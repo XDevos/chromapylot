@@ -3,8 +3,9 @@ from astropy.table import Table
 
 from .main import get_img_name, get_file_path
 
-class FilterTableModule:
+class FilterTableModule(Module):
     def __init__(self, props = {"max_intensity":1500}) -> None:
+        super().__init__()
         self.props = props
     
     def run(self, table):
@@ -26,9 +27,9 @@ class FilterTableModule:
             overwrite=True,
         )
 
-class FilterMaskModule:
+class FilterMaskModule(Module):
     def __init__(self) -> None:
-        self.supplementary_data = {"_3Dmasks": None}
+        super().__init__(supplementary_data={"_3Dmasks": None})
     
     def run(self, mask, table):
         filtered_mask = np.zeros_like(mask)

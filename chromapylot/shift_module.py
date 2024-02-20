@@ -3,6 +3,7 @@ import numpy as np
 from tifffile import imread, imsave
 
 from .main import get_img_name, get_file_path, load_shifts_from_json
+from .module import TiffModule
 
 def shift_3d_array_subpixel(array_3d, shift_values):
     """
@@ -43,22 +44,6 @@ def shift_and_skip(input_path, output_path, label_name="mask28"):
     shifted_image = shift_3d_array_subpixel(skip_img, shifts[label_name])
     imsave(get_file_path(output_path, img_name + "_shifted", "tif"), shifted_image)
 
-class TiffModule:
-    def __init__(self, action_keyword:str) -> None:
-        self.action_keyword = action_keyword
-
-    def run(self, array_3d):
-        raise NotImplementedError
-
-    def load_data(self, input_path, label_name):
-        img_name = get_img_name(label_name)
-        image_path = get_file_path(input_path, img_name, "tif")
-        image = imread(image_path)
-        return image
-
-    def save_data(self, output_path, label_name, data):
-        img_name = get_img_name(label_name)
-        imsave(get_file_path(output_path, img_name + "_" + self.action_keyword, "tif"), data)
 
 class SkipModule(TiffModule):
     def __init__(self, z_binning) -> None:

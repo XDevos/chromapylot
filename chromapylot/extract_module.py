@@ -3,6 +3,7 @@ from astropy.table import Table
 from tifffile import imread
 
 from .main import get_img_name, get_file_path
+from .module import Module
 
 
 def extract_properties(tiff_image, mask_3d):
@@ -18,20 +19,10 @@ def extract_properties(tiff_image, mask_3d):
 
     return properties
 
-class Module:
-    def run(self, tiff_image, mask_3d):
-        raise NotImplementedError
-
-    def load_data(self, input_path, label_name):
-        raise NotImplementedError
-
-    def save_data(self, output_path, label_name, data):
-        raise NotImplementedError
 
 class ExtractModule(Module):
     def __init__(self) -> None:
-        super().__init__()
-        self.supplementary_data = {"_shifted": None}
+        super().__init__(supplementary_data={"_shifted": None})
     
     def run(self, tiff_image, mask_3d):
         properties = extract_properties(tiff_image, mask_3d)
