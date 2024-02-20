@@ -1,6 +1,8 @@
 from scipy.ndimage import shift
 import numpy as np
+from tifffile import imread, imsave
 
+from .main import get_img_name, get_file_path, load_shifts_from_json
 
 def shift_3d_array_subpixel(array_3d, shift_values):
     """
@@ -22,3 +24,70 @@ def shift_3d_array_subpixel(array_3d, shift_values):
     shifted_array = shift(array_3d, shift_vector)
 
     return shifted_array
+
+
+
+def skip_z_planes(array_3d):
+    if not isinstance(array_3d, np.ndarray) or len(array_3d.shape) != 3:
+        raise ValueError("Input must be a 3D numpy array.")
+
+    return array_3d[::2, :, :]
+
+
+def shift_and_skip(input_path, output_path, label_name="mask28"):
+    img_name = get_img_name(label_name)
+    image_path = get_file_path(input_path, img_name, "tif")
+    image = imread(image_path)
+    shifts = load_shifts_from_json(get_file_path(input_path, "shifts", "json"))
+    skip_img = skip_z_planes(image)
+    shifted_image = shift_3d_array_subpixel(skip_img, shifts[label_name])
+    imsave(get_file_path(output_path, img_name + "_shifted", "tif"), shifted_image)
+
+class TiffModule:
+    def __init__(self, action_keyword:str) -> None:
+        self.action_keyword = action_keyword
+
+    def run(self, array_3d):
+        raise NotImplementedError
+
+    def load_data(self, input_path, label_name):
+        img_name = get_img_name(label_name)
+        image_path = get_file_path(input_path, img_name, "tif")
+        image = imread(image_path)
+        return image
+
+    def save_data(self, output_path, label_name, data):
+        img_name = get_img_name(label_name)
+        imsave(get_file_path(output_path, img_name + "_" + self.action_keyword, "tif"), data)
+
+class SkipModule(TiffModule):
+    def __init__(self, z_binning) -> None:
+        """
+        Parameters:
+        z_binning (int): The number of z-planes to skip.
+        """
+        super().__init__("skipped")
+        self.z_binning = z_binning
+    
+    def run(self, array_3d):
+        if not isinstance(array_3d, np.ndarray) or len(array_3d.shape) != 3:
+            raise ValueError("Input must be a 3D numpy array.")
+
+        return array_3d[::self.z_binning, :, :]
+    
+
+class ShiftModule(TiffModule):
+    def __init__(self, shift_dict) -> None:
+        """
+        Parameters:
+        shift_dict (dict): A dictionary with the shift values for each label.
+        """
+        super().__init__("shifted")
+        self.shift_dict = shift_dict
+
+    def run(self, array_3d, label_name):
+        if not isinstance(array_3d, np.ndarray) or len(array_3d.shape) != 3:
+            raise ValueError("Input must be a 3D numpy array.")
+
+        return shift_3d_array_subpixel(array_3d, self.shift_dict[label_name])
+    
