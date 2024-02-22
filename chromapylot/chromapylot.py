@@ -1,25 +1,26 @@
-from typing import List, Literal
+from typing import List, Literal, Dict
 
 Datatype = Literal[
-    "_dapi",
-    "_primer",
-    "_satellite",
-    "_rna",
     "_3d",
     "_2d",
-    "_shift_tuple",
-    "_shift_dict",
-    "_shift_table",
+    "shift_tuple",
+    "shift_dict",
+    "shift_table",
+    "_skipped",
     "_shifted",
     "_segmented",
+    "_selected",
     "_table",
     "_filtered",
     "_registered",
 ]
-AnalysisType = Literal["fiducial", "barcode", "mask", "trace"]
+AnalysisType = Literal[
+    "fiducial", "barcode", "dapi", "rna", "primer", "satellite", "trace"
+]
 ModuleName = Literal[
     "project",
     "register_global",
+    "skip",
     "shift",
     "shift_fiducial",
     "register_local",
@@ -62,43 +63,65 @@ class Pipeline:
         self.supplementary_data = {}
 
     def prepare(self):
+        first_input_type = self.modules[0].input_type
+        generated_data_type = [first_module_input_type]
+        supplementary_data_to_find = []
         for module in self.modules:
+            # Load data to keep during all processes
+            module.reference_data = self.data_manager.get_data_from_type(
+                module.reference_type
+            )
+            # Collect data type to keep during one process
             if module.supplementary_data:
                 self.supplementary_data.update(module.supplementary_data)
+                if module.supplementary_type not in generated_data_type:
+                    supplementary_data_to_find.append(module.supplementary_type)
+        return first_input_type, supplementary_data_to_find
 
-    def assign_supplementary_data(self, module, data_path, label_name):
+    def assign_supplementary_data(self, module, data_path):
         for key, value in module.supplementary_data.items():
             if value is None:
-                module.load_supplementary_data(data_path, label_name)
+                module.load_supplementary_data(data_path)
             else:
                 module.supplementary_data[key] = self.supplementary_data[key]
 
     def choose_to_keep_data(self, module, data):
-        if module.action_keyword in self.supplementary_data:
-            self.supplementary_data[module.action_keyword] = data
+        if module.output_type in self.supplementary_data:
+            self.supplementary_data[module.output_type] = data
 
     def choose_to_keep_input_data(self, data):
         if self.modules[0].input_type in self.supplementary_data:
             self.supplementary_data[self.modules[0].input_type] = data
 
-    def process(self, data_path, label_name):
-        data = self.modules[0].load_data(data_path, label_name)
+    def process(self, data_path):
+        data = self.modules[0].load_data(data_path)
         self.choose_to_keep_input_data(data)
         for module in self.modules:
-            self.assign_supplementary_data(module, data_path, label_name)
-            data = module.run(data)
-            module.save_data(data_path, label_name, data)
+            self.assign_supplementary_data(module, data_path)
+            data = module.run(data, supplementary_data)
+            module.save_data(data_path, data)
             self.choose_to_keep_data(module, data)
+
+    def delete_supplementary_data(self):
+        for module in self.modules:
+            if module.supplementary_data:
+                for key in module.supplementary_data:
+                    module.supplementary_data[key] = None
+                    self.supplementary_data[key] = None
 
 
 class AnalysisManager:
     def __init__(self, data_manager: DataManager):
         self.data_manager = data_manager
+        self.ordered_analysis_types = self.sort_analysis_types()
         self.module_names = []
-        self.pipelines = {
+        self.pipelines: Dict[AnalysisType, Pipeline] = {
             "fiducial": None,
             "barcode": None,
-            "mask": None,
+            "dapi": None,
+            "rna": None,
+            "primer": None,
+            "satellite": None,
             "trace": None,
         }
 
@@ -153,13 +176,33 @@ class AnalysisManager:
                     )
                 modules.append(self.create_module(module_chain[i], pipeline_type))
 
+    def sort_analysis_types(self):
+        analysis_types = self.data_manager.get_analysis_types()
+        order = ["fiducial", "barcode", "dapi", "rna", "primer", "satellite", "trace"]
+        analysis_types = [x for x in order if x in analysis_types]
+        return analysis_types
+
     def create_pipelines(self):
-        data_types = self.data_manager.get_data_types()
-        order = ["fiducial", "barcode", "mask", "trace"]
-        data_types = [x for x in order if x in data_types]
-        for data_type in data_types:
-            modules = self.create_pipeline_modules(data_type)
-            self.pipelines[data_type] = Pipeline(modules)
+        for analysis_type in self.ordered_analysis_types:
+            modules = self.create_pipeline_modules(analysis_type)
+            self.pipelines[analysis_type] = Pipeline(modules)
+
+    def launch_analysis(self):
+        for analysis_type in self.ordered_analysis_types:
+            first_input_type, supplementary_data_to_find = self.pipelines[
+                analysis_type
+            ].prepare(self.data_manager)
+            first_input_paths = self.data_manager.get_path_from_type(first_input_type)
+            supplementary_paths_by_type = []
+            for data_type in supplementary_data_to_find:
+                supplementary_paths_by_type.append(
+                    self.data_manager.get_path_from_type(data_type)
+                )
+            for data_path, supplementary_dict in zip(
+                first_input_paths, supplementary_paths_by_type
+            ):  # WARNING Todo verify if supplementary_dict is the right format
+                self.pipelines[analysis_type].process(data_path, supplementary_dict)
+            self.pipelines[analysis_type].delete_supplementary_data()
 
 
 # # Utilisation du pipeline

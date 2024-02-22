@@ -2,6 +2,7 @@ import numpy as np
 from astropy.table import Table
 
 from .main import get_img_name, get_file_path
+from .module import Module
 
 
 class FilterTableModule(Module):
@@ -15,16 +16,14 @@ class FilterTableModule(Module):
             table = table[table[key] > value]
         return table
 
-    def load_data(self, input_path, label_name):
-        img_name = get_img_name(label_name)
-        props_path = get_file_path(input_path, img_name, "ecsv")
+    def load_data(self, input_path):
+        props_path = get_file_path(input_path, "", "ecsv")
         properties_table = Table.read(props_path, format="ascii.ecsv")
         return properties_table
 
-    def save_data(self, output_path, label_name, data):
-        img_name = get_img_name(label_name)
+    def save_data(self, output_path, data):
         data.write(
-            get_file_path(output_path, img_name + "_filtered", "ecsv"),
+            get_file_path(output_path, "_filtered", "ecsv"),
             format="ascii.ecsv",
             overwrite=True,
         )
@@ -40,20 +39,14 @@ class FilterMaskModule(Module):
             filtered_mask[mask == label] = label
         return filtered_mask
 
-    def load_supplementary_data(self, input_path, label_name):
-        img_name = get_img_name(label_name)
-        mask_path = get_file_path(input_path, img_name + "_3Dmasks", "npy")
+    def load_supplementary_data(self, input_path):
+        mask_path = get_file_path(input_path, "_3Dmasks", "npy")
         self.supplementary_data["_3Dmasks"] = np.load(mask_path)
 
-    def load_data(self, input_path, label_name):
-        img_name = get_img_name(label_name)
-        props_path = get_file_path(input_path, img_name + "_filtered", "ecsv")
+    def load_data(self, input_path):
+        props_path = get_file_path(input_path, "_filtered", "ecsv")
         properties_table = Table.read(props_path, format="ascii.ecsv")
         return properties_table
 
-    def save_data(self, output_path, label_name, data):
-        img_name = get_img_name(label_name)
-        np.save(
-            get_file_path(output_path, img_name + "_mask_filtered", "npy"),
-            data,
-        )
+    def save_data(self, output_path, data):
+        np.save(get_file_path(output_path, "_mask_filtered", "npy"), data)

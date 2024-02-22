@@ -1,6 +1,7 @@
 import json
-import numpy as np
 import os
+
+import numpy as np
 from tifffile import imread, imsave
 from astropy.table import Table
 
