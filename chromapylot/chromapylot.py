@@ -1,6 +1,6 @@
 from typing import List, Literal, Dict
 
-Datatype = Literal[
+DataType = Literal[
     "_3d",
     "_2d",
     "shift_tuple",
@@ -76,14 +76,8 @@ class Pipeline:
                 self.supplementary_data.update(module.supplementary_data)
                 if module.supplementary_type not in generated_data_type:
                     supplementary_data_to_find.append(module.supplementary_type)
+            generated_data_type.append(module.output_type)
         return first_input_type, supplementary_data_to_find
-
-    def assign_supplementary_data(self, module, data_path):
-        for key, value in module.supplementary_data.items():
-            if value is None:
-                module.load_supplementary_data(data_path)
-            else:
-                module.supplementary_data[key] = self.supplementary_data[key]
 
     def choose_to_keep_data(self, module, data):
         if module.output_type in self.supplementary_data:
@@ -93,21 +87,45 @@ class Pipeline:
         if self.modules[0].input_type in self.supplementary_data:
             self.supplementary_data[self.modules[0].input_type] = data
 
-    def process(self, data_path):
+    def update_supplementary_data(self, supplementary_paths):
+        for key, value in supplementary_paths.items():
+            if key not in self.supplementary_data:
+                raise ValueError(f"Supplementary data type {key} not found.")
+            elif self.supplementary_data[key] is not None:
+                raise ValueError(f"Supplementary data type {key} already exists.")
+            else:
+                self.supplementary_data[key] = value
+
+    def load_supplementary_data(self, module: Module, cycle: str):
+        data_type = module.supplementary_type
+        if data_type:
+            if data_type in self.supplementary_data:
+                if self.supplementary_data[data_type] is None:
+                    self.supplementary_data[data_type] = module.load_supplementary_data(
+                        os.getcwd(), cycle
+                    )
+                elif isinstance(self.supplementary_data[data_type], str):
+                    self.supplementary_data[data_type] = module.load_supplementary_data(
+                        self.supplementary_data[data_type], cycle
+                    )
+                return self.supplementary_data[data_type]
+            else:
+                raise ValueError(f"Supplementary data {data_type} not found.")
+        else:
+            return None
+
+    def process(
+        self, data_path: str, supplementary_paths: Dict[DataType, str], cycle: str
+    ):
+        print(f"Processing data from cycle {cycle}.")
         data = self.modules[0].load_data(data_path)
         self.choose_to_keep_input_data(data)
+        self.update_supplementary_data(supplementary_paths)
         for module in self.modules:
-            self.assign_supplementary_data(module, data_path)
+            supplementary_data = self.load_supplementary_data(module, cycle)
             data = module.run(data, supplementary_data)
             module.save_data(data_path, data)
             self.choose_to_keep_data(module, data)
-
-    def delete_supplementary_data(self):
-        for module in self.modules:
-            if module.supplementary_data:
-                for key in module.supplementary_data:
-                    module.supplementary_data[key] = None
-                    self.supplementary_data[key] = None
 
 
 class AnalysisManager:
@@ -133,7 +151,12 @@ class AnalysisManager:
             return ["project", "register_global", "shift", "register_local"]
         elif pipeline_type == "barcode":
             return ["shift", "segment", "extract"]
-        elif pipeline_type == "mask":
+        elif (
+            pipeline_type == "dapi"
+            or pipeline_type == "rna"
+            or pipeline_type == "primer"
+            or pipeline_type == "satellite"
+        ):
             return ["shift", "segment", "extract", "filter_table", "filter_mask"]
         elif pipeline_type == "trace":
             return [
@@ -169,12 +192,18 @@ class AnalysisManager:
         modules = []
         for i in range(len(module_chain)):
             if module_chain[i] in self.module_names:
-                # check if we don't break the chain
-                if len(modules) > 0 and module_chain[i - 1] not in self.module_names:
-                    raise ValueError(
-                        f"Module {module_chain[i]} cannot be used without {module_chain[i - 1]}, for {pipeline_type} analysis."
-                    )
                 modules.append(self.create_module(module_chain[i], pipeline_type))
+                # check if we don't break the chain
+                if (
+                    len(modules) >= 2
+                    and modules[-2].output_type != modules[-1].input_type
+                ):
+                    if modules[-2].output_type == modules[-1].supplementary_type:
+                        modules[-2].switch_input_supplementary()
+                    else:
+                        raise ValueError(
+                            f"Module {module_chain[i]} cannot be used without {module_chain[i - 1]}, for {pipeline_type} analysis."
+                        )
 
     def sort_analysis_types(self):
         analysis_types = self.data_manager.get_analysis_types()
@@ -189,20 +218,31 @@ class AnalysisManager:
 
     def launch_analysis(self):
         for analysis_type in self.ordered_analysis_types:
-            first_input_type, supplementary_data_to_find = self.pipelines[
-                analysis_type
-            ].prepare(self.data_manager)
-            first_input_paths = self.data_manager.get_path_from_type(first_input_type)
-            supplementary_paths_by_type = []
-            for data_type in supplementary_data_to_find:
-                supplementary_paths_by_type.append(
-                    self.data_manager.get_path_from_type(data_type)
+            input_type, sup_types_to_find = self.pipelines[analysis_type].prepare(
+                self.data_manager
+            )
+            input_paths = self.data_manager.get_path_from_type(input_type)
+            sup_paths = self.data_manager.get_sup_paths_by_cycle(sup_types_to_find)
+            for data_path in input_paths:
+                cycle = self.data_manager.get_cycle_from_path(data_path)
+                if cycle not in sup_paths:
+                    sup_paths[cycle] = {}
+                self.pipelines[analysis_type].process(
+                    data_path, sup_paths.pop(cycle), cycle
                 )
-            for data_path, supplementary_dict in zip(
-                first_input_paths, supplementary_paths_by_type
-            ):  # WARNING Todo verify if supplementary_dict is the right format
-                self.pipelines[analysis_type].process(data_path, supplementary_dict)
-            self.pipelines[analysis_type].delete_supplementary_data()
+            if sup_paths:
+                raise ValueError(
+                    f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
+                )
+
+
+if __name__ == "__main__":
+    run_args = RunArgs()
+    data_manager = DataManager(run_args)
+    analysis_manager = AnalysisManager(data_manager)
+    analysis_manager.parse_commands(run_args.commands)
+    analysis_manager.create_pipelines()
+    analysis_manager.launch_analysis()
 
 
 # # Utilisation du pipeline

@@ -25,11 +25,30 @@ class Module:
     def load_data(self, input_path):
         raise NotImplementedError
 
-    def load_supplementary_data(self, input_path):
+    def load_supplementary_data(self, input_path, cycle):
+        """
+        Load supplementary data for the module.
+
+        Args:
+            input_path (str): The path or the directory to the input data.
+            cycle (str): The cycle to process.
+
+        Returns:
+            Any: The supplementary data.
+        """
         raise NotImplementedError
 
     def save_data(self, output_path, data):
         raise NotImplementedError
+
+    def switch_input_supplementary(self):
+        """
+        Switch the input type with the supplementary type.
+        """
+        self.input_type, self.supplementary_type = (
+            self.supplementary_type,
+            self.input_type,
+        )
 
 
 class TiffModule(Module):
