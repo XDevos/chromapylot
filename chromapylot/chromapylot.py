@@ -1,4 +1,5 @@
 from typing import List, Literal, Dict
+from enum import Enum
 
 DataType = Literal[
     "_3d",
@@ -14,9 +15,18 @@ DataType = Literal[
     "_filtered",
     "_registered",
 ]
-AnalysisType = Literal[
-    "fiducial", "barcode", "dapi", "rna", "primer", "satellite", "trace"
-]
+
+
+class AnalysisType(Enum):
+    FIDUCIAL = "fiducial"
+    BARCODE = "barcode"
+    DAPI = "dapi"
+    RNA = "rna"
+    PRIMER = "primer"
+    SATELLITE = "satellite"
+    TRACE = "trace"
+
+
 ModuleName = Literal[
     "project",
     "register_global",
@@ -68,9 +78,7 @@ class Pipeline:
         supplementary_data_to_find = []
         for module in self.modules:
             # Load data to keep during all processes
-            module.reference_data = self.data_manager.get_data_from_type(
-                module.reference_type
-            )
+            module.load_reference_data()
             # Collect data type to keep during one process
             if module.supplementary_data:
                 self.supplementary_data.update(module.supplementary_data)
@@ -123,6 +131,8 @@ class Pipeline:
         self.update_supplementary_data(supplementary_paths)
         for module in self.modules:
             supplementary_data = self.load_supplementary_data(module, cycle)
+            if module.switched:
+                data, supplementary_data = supplementary_data, data
             data = module.run(data, supplementary_data)
             module.save_data(data_path, data)
             self.choose_to_keep_data(module, data)
@@ -199,7 +209,7 @@ class AnalysisManager:
                     and modules[-2].output_type != modules[-1].input_type
                 ):
                     if modules[-2].output_type == modules[-1].supplementary_type:
-                        modules[-2].switch_input_supplementary()
+                        modules[-1].switch_input_supplementary()
                     else:
                         raise ValueError(
                             f"Module {module_chain[i]} cannot be used without {module_chain[i - 1]}, for {pipeline_type} analysis."
