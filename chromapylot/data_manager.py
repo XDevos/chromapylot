@@ -116,10 +116,6 @@ class DataManager:
     def write_csv(data, output_path):
         data.to_csv(output_path)
 
-    def get_data_from_type(self, data_type):
-        # TODO: Implement this method
-        pass
-
     def get_path_from_type(self, data_type):
         # TODO: Implement this method
         pass
