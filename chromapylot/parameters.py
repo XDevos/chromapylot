@@ -13,7 +13,6 @@ from typing import Dict, List, Union
 
 from dataclasses_json import CatchAll, LetterCase, Undefined, dataclass_json
 
-
 def print_section(section: str):
     print(f"$ Load: {section}")
 
@@ -59,7 +58,23 @@ def set_default(key: str, val):
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class AcquisitionParams:
-    """acquisition section of parameters.json parameter file."""
+    """
+    acquisition section of parameters.json parameter file.
+
+    Attributes:
+        DAPI_channel (str): The DAPI channel used for acquisition.
+        RNA_channel (str): The RNA channel used for acquisition.
+        barcode_channel (str): The barcode channel used for acquisition.
+        mask_channel (str): The mask channel used for acquisition.
+        fiducialBarcode_channel (str): The fiducial barcode channel used for acquisition.
+        fiducialMask_channel (str): The fiducial mask channel used for acquisition.
+        fiducialDAPI_channel (str): The fiducial DAPI channel used for acquisition.
+        fileNameRegExp (str): The regular expression pattern for matching the file names.
+        pixelSizeXY (float): The pixel size in the XY plane.
+        pixelSizeZ (float): The pixel size in the Z direction.
+        zBinning (int): The Z binning factor.
+        unknown_params (CatchAll): Catch-all field for unknown parameters.
+    """
 
     # pylint: disable=invalid-name
     DAPI_channel: str = set_default("DAPI_channel", "None")
@@ -86,18 +101,31 @@ class AcquisitionParams:
 @dataclass_json(undefined=Undefined.INCLUDE, letter_case=LetterCase.CAMEL)
 @dataclass
 class ProjectionParams:
-    """zProject section of parameters.json parameter file."""
+    """
+    Represents the zProject section of the parameters.json parameter file.
 
+    Attributes:
+        folder (str): Output folder for the projected images.
+        mode (str): Projection mode. Options: full, manual, automatic, laplacian.
+        block_size (int): Block size for projection.
+        display (bool): Flag indicating whether to display the projected images.
+        zmin (int): Minimum z-slice to include in the projection.
+        zmax (int): Maximum z-slice to include in the projection.
+        zwindows (int): Number of z-slices to include in each projection window.
+        window_security (int): Number of additional z-slices to include for security in each projection window.
+        z_project_option (str): Projection option. Options: sum, MIP.
+        unknown_params (Dict[str, Any]): Dictionary to store unknown parameters.
+    """
     # pylint: disable=invalid-name
-    folder: str = set_default("folder", "project")  # output folder
-    mode: str = set_default("mode", "full")  # full, manual, automatic, laplacian
+    folder: str = set_default("folder", "project")
+    mode: str = set_default("mode", "full")
     block_size: int = set_default("block_size", 256)
     display: bool = set_default("display", True)
     zmin: int = set_default("zmin", 1)
     zmax: int = set_default("zmax", 59)
     zwindows: int = set_default("zwindows", 15)
     window_security: int = set_default("window_security", 2)
-    z_project_option: str = set_default("z_project_option", "MIP")  # sum or MIP
+    z_project_option: str = set_default("z_project_option", "MIP")
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
@@ -108,45 +136,58 @@ class ProjectionParams:
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class RegistrationParams:
-    """alignImages section of parameters.json parameter file."""
+    """Represents the alignImages section of the parameters.json parameter file.
+
+    Attributes:
+        register_global_folder (str): Output folder for global registration.
+        register_local_folder (str): Output folder for local registration.
+        outputFile (str): Output file name for storing shifts.
+        referenceFiducial (str): Reference fiducial for alignment.
+        localAlignment (str): Type of local alignment. Options: None, mask2D, block3D.
+        alignByBlock (bool): Flag indicating whether to perform block alignment.
+        tolerance (float): Percentage of error tolerated in block alignment.
+        lower_threshold (float): Lower threshold for adjusting image intensity levels before 2D alignment.
+        higher_threshold (float): Higher threshold for adjusting image intensity levels before 2D alignment.
+        _3D_lower_threshold (Union[float, str]): Lower threshold for adjusting image intensity levels before 3D alignment.
+        _3D_higher_threshold (Union[float, str]): Higher threshold for adjusting image intensity levels before 3D alignment.
+        background_sigma (float): Sigma value used to remove inhomogeneous background.
+        blockSize (int): Block size for global registration.
+        blockSizeXY (int): Block size for local registration in XY dimension.
+        upsample_factor (int): Upsample factor for local registration.
+        unknown_params (Dict[str, Any]): Dictionary to store unknown parameters.
+
+    Note:
+        - The `_3D_lower_threshold` and `_3D_higher_threshold` attributes can be set to a float value or "None".
+    """
 
     # pylint: disable=invalid-name
     register_global_folder: str = set_default(
         "register_global_folder", "register_global"
-    )  # output folder
+    )
     register_local_folder: str = set_default(
         "register_local_folder", "register_local"
-    )  # output folder
+    )
     outputFile: str = set_default("outputFile", "shifts")
     referenceFiducial: str = set_default("referenceFiducial", "RT27")
     localAlignment: str = set_default(
         "localAlignment", "block3D"
-    )  # options: None, mask2D, block3D
+    )
     alignByBlock: bool = set_default(
         "alignByBlock", True
-    )  # alignByBlock True will perform block alignment
-    # Used in blockAlignment to determine the % of error tolerated
+    )
     tolerance: float = set_default("tolerance", 0.1)
-    # lower threshold to adjust image intensity levels
-    # before xcorrelation for alignment in 2D
     lower_threshold: float = set_default("lower_threshold", 0.999)
-    # higher threshold to adjust image intensity levels
-    # before xcorrelation for alignment in 2D
     higher_threshold: float = set_default("higher_threshold", 0.9999999)
-    # lower threshold to adjust image intensity levels
-    # before xcorrelation for Alignment3D
     _3D_lower_threshold: Union[float, str] = set_default("_3D_lower_threshold", "None")
-    # higher threshold to adjust image intensity levels
-    # before xcorrelation for Alignment3D
     _3D_higher_threshold: Union[float, str] = set_default(
         "_3D_higher_threshold", "None"
     )
     background_sigma: float = set_default(
         "background_sigma", 3.0
-    )  # used to remove inhom background
-    blockSize: int = set_default("blockSize", 256)  # register_global
-    blockSizeXY: int = set_default("blockSizeXY", 128)  # register_local
-    upsample_factor: int = set_default("upsample_factor", 100)  # register_local
+    )
+    blockSize: int = set_default("blockSize", 256)
+    blockSizeXY: int = set_default("blockSizeXY", 128)
+    upsample_factor: int = set_default("upsample_factor", 100)
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
@@ -168,73 +209,83 @@ class RegistrationParams:
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class SegmentationParams:
-    """segmentedObjects section of parameters.json parameter file."""
+    """Represents the segmentedObjects section of the parameters.json parameter file.
+
+    Attributes:
+        mask_2d_folder (str): Output folder for 2D masks.
+        mask_3d_folder (str): Output folder for 3D masks.
+        localize_2d_folder (str): Output folder for 2D localizations.
+        localize_3d_folder (str): Output folder for 3D localizations.
+        operation (str): Options for segmentation operation (2D, 3D).
+        outputFile (str): Output file name for localizations.
+        background_method (str): Method for background removal (flat, inhomogeneous, stardist).
+        stardist_basename (str): Base name for stardist network.
+        stardist_network (str): Network for 2D mask segmentation.
+        stardist_network3D (str): Network for 3D mask or barcode segmentation.
+        tesselation (bool): Whether to tesselate masks.
+        background_sigma (float): Sigma value used to remove inhomogeneous background.
+        threshold_over_std (float): Threshold value used to detect sources.
+        fwhm (float): Source size in pixels (FWHM).
+        brightest (int): Maximum number of sources segmented per field of view.
+        intensity_min (int): Minimum intensity to keep an object.
+        intensity_max (int): Maximum intensity to keep an object.
+        area_min (int): Minimum area to keep an object.
+        area_max (int): Maximum area to keep an object.
+        reducePlanes (bool): Whether to reduce planes for 3D segmentation.
+        residual_max (float): Maximum residuals to keep an object in z-profile Fit.
+        sigma_max (int): Maximum sigma value for 3D fitting to keep an object in z-profile Fit.
+        centroidDifference_max (int): Maximum difference in centroid position to associate a source localized in YZ with one localized in XY.
+        _3Dmethod (str): Method for 3D segmentation: thresholding or stardist.
+        _3DGaussianfitWindow (Union[int, str]): Window size to extract subVolume for z-profile Fit.
+        _3dAP_window (Union[int, str]): Window size for constructing a YZ image by summing from xPlane-window to xPlane+window.
+        _3dAP_flux_min (Union[int, str]): Threshold to keep a source detected in YZ.
+        _3dAP_brightest (Union[int, str]): Number of sources sought in each YZ plane.
+        _3dAP_distTolerance (Union[int, str]): Pixel distance to attribute a source localized in YZ to one localized in XY.
+        _3D_threshold_over_std (Union[int, str]): Threshold value used for 3D segmentation.
+        _3D_sigma (Union[int, str]): Sigma value used for 3D segmentation.
+        _3D_boxSize (Union[int, str]): Box size used for 3D segmentation.
+        _3D_area_min (Union[int, str]): Minimum area to keep an object in 3D segmentation.
+        _3D_area_max (Union[int, str]): Maximum area to keep an object in 3D segmentation.
+        _3D_nlevels (Union[int, str]): Number of levels used for 3D segmentation.
+        _3D_contrast (Union[float, str]): Contrast value used for 3D segmentation.
+        _3D_psf_z (Union[int, str]): PSF value in z-direction used for 3D segmentation.
+        _3D_psf_yx (Union[int, str]): PSF value in yx-direction used for 3D segmentation.
+        _3D_lower_threshold (Union[float, str]): Lower threshold value used for 3D segmentation.
+        _3D_higher_threshold (Union[float, str]): Higher threshold value used for 3D segmentation.
+        unknown_params (CatchAll): Catch-all field for unknown parameters.
+    """
 
     # pylint: disable=invalid-name
-    mask_2d_folder: str = set_default(
-        "mask_2d_folder", "mask_2d"
-    )  # output mask_2d folder
-    mask_3d_folder: str = set_default("mask_3d_folder", "mask_3d")  # output folder
-    localize_2d_folder: str = set_default(
-        "localize_2d_folder", "localize_2d"
-    )  # output folder
-    localize_3d_folder: str = set_default(
-        "localize_3d_folder", "localize_3d"
-    )  # output folder
-    operation: str = set_default("operation", "2D,3D")  # options: 2D or 3D
+    mask_2d_folder: str = set_default("mask_2d_folder", "mask_2d")
+    mask_3d_folder: str = set_default("mask_3d_folder", "mask_3d")
+    localize_2d_folder: str = set_default("localize_2d_folder", "localize_2d")
+    localize_3d_folder: str = set_default("localize_3d_folder", "localize_3d")
+    operation: str = set_default("operation", "2D,3D")
     outputFile: str = set_default("outputFile", "localizations")
-    background_method: str = set_default(
-        "background_method", "inhomogeneous"
-    )  # flat or inhomogeneous or stardist
+    background_method: str = set_default("background_method", "inhomogeneous")
     stardist_basename: str = set_default("stardist_basename", "None")
-    # network for 2D mask segmentation
     stardist_network: str = set_default("stardist_network", "None")
-    # network for 3D mask or barcode segmentation
     stardist_network3D: str = set_default("stardist_network3D", "None")
-    tesselation: bool = set_default("tesselation", True)  # tesselates masks
-    background_sigma: float = set_default(
-        "background_sigma", 3.0
-    )  # used to remove inhom background
-    threshold_over_std: float = set_default(
-        "threshold_over_std", 1.0
-    )  # threshold used to detect sources
-    fwhm: float = set_default("fwhm", 3.0)  # source size in px
-    brightest: int = set_default(
-        "brightest", 1100
-    )  # max number of sources segmented per FOV
-    intensity_min: int = set_default("intensity_min", 0)  # min int to keep object
-    intensity_max: int = set_default("intensity_max", 59)  # max int to keeep object
-    area_min: int = set_default("area_min", 50)  # min area to keeep object
-    area_max: int = set_default("area_max", 500)  # max area to keeep object
-    # if reducePlanes==True it will calculate focal plane and only use a region
-    # around it for segmentSources3D, otherwise will use the full stack
+    tesselation: bool = set_default("tesselation", True)
+    background_sigma: float = set_default("background_sigma", 3.0)
+    threshold_over_std: float = set_default("threshold_over_std", 1.0)
+    fwhm: float = set_default("fwhm", 3.0)
+    brightest: int = set_default("brightest", 1100)
+    intensity_min: int = set_default("intensity_min", 0)
+    intensity_max: int = set_default("intensity_max", 59)
+    area_min: int = set_default("area_min", 50)
+    area_max: int = set_default("area_max", 500)
     reducePlanes: bool = set_default("reducePlanes", True)
-    residual_max: float = set_default(
-        "residual_max", 2.5
-    )  # z-profile Fit: max residuals to keeep object
-    sigma_max: int = set_default(
-        "sigma_max", 5
-    )  # z-profile Fit: max sigma 3D fitting to keeep object
-    # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
+    residual_max: float = set_default("residual_max", 2.5)
+    sigma_max: int = set_default("sigma_max", 5)
     centroidDifference_max: int = set_default("centroidDifference_max", 5)
-    # options: 'thresholding' or 'stardist'
     _3Dmethod: str = set_default("_3Dmethod", "None")
-    # z-profile Fit: window size to extract subVolume, px.
-    # 3 means subvolume will be 7x7.
     _3DGaussianfitWindow: Union[int, str] = set_default("_3DGaussianfitWindow", "None")
-    # constructs a YZ image by summing from xPlane-window:xPlane+window
     _3dAP_window: Union[int, str] = set_default("_3dAP_window", "None")
-    _3dAP_flux_min: Union[int, str] = set_default(
-        "_3dAP_flux_min", "None"
-    )  # # threshold to keep a source detected in YZ
-    _3dAP_brightest: Union[int, str] = set_default(
-        "_3dAP_brightest", "None"
-    )  # number of sources sought in each YZ plane
-    # px dist to attribute a source localized in YZ to one localized in XY
+    _3dAP_flux_min: Union[int, str] = set_default("_3dAP_flux_min", "None")
+    _3dAP_brightest: Union[int, str] = set_default("_3dAP_brightest", "None")
     _3dAP_distTolerance: Union[int, str] = set_default("_3dAP_distTolerance", "None")
-    _3D_threshold_over_std: Union[int, str] = set_default(
-        "_3D_threshold_over_std", "None"
-    )
+    _3D_threshold_over_std: Union[int, str] = set_default("_3D_threshold_over_std", "None")
     _3D_sigma: Union[int, str] = set_default("_3D_sigma", "None")
     _3D_boxSize: Union[int, str] = set_default("_3D_boxSize", "None")
     _3D_area_min: Union[int, str] = set_default("_3D_area_min", "None")
@@ -244,12 +295,11 @@ class SegmentationParams:
     _3D_psf_z: Union[int, str] = set_default("_3D_psf_z", "None")
     _3D_psf_yx: Union[int, str] = set_default("_3D_psf_yx", "None")
     _3D_lower_threshold: Union[float, str] = set_default("_3D_lower_threshold", "None")
-    _3D_higher_threshold: Union[float, str] = set_default(
-        "_3D_higher_threshold", "None"
-    )
-    unknown_params: CatchAll = field(default_factory=lambda: {})
+    _3D_higher_threshold: Union[float, str] = set_default("_3D_higher_threshold", "None")
+    unknown_params: CatchAll = field(default_factory=lambda: {})  # Catch-all field for unknown parameters
 
     def __post_init__(self):
+        # Handle default values for certain parameters
         self._3Dmethod = (
             warn_pop(self.unknown_params, "3Dmethod", "stardist")
             if self._3Dmethod == "None"
@@ -342,26 +392,35 @@ class SegmentationParams:
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class MatrixParams:
-    """buildsPWDmatrix section of parameters.json parameter file."""
+    """Class representing the 'buildsPWDmatrix' section of the parameters.json parameter file.
 
-    # pylint: disable=invalid-name
-    folder: str = set_default("folder", "tracing")  # output folder
-    # available methods: masking, clustering
+    Attributes:
+        folder (str): Output folder for the generated files. Default is 'tracing'.
+        tracing_method (List[str]): List of available tracing methods. Default is ['masking', 'clustering'].
+        mask_expansion (int): Maximum number of pixels to expand masks until they collide. Default is 8.
+        masks2process (Dict[str, str]): Dictionary mapping mask names to their corresponding channels. Default is {'nuclei': 'DAPI', 'mask1': 'mask0'}.
+        flux_min (int): Minimum flux required to keep an object. Default is 10.
+        flux_min_3D (float): Minimum flux required to keep an object in 3D. Default is 0.1.
+        KDtree_distance_threshold_mum (int): Distance threshold used to build KDtree. Default is 1.
+        toleranceDrift (Union[int, List[int]]): ZXY tolerance used for block drift correction, in pixels. Default is [3, 1, 1].
+        remove_uncorrected_localizations (bool): Flag indicating whether to remove uncorrected localizations. Default is True.
+        z_offset (float): Z offset value. Default is 2.0.
+        unknown_params (CatchAll): Catch-all field for any unknown parameters.
+
+    """
+
+    folder: str = set_default("folder", "tracing")
     tracing_method: List[str] = set_default("tracing_method", ["masking", "clustering"])
-    # Expands masks until they collide by a max of 'mask_expansion' pixels
     mask_expansion: int = set_default("mask_expansion", 8)
     masks2process: Dict[str, str] = set_default(
         "masks2process", {"nuclei": "DAPI", "mask1": "mask0"}
     )
-    flux_min: int = set_default("flux_min", 10)  # min flux to keeep object
-    flux_min_3D: float = set_default("flux_min_3D", 0.1)  # min flux to keeep object
+    flux_min: int = set_default("flux_min", 10)
+    flux_min_3D: float = set_default("flux_min_3D", 0.1)
     KDtree_distance_threshold_mum: int = set_default(
         "KDtree_distance_threshold_mum", 1
-    )  # distance threshold used to build KDtree
-    # zxy tolerance used for block drift correction, in px
+    )
     toleranceDrift: Union[int, List[int]] = set_default("toleranceDrift", [3, 1, 1])
-    # if True it will removed uncorrected localizations,
-    # otherwise they will remain uncorrectd.
     remove_uncorrected_localizations: bool = set_default(
         "remove_uncorrected_localizations", True
     )
