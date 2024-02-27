@@ -1,5 +1,9 @@
 from typing import List, Literal, Dict
 from enum import Enum
+from .data_manager import DataManager
+from .run_args import RunArgs
+import os
+import module as mod
 
 DataType = Literal[
     "_3d",
@@ -89,13 +93,13 @@ ExampleType = Literal[
 
 
 class Pipeline:
-    def __init__(self, modules: List[Module]):
+    def __init__(self, modules: List[mod.Module]):
         self.modules = modules
         self.supplementary_data = {}
 
     def prepare(self):
         first_input_type = self.modules[0].input_type
-        generated_data_type = [first_module_input_type]
+        generated_data_type = [first_input_type]
         supplementary_data_to_find = []
         for module in self.modules:
             # Load data to keep during all processes
@@ -125,7 +129,7 @@ class Pipeline:
             else:
                 self.supplementary_data[key] = value
 
-    def load_supplementary_data(self, module: Module, cycle: str):
+    def load_supplementary_data(self, module: mod.Module, cycle: str):
         data_type = module.supplementary_type
         if data_type:
             if data_type in self.supplementary_data:
@@ -200,18 +204,23 @@ class AnalysisManager:
     def create_module(self, module_name: ModuleName, pipeline_type: AnalysisType):
         module_params = self.data_manager.get_module_params(module_name, pipeline_type)
         module_mapping = {
-            "project": ProjectModule,
-            "register_global": RegisterGlobalModule,
-            "shift": ShiftModule,
-            "register_local": RegisterLocalModule,
-            "filter_table": FilterTableModule,
-            "filter_mask": FilterMaskModule,
-            "segment": SegmentModule,
-            "extract": ExtractModule,
-            "filter_localization": FilterLocalizationModule,
-            "register_localization": RegisterLocalizationModule,
-            "build_trace": BuildTraceModule,
-            "build_matrix": BuildMatrixModule,
+            "project": mod.ProjectModule,
+            "skip": mod.SkipModule,
+            "shift_2d": mod.Shift2DModule,
+            "shift_3d": mod.Shift3DModule,
+            "register_global": mod.RegisterGlobalModule,
+            "register_local": mod.RegisterLocalModule,
+            "segment_2d": mod.Segment2DModule,
+            "segment_3d": mod.Segment3DModule,
+            "extract_2d": mod.Extract2DModule,
+            "extract_3d": mod.Extract3DModule,
+            "filter_mask": mod.FilterMaskModule,
+            "select_mask_2d": mod.SelectMask2DModule,
+            "select_mask_3d": mod.SelectMask3DModule,
+            "filter_localization": mod.FilterLocalizationModule,
+            "register_localization": mod.RegisterLocalizationModule,
+            "build_trace": mod.BuildTraceModule,
+            "build_matrix": mod.BuildMatrixModule,
         }
         if module_name in module_mapping:
             return module_mapping[module_name](module_params)
@@ -275,17 +284,3 @@ if __name__ == "__main__":
     analysis_manager.create_pipelines()
     analysis_manager.launch_analysis()
 
-
-# # Utilisation du pipeline
-# alignment_module = AlignmentModule(method='method2') *# Utilise la méthode 2 pour l'alignement*
-# modules = [PreprocessingModule(), alignment_module] *# Ajoutez vos autres modules ici*
-# pipeline = ImageAnalysisPipeline(modules)
-
-# input_paths = [...]  # Remplacez par votre liste de chemins d'entrée
-# output_paths = [...]  # Remplacez par votre liste de chemins de sortie
-
-# for input_path, output_path in zip(input_paths, output_paths):
-#     for module in pipeline.modules:
-#         input_data = module.load_input(input_path)
-#         result = pipeline.run(input_data)
-#         module.save_output(result, output_path)
