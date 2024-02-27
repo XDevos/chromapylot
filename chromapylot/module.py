@@ -80,21 +80,40 @@ class ProjectModule(Module):
     def __init__(self):
         super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_2D)
 
+    def run(self, array_3d):
+        print("Projecting 3D image to 2D.")
+        return np.max(array_3d, axis=0)
+    
+    def load_data(self, input_path):
+        print("Loading 3D image.")
+        return np.ones((10, 10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving 2D image.")
 
-class SkipModule(TiffModule):
+
+class SkipModule(Module):
     def __init__(self, z_binning):
         """
         Parameters:
         z_binning (int): The number of z-planes to skip.
         """
-        super().__init__()
+        super().__init__(
+            input_type=DataType.IMAGE_3D,
+            output_type=DataType.IMAGE_3D,
+        )
         self.z_binning = z_binning
 
     def run(self, array_3d):
-        if not isinstance(array_3d, np.ndarray) or len(array_3d.shape) != 3:
-            raise ValueError("Input must be a 3D numpy array.")
-
+        print(f"Skipping every {self.z_binning} z-planes.")
         return array_3d[:: self.z_binning, :, :]
+    
+    def load_data(self, input_path):
+        print("Loading 3D image.")
+        return np.ones((10, 10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving 3D image.")
 
 
 class ShiftModule(Module):
@@ -137,6 +156,17 @@ class Shift3DModule(ShiftModule):
             output_type=DataType.IMAGE_3D_SHIFTED,
         )
 
+    def run(self, array_2d_or_3d, shift_tuple):
+        print("Shifting 3D image.")
+        return array_2d_or_3d
+
+    def load_data(self, input_path):
+        print("Loading 3D image.")
+        return np.ones((10, 10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving 3D image.")
+
 
 class Shift2DModule(ShiftModule):
     def __init__(self):
@@ -144,6 +174,17 @@ class Shift2DModule(ShiftModule):
             input_type=DataType.IMAGE_2D,
             output_type=DataType.IMAGE_2D_SHIFTED,
         )
+
+    def run(self, array_2d_or_3d, shift_tuple):
+        print("Shifting 2D image.")
+        return array_2d_or_3d
+    
+    def load_data(self, input_path):
+        print("Loading 2D image.")
+        return np.ones((10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving 2D image.")
 
 
 class RegisterGlobalModule(Module):
@@ -154,6 +195,22 @@ class RegisterGlobalModule(Module):
             reference_type=DataType.IMAGE_2D,
         )
 
+    def run(self, image):
+        return [0, 0]
+    
+    def load_data(self, input_path):
+        print("Loading 2D image.")
+        return np.ones((10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving shift tuple.")
+
+    def load_reference_data(self):
+        return {"DAPI": [0, 0], "RT1": [0, 0], "RT2": [0, 0], "RT3": [0, 0], "mask0": [0, 0], "mask1": [0, 0]}
+    
+    def load_supplementary_data(self, input_path, cycle):
+        return [0, 0]
+
 
 class RegisterLocalModule(Module):
     def __init__(self):
@@ -163,6 +220,20 @@ class RegisterLocalModule(Module):
             reference_type=DataType.IMAGE_3D,
         )
 
+    def run(self, shifted_image):
+        return Table()
+    
+    def load_data(self, input_path):
+        print("Loading 3D image.")
+        return np.ones((10, 10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving registration table.")
+
+    def load_reference_data(self):
+        print("Loading 3D image.")
+        self.reference_data = np.ones((10, 10, 10))
+
 
 class Segment3DModule(Module):
     def __init__(self):
@@ -171,6 +242,16 @@ class Segment3DModule(Module):
             output_type=DataType.IMAGE_3D_SEGMENTED,
         )
 
+    def run(self, image):
+        print("Segmenting 3D image.")
+        return np.ones_like(image)
+
+    def load_data(self, input_path):
+        print("Loading 3D image.")
+        return np.ones((10, 10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving 3D image.")
 
 class Segment2DModule(Module):
     def __init__(self):
@@ -178,6 +259,17 @@ class Segment2DModule(Module):
             input_type=[DataType.IMAGE_2D_SHIFTED, DataType.IMAGE_2D],
             output_type=DataType.IMAGE_2D_SEGMENTED,
         )
+
+    def run(self, image):
+        print("Segmenting 2D image.")
+        return np.ones_like(image)
+    
+    def load_data(self, input_path):
+        print("Loading 2D image.")
+        return np.ones((10, 10))
+
+    def save_data(self, output_path, data):
+        print("Saving 2D image.")
 
 
 class ExtractModule(Module):
@@ -222,6 +314,16 @@ class Extract3DModule(ExtractModule):
             ],
         )
 
+    def run(self, image, mask):
+        print("Extracting properties from 3D image.")
+        return Table()
+    
+    def load_data(self, input_path):
+        print("Loading 3D mask.")
+        return np.ones((10, 10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving properties.")
 
 class Extract2DModule(ExtractModule):
     def __init__(self):
@@ -235,6 +337,18 @@ class Extract2DModule(ExtractModule):
                 DataType.IMAGE_2D,
             ],
         )
+
+    def run(self, image, mask):
+        print("Extracting properties from 2D image.")
+        return Table()
+    
+    def load_data(self, input_path):
+        print("Loading 2D mask.")
+        return np.ones((10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving properties.")
+
 
 
 class FilterTableModule(Module):
@@ -267,11 +381,31 @@ class FilterMaskModule(FilterTableModule):
     def __init__(self):
         super().__init__()
 
+    def run(self, table):
+        print("Filtering mask.")
+        return Table()
+    
+    def load_data(self, input_path):
+        print("Loading properties.")
+        return Table()
+
+    def save_data(self, output_path, data):
+        print("Saving filtered mask table.")
 
 class FilterLocalizationModule(FilterTableModule):
     def __init__(self):
         super().__init__()
 
+    def run(self, table):
+        print("Filtering ocalization.")
+        return Table()
+    
+    def load_data(self, input_path):
+        print("Loading properties.")
+        return Table()
+
+    def save_data(self, output_path, data):
+        print("Saving filtered ocalization table.")
 
 class SelectMaskModule(Module):
     def __init__(self, input_type, output_type, supplementary_type):
@@ -308,6 +442,21 @@ class SelectMask3DModule(SelectMaskModule):
             supplementary_type=DataType.TABLE_3D,
         )
 
+    def run(self, mask, table):
+        print("Selecting 3D mask.")
+        return np.ones_like(mask)
+    
+    def load_data(self, input_path):
+        print("Loading 3D mask.")
+        return np.ones((10, 10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving 3D mask.")
+
+    def load_supplementary_data(self, input_path):
+        print("Loading 3D mask table.")
+        return Table()
+
 
 class SelectMask2DModule(SelectMaskModule):
     def __init__(self):
@@ -316,6 +465,21 @@ class SelectMask2DModule(SelectMaskModule):
             output_type=DataType.IMAGE_2D_SEGMENTED_SELECTED,
             supplementary_type=DataType.TABLE_2D,
         )
+
+    def run(self, mask, table):
+        print("Selecting 2D mask.")
+        return np.ones_like(mask)
+    
+    def load_data(self, input_path):
+        print("Loading 2D mask.")
+        return np.ones((10, 10, 10))
+    
+    def save_data(self, output_path, data):
+        print("Saving 2D mask.")
+
+    def load_supplementary_data(self, input_path):
+        print("Loading 2D mask table.")
+        return Table()
 
 
 class RegisterLocalizationModule(Module):
@@ -326,6 +490,20 @@ class RegisterLocalizationModule(Module):
             reference_type=[DataType.REGISTRATION_TABLE, None],
         )
 
+    def run(self, table):
+        print("Registering localization.")
+        return Table()
+    
+    def load_data(self, input_path):
+        print("Loading properties.")
+        return Table()
+    
+    def save_data(self, output_path, data):
+        print("Saving registered localization table.")
+
+    def load_reference_data(self):
+        print("Loading registration table.")
+        return Table()
 
 class BuildTraceModule(Module):
     def __init__(self):
@@ -335,6 +513,21 @@ class BuildTraceModule(Module):
             reference_type=DataType.IMAGE_SEGMENTED,
         )
 
+    def run(self, properties):
+        print("Building trace table.")
+        return Table()
+    
+    def load_data(self, input_path):
+        print("Loading properties.")
+        return Table()
+    
+    def save_data(self, output_path, data):
+        print("Saving trace table.")
+
+    def load_reference_data(self):
+        print("Loading segmented image.")
+        return np.ones((10, 10))
+
 
 class BuildMatrixModule(Module):
     def __init__(self):
@@ -342,3 +535,16 @@ class BuildMatrixModule(Module):
             input_type=DataType.TRACE_TABLE,
             output_type=DataType.MATRIX,
         )
+
+    def run(self, trace_table):
+        print("Building matrix.")
+        return np.ones((10, 10))
+    
+    def load_data(self, input_path):
+        print("Loading trace table.")
+        return Table()
+    
+    def save_data(self, output_path, data):
+        print("Saving matrix.")
+
+    
