@@ -3,94 +3,8 @@ from enum import Enum
 from .data_manager import DataManager
 from .run_args import RunArgs
 import os
-import module as mod
-
-DataType = Literal[
-    "_3d",
-    "_2d",
-    "shift_tuple",
-    "shift_dict",
-    "shift_table",
-    "_skipped",
-    "_shifted",
-    "_segmented",
-    "_selected",
-    "_table",
-    "_filtered",
-    "_registered",
-]
-
-
-class DataType(Enum):
-    IMAGE_3D = "IMAGE_3D"
-    IMAGE_2D = "IMAGE_2D"
-    SHIFT_TUPLE = "SHIFT_TUPLE"
-    SHIFT_DICT = "SHIFT_DICT"
-    REGISTRATION_TABLE = "REGISTRATION_TABLE"
-    IMAGE_3D_SHIFTED = "IMAGE_3D_SHIFTED"
-    IMAGE_3D_SEGMENTED = "IMAGE_3D_SEGMENTED"
-    IMAGE_2D_SHIFTED = "IMAGE_2D_SHIFTED"
-    IMAGE_2D_SEGMENTED = "IMAGE_2D_SEGMENTED"
-    TABLE_3D = "TABLE_3D"
-    TABLE_2D = "TABLE_2D"
-    TABLE = "TABLE"
-    TABLE_FILTERED = "TABLE_FILTERED"
-    TABLE_3D_REGISTERED = "TABLE_3D_REGISTERED"
-    TRACE_TABLE_3D = "TRACE_TABLE_3D"
-    TRACE_TABLE_2D = "TRACE_TABLE_2D"
-    MATRIX_3D = "MATRIX_3D"
-    MATRIX_2D = "MATRIX_2D"
-
-
-class AnalysisType(Enum):
-    FIDUCIAL = "fiducial"
-    BARCODE = "barcode"
-    DAPI = "dapi"
-    RNA = "rna"
-    PRIMER = "primer"
-    SATELLITE = "satellite"
-    TRACE = "trace"
-
-
-ModuleName = Literal[
-    "project",
-    "register_global",
-    "skip",
-    "shift",
-    "shift_fiducial",
-    "register_local",
-    "filter_table",
-    "filter_mask",
-    "segment",
-    "extract",
-    "filter_localization",
-    "register_localization",
-    "build_trace",
-    "build_matrix",
-]
-
-ExampleType = Literal[
-    "fiducial_3d",
-    "fiducial_2d",
-    "shift_tuple",
-    "shift_dict",
-    "shift_table",
-    "fiducial_3d_shifted",
-    "barcode_3d",
-    "barcode_3d_shifted",
-    "barcode_3d_segmented",
-    "barcode_3d_table",
-    "barcode_3d_table_filtered",
-    "barcode_3d_table_registered",
-    "barcode_3d_table_filtered_registered",
-    "barcode_3d_table_registered_filtered",
-    "mask_3d",
-    "mask_3d_shifted",
-    "mask_3d_segmented",
-    "mask_3d_table",
-    "mask_3d_table_filtered",
-]
-
+from . import module as mod
+from .types import DataType, AnalysisType, ModuleName
 
 class Pipeline:
     def __init__(self, modules: List[mod.Module]):
@@ -174,7 +88,6 @@ class AnalysisManager:
             "dapi": None,
             "rna": None,
             "primer": None,
-            "satellite": None,
             "trace": None,
         }
 
@@ -190,7 +103,6 @@ class AnalysisManager:
             pipeline_type == "dapi"
             or pipeline_type == "rna"
             or pipeline_type == "primer"
-            or pipeline_type == "satellite"
         ):
             return ["shift", "segment", "extract", "filter_table", "filter_mask"]
         elif pipeline_type == "trace":
@@ -247,7 +159,7 @@ class AnalysisManager:
 
     def sort_analysis_types(self):
         analysis_types = self.data_manager.get_analysis_types()
-        order = ["fiducial", "barcode", "dapi", "rna", "primer", "satellite", "trace"]
+        order = ["fiducial", "barcode", "dapi", "rna", "primer", "trace"]
         analysis_types = [x for x in order if x in analysis_types]
         return analysis_types
 
@@ -261,8 +173,8 @@ class AnalysisManager:
             input_type, sup_types_to_find = self.pipelines[analysis_type].prepare(
                 self.data_manager
             )
-            input_paths = self.data_manager.get_path_from_type(input_type)
-            sup_paths = self.data_manager.get_sup_paths_by_cycle(sup_types_to_find)
+            input_paths = self.data_manager.get_paths_from_type(input_type, analysis_type)
+            sup_paths = self.data_manager.get_sup_paths_by_cycle(sup_types_to_find, analysis_type)
             for data_path in input_paths:
                 cycle = self.data_manager.get_cycle_from_path(data_path)
                 if cycle not in sup_paths:
@@ -275,8 +187,7 @@ class AnalysisManager:
                     f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
                 )
 
-
-if __name__ == "__main__":
+def main():
     run_args = RunArgs()
     data_manager = DataManager(run_args)
     analysis_manager = AnalysisManager(data_manager)
@@ -284,3 +195,6 @@ if __name__ == "__main__":
     analysis_manager.create_pipelines()
     analysis_manager.launch_analysis()
 
+
+if __name__ == "__main__":
+    main()

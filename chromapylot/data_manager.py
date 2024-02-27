@@ -1,5 +1,11 @@
 import os
+import json
+from typing import List
+from .types import get_data_type
 
+
+def get_file_path(directory, filename, extension):
+    return os.path.join(directory, f"{filename}.{extension}")
 
 def extract_files(root: str):
     """Extract recursively file informations of all files into a given directory.
@@ -32,6 +38,10 @@ def extract_files(root: str):
 
     return files
 
+def load_json(file_path):
+    with open(file_path, "r") as file:
+        print(f"Loading {file_path}...")
+        return json.load(file)
 
 class DataManager:
     def __init__(self, run_args):
@@ -39,6 +49,7 @@ class DataManager:
         self.output_folder = run_args.output
         self.input_files = extract_files(self.input_folder)
         self.parameters_file = self.get_parameters_file()
+        self.parameters = self.get_parameters()
         self.analysis_files = self.get_analysis_files()
 
     def get_parameters_file(self):
@@ -48,6 +59,13 @@ class DataManager:
         raise FileNotFoundError(
             "No parameters file found in input folder: ", self.input_folder
         )
+    
+    def get_parameters(self):
+        with open(self.parameters_file, "r") as file:
+            return json.load(file)
+        
+    def get_module_params(self, module_name):
+    
 
     def get_analysis_files(self):
         analysis_files = {
@@ -56,12 +74,11 @@ class DataManager:
             "dapi": [],
             "rna": [],
             "primer": [],
-            "satellite": [],
             "trace": [],
         }
         for file in self.input_files:
             analysis_type = self.get_analysis_type(file[1], file[2])
-            data_type = self.get_data_type(file[1], file[2])
+            data_type = get_data_type(file[1], file[2])
             if analysis_type:
                 analysis_files[analysis_type].append((data_type, file[0]))
         return analysis_files
@@ -92,33 +109,8 @@ class DataManager:
         elif "_block3D" in filename or "shifts" in filename:
             return "fiducial"
 
-    @staticmethod
-    def read_image(image_path):
-        return cv2.imread(image_path)
-
-    @staticmethod
-    def read_npy(input_path):
-        return np.load(input_path)
-
-    @staticmethod
-    def read_csv(input_path):
-        return pd.read_csv(input_path)
-
-    @staticmethod
-    def write_image(image, output_path):
-        cv2.imwrite(output_path, image)
-
-    @staticmethod
-    def write_npy(array, output_path):
-        np.save(output_path, array)
-
-    @staticmethod
-    def write_csv(data, output_path):
-        data.to_csv(output_path)
-
-    def get_path_from_type(self, data_type):
-        # TODO: Implement this method
-        pass
+    def get_paths_from_type(self, data_type, analysis_type):
+        return [path for type, path in self.analysis_files[analysis_type] if type == data_type]
 
     def get_cycle_from_path(self, data_path):
         split_path = os.path.basename(data_path).split("_")
@@ -149,10 +141,13 @@ class DataManager:
             )
 
     def get_analysis_types(self):
-        # TODO: Implement this method
-        pass
+        types = []
+        for type in self.analysis_files:
+            if len(self.analysis_files[type]) > 0:
+                types.append(type)
+        return types
 
-    def get_sup_paths_by_cycle(self, sup_types_to_find):
+    def get_sup_paths_by_cycle(self, sup_types_to_find, analysis_type):
         """
         Retrieves supplementary data paths by cycle for the given supplementary data types.
 
@@ -167,7 +162,7 @@ class DataManager:
                   Dict[CycleName, Dict[DataType, Path]]
         """
         supplementary_paths_by_type = {
-            sup_type: self.get_path_from_type(sup_type)
+            sup_type: self.get_paths_from_type(sup_type, analysis_type)
             for sup_type in sup_types_to_find
         }
         self.dict_elt_have_same_length(supplementary_paths_by_type)

@@ -1,8 +1,8 @@
 from tifffile import imread, imsave
 from typing import Any
 from scipy.ndimage import shift
-from .main import get_file_path
-from .chromapylot import DataType
+from .data_manager import get_file_path
+from .types import DataType
 import numpy as np
 import json
 from .extract_module import extract_properties
