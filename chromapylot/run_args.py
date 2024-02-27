@@ -33,6 +33,14 @@ def _parse_run_args():
         default=os.getcwd(),
         help="Folder path for output data.\nDEFAULT: Current directory",
     )
+    parser.add_argument(
+        "-D",
+        "--dimension",
+        type=int,
+        default=3,
+        help="Dimension of input data, choice between 2, 3, 23.\nDEFAULT: 3",
+    )
+
     return parser.parse_args()
 
 
@@ -46,7 +54,8 @@ class RunArgs:
         self.output = parsed_args.output
         self._check_args()
 
-    def parse_command(self, command):
+    @classmethod
+    def parse_command(cls, command):
         """Parse command argument
 
         Parameters
@@ -64,8 +73,12 @@ class RunArgs:
     @staticmethod
     def _get_default_commands():
         return [
+            "project",
             "skip",
-            "shift",
+            "shift_3d",
+            "shift_2d",
+            "register_global",
+            "register_local",
             "extract",
             "filter_table",
             "select_mask",

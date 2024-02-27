@@ -38,12 +38,11 @@ class DataType(Enum):
     MATRIX_3D = "MATRIX_3D"
     MATRIX_2D = "MATRIX_2D"
 
-
 class AnalysisType(Enum):
     FIDUCIAL = "fiducial"
     BARCODE = "barcode"
-    DAPI = "dapi"
-    RNA = "rna"
+    DAPI = "DAPI"
+    RNA = "RNA"
     PRIMER = "primer"
     SATELLITE = "satellite"
     TRACE = "trace"
@@ -127,3 +126,6 @@ def get_data_type(filename, extension):
             return DataType.TABLE_2D
     else:
         raise ValueError(f"Unknown type of data: {filename}.{extension}")
+    
+def is_similar(strict_data_type: DataType, lazy_data_type: DataType):
+    return lazy_data_type.value in strict_data_type.value

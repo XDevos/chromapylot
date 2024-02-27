@@ -1,5 +1,5 @@
 from tifffile import imread, imsave
-from typing import Any
+from typing import Any, List, Union
 from scipy.ndimage import shift
 from .data_manager import get_file_path
 from .types import DataType
@@ -7,15 +7,15 @@ import numpy as np
 import json
 from .extract_module import extract_properties
 from astropy.table import Table
-
+from .parameters import ProjectionParams, AcquisitionParams, RegistrationParams, SegmentationParams, MatrixParams
 
 class Module:
     def __init__(
         self,
-        input_type: DataType,
+        input_type: Union[DataType, List[DataType]],
         output_type: DataType,
-        reference_type: DataType = None,
-        supplementary_type: DataType = None,
+        reference_type: Union[DataType, List[DataType], None] = None,
+        supplementary_type: Union[DataType, List[DataType], None] = None,
     ):
         self.input_type = input_type
         self.output_type = output_type
@@ -59,6 +59,36 @@ class Module:
             self.input_type,
         )
 
+    def is_compatible(self, data_type: DataType):
+        """
+        Check if the module is compatible with the given data type.
+
+        Args:
+            data_type (DataType): The data type to check.
+
+        Returns:
+            bool: True if the module is compatible, False otherwise.
+        """
+        if isinstance(self.input_type, list):
+            for input_type in self.input_type:
+                if data_type == input_type:
+                    self.input_type = input_type
+                    return True
+        else:
+            if data_type == self.input_type:
+                return True
+        if isinstance(self.supplementary_type, list):
+            for supplementary_type in self.supplementary_type:
+                if data_type == supplementary_type:
+                    self.supplementary_type = supplementary_type
+                    self.switch_input_supplementary()
+                    return True
+            return False
+        if data_type == self.supplementary_type:
+            self.switch_input_supplementary()
+            return True
+        return False
+
 
 class TiffModule(Module):
     def __init__(self):
@@ -77,9 +107,9 @@ class TiffModule(Module):
 
 
 class ProjectModule(Module):
-    def __init__(self):
+    def __init__(self, params: ProjectionParams):
         super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_2D)
-
+        self.params = params
     def run(self, array_3d):
         print("Projecting 3D image to 2D.")
         return np.max(array_3d, axis=0)
@@ -93,7 +123,7 @@ class ProjectModule(Module):
 
 
 class SkipModule(Module):
-    def __init__(self, z_binning):
+    def __init__(self, params: AcquisitionParams):
         """
         Parameters:
         z_binning (int): The number of z-planes to skip.
@@ -102,7 +132,7 @@ class SkipModule(Module):
             input_type=DataType.IMAGE_3D,
             output_type=DataType.IMAGE_3D,
         )
-        self.z_binning = z_binning
+        self.z_binning = params.zBinning
 
     def run(self, array_3d):
         print(f"Skipping every {self.z_binning} z-planes.")
@@ -150,7 +180,7 @@ class ShiftModule(Module):
 
 
 class Shift3DModule(ShiftModule):
-    def __init__(self):
+    def __init__(self, params: RegistrationParams):
         super().__init__(
             input_type=DataType.IMAGE_3D,
             output_type=DataType.IMAGE_3D_SHIFTED,
@@ -169,7 +199,7 @@ class Shift3DModule(ShiftModule):
 
 
 class Shift2DModule(ShiftModule):
-    def __init__(self):
+    def __init__(self, params: RegistrationParams):
         super().__init__(
             input_type=DataType.IMAGE_2D,
             output_type=DataType.IMAGE_2D_SHIFTED,
@@ -188,7 +218,7 @@ class Shift2DModule(ShiftModule):
 
 
 class RegisterGlobalModule(Module):
-    def __init__(self):
+    def __init__(self, params: RegistrationParams):
         super().__init__(
             input_type=DataType.IMAGE_2D,
             output_type=DataType.SHIFT_TUPLE,
@@ -213,7 +243,7 @@ class RegisterGlobalModule(Module):
 
 
 class RegisterLocalModule(Module):
-    def __init__(self):
+    def __init__(self, params: RegistrationParams):
         super().__init__(
             input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
             output_type=DataType.REGISTRATION_TABLE,
@@ -236,7 +266,7 @@ class RegisterLocalModule(Module):
 
 
 class Segment3DModule(Module):
-    def __init__(self):
+    def __init__(self, params: SegmentationParams):
         super().__init__(
             input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
             output_type=DataType.IMAGE_3D_SEGMENTED,
@@ -254,7 +284,7 @@ class Segment3DModule(Module):
         print("Saving 3D image.")
 
 class Segment2DModule(Module):
-    def __init__(self):
+    def __init__(self, params: SegmentationParams):
         super().__init__(
             input_type=[DataType.IMAGE_2D_SHIFTED, DataType.IMAGE_2D],
             output_type=DataType.IMAGE_2D_SEGMENTED,
@@ -302,7 +332,7 @@ class ExtractModule(Module):
 
 
 class Extract3DModule(ExtractModule):
-    def __init__(self):
+    def __init__(self, params: SegmentationParams):
         super().__init__(
             input_type=[
                 DataType.IMAGE_3D_SEGMENTED,
@@ -326,7 +356,7 @@ class Extract3DModule(ExtractModule):
         print("Saving properties.")
 
 class Extract2DModule(ExtractModule):
-    def __init__(self):
+    def __init__(self, params: SegmentationParams):
         super().__init__(
             input_type=[
                 DataType.IMAGE_2D_SEGMENTED,
@@ -378,7 +408,7 @@ class FilterTableModule(Module):
 
 
 class FilterMaskModule(FilterTableModule):
-    def __init__(self):
+    def __init__(self, params: SegmentationParams):
         super().__init__()
 
     def run(self, table):
@@ -393,7 +423,7 @@ class FilterMaskModule(FilterTableModule):
         print("Saving filtered mask table.")
 
 class FilterLocalizationModule(FilterTableModule):
-    def __init__(self):
+    def __init__(self, params: MatrixParams):
         super().__init__()
 
     def run(self, table):
@@ -435,7 +465,7 @@ class SelectMaskModule(Module):
 
 
 class SelectMask3DModule(SelectMaskModule):
-    def __init__(self):
+    def __init__(self, params: SegmentationParams):
         super().__init__(
             input_type=DataType.IMAGE_3D_SEGMENTED,
             output_type=DataType.IMAGE_3D_SEGMENTED_SELECTED,
@@ -459,7 +489,7 @@ class SelectMask3DModule(SelectMaskModule):
 
 
 class SelectMask2DModule(SelectMaskModule):
-    def __init__(self):
+    def __init__(self, params: SegmentationParams):
         super().__init__(
             input_type=DataType.IMAGE_2D_SEGMENTED,
             output_type=DataType.IMAGE_2D_SEGMENTED_SELECTED,
@@ -483,7 +513,7 @@ class SelectMask2DModule(SelectMaskModule):
 
 
 class RegisterLocalizationModule(Module):
-    def __init__(self):
+    def __init__(self, params: MatrixParams):
         super().__init__(
             input_type=DataType.TABLE_3D,
             output_type=DataType.TABLE_3D_REGISTERED,
@@ -506,7 +536,7 @@ class RegisterLocalizationModule(Module):
         return Table()
 
 class BuildTraceModule(Module):
-    def __init__(self):
+    def __init__(self, params: MatrixParams):
         super().__init__(
             input_type=DataType.TABLE,
             output_type=DataType.TRACE_TABLE,
@@ -530,7 +560,7 @@ class BuildTraceModule(Module):
 
 
 class BuildMatrixModule(Module):
-    def __init__(self):
+    def __init__(self, params: MatrixParams):
         super().__init__(
             input_type=DataType.TRACE_TABLE,
             output_type=DataType.MATRIX,

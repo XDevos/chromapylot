@@ -1,10 +1,11 @@
-from typing import List, Literal, Dict
+from typing import List, Dict, Union
 from enum import Enum
 from .data_manager import DataManager
 from .run_args import RunArgs
 import os
 from . import module as mod
 from .types import DataType, AnalysisType, ModuleName
+from .parameters import ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams, PipelineParams
 
 class Pipeline:
     def __init__(self, modules: List[mod.Module]):
@@ -95,17 +96,17 @@ class AnalysisManager:
         self.module_names = list(set(commands))
 
     def get_module_chain(self, pipeline_type: AnalysisType) -> List[ModuleName]:
-        if pipeline_type == "fiducial":
-            return ["project", "register_global", "shift", "register_local"]
-        elif pipeline_type == "barcode":
-            return ["shift", "segment", "extract"]
+        if pipeline_type == AnalysisType.FIDUCIAL:
+            return ["skip", "project", "register_global", "shift_3d", "register_local"]
+        elif pipeline_type == AnalysisType.BARCODE:
+            return ["shift_3d", "segment", "extract"]
         elif (
-            pipeline_type == "dapi"
-            or pipeline_type == "rna"
-            or pipeline_type == "primer"
+            pipeline_type == AnalysisType.DAPI
+            or pipeline_type == AnalysisType.RNA
+            or pipeline_type == AnalysisType.PRIMER
         ):
-            return ["shift", "segment", "extract", "filter_table", "filter_mask"]
-        elif pipeline_type == "trace":
+            return ["shift_3d", "segment", "extract", "filter_table", "filter_mask"]
+        elif pipeline_type == AnalysisType.TRACE:
             return [
                 "filter_localization",
                 "register_localization",
@@ -113,8 +114,7 @@ class AnalysisManager:
                 "build_matrix",
             ]
 
-    def create_module(self, module_name: ModuleName, pipeline_type: AnalysisType):
-        module_params = self.data_manager.get_module_params(module_name, pipeline_type)
+    def create_module(self, module_name: ModuleName, module_params: Union[ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams]):
         module_mapping = {
             "project": mod.ProjectModule,
             "skip": mod.SkipModule,
@@ -135,6 +135,7 @@ class AnalysisManager:
             "build_matrix": mod.BuildMatrixModule,
         }
         if module_name in module_mapping:
+            print(f"Creating module {module_name} with parameters {module_params}.")
             return module_mapping[module_name](module_params)
         else:
             raise ValueError(f"Module {module_name} does not exist.")
@@ -142,25 +143,34 @@ class AnalysisManager:
     def create_pipeline_modules(self, pipeline_type: AnalysisType):
         module_chain = self.get_module_chain(pipeline_type)
         modules = []
+        pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
         for i in range(len(module_chain)):
             if module_chain[i] in self.module_names:
-                modules.append(self.create_module(module_chain[i], pipeline_type))
+                module_params = pipe_params.get_module_params(module_chain[i])
+                modules.append(self.create_module(module_chain[i], module_params))
                 # check if we don't break the chain
                 if (
                     len(modules) >= 2
                     and modules[-2].output_type != modules[-1].input_type
                 ):
+                    print(f"modules[-2].output_type = {modules[-2].output_type}")
+                    print(f"modules[-1].input_type = {modules[-1].input_type}")
+                    print(f"modules[-1].supplementary_type = {modules[-1].supplementary_type}")
                     if modules[-2].output_type == modules[-1].supplementary_type:
                         modules[-1].switch_input_supplementary()
                     else:
+                        print(f"modules: {modules}")
                         raise ValueError(
                             f"Module {module_chain[i]} cannot be used without {module_chain[i - 1]}, for {pipeline_type} analysis."
                         )
 
     def sort_analysis_types(self):
         analysis_types = self.data_manager.get_analysis_types()
-        order = ["fiducial", "barcode", "dapi", "rna", "primer", "trace"]
+        print(f"Analysis types found: {analysis_types}")
+        order = ["fiducial", "barcode", "DAPI", "RNA", "primer", "trace"]
+        order = [AnalysisType(x) for x in order]
         analysis_types = [x for x in order if x in analysis_types]
+        print(f"Analysis types to run: {analysis_types}")
         return analysis_types
 
     def create_pipelines(self):

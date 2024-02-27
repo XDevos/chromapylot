@@ -10,6 +10,7 @@ import os
 from dataclasses import asdict, dataclass, field
 from os import path
 from typing import Dict, List, Union
+from .types import AnalysisType
 
 from dataclasses_json import CatchAll, LetterCase, Undefined, dataclass_json
 
@@ -432,40 +433,17 @@ class MatrixParams:
             print(f"! Unknown parameters detected: {self.unknown_params}")
 
 
-class Params:
-    def __init__(self, labelled_dict: dict, sections: List[str]):
-        self.acquisition = None
-        self.projection = None
-        self.registration = None
-        self.segmentation = None
-        self.matrix = None
+class PipelineParams:
+    def __init__(self, raw_params: Dict[str, Dict[str, dict]], label: AnalysisType):
+        labelled_params = deep_dict_update(raw_params["common"], raw_params["labels"][label.value])
 
-        if "acquisition" in sections:
-            print_section("acquisition")
-            # pylint: disable=no-member
-            self.acquisition = AcquisitionParams.from_dict(labelled_dict["acquisition"])
-        if "projection" in sections:
-            print_section("zProject")
-            # pylint: disable=no-member
-            self.projection = ProjectionParams.from_dict(labelled_dict["zProject"])
-        if "registration" in sections:
-            print_section("alignImages")
-            # pylint: disable=no-member
-            self.registration = RegistrationParams.from_dict(
-                labelled_dict["alignImages"]
-            )
-        if "segmentation" in sections:
-            print_section("segmentedObjects")
-            # pylint: disable=no-member
-            self.segmentation = SegmentationParams.from_dict(
-                labelled_dict["segmentedObjects"]
-            )
-        if "matrix" in sections:
-            print_section("buildsPWDmatrix")
-            # pylint: disable=no-member
-            self.matrix = MatrixParams.from_dict(labelled_dict["buildsPWDmatrix"])
+        self.acquisition = AcquisitionParams.from_dict(labelled_params.get("acquisition", None))
+        self.projection = ProjectionParams.from_dict(labelled_params.get("zProject", None))
+        self.registration = RegistrationParams.from_dict(labelled_params.get("alignImages", None))
+        self.segmentation = SegmentationParams.from_dict(labelled_params.get("segmentedObjects", None))
+        self.matrix = MatrixParams.from_dict(labelled_params.get("buildsPWDmatrix", None))
 
-        self.highlight_deprecated_params(labelled_dict)
+        self.highlight_deprecated_params(labelled_params)
 
     def highlight_deprecated_params(self, dict_to_check: dict):
         """Warns the user that there are unused/deprecated parameters in his parameters.json
@@ -504,6 +482,18 @@ class Params:
                 result[key].pop("unknown_params", None)
         return result
 
+    def get_module_params(self, module_name: str):
+        if module_name in ["acquisition", "skip"]:
+            return self.acquisition
+        if module_name == "project":
+            return self.projection
+        if module_name in ["register_global", "register_local", "shift_2d", "shift_3d"]:
+            return self.registration
+        if module_name in ["segment_2d", "segment_3d", "extract_2d", "extract_3d", "filter_mask", "select_mask_2d", "select_mask_3d"]:
+            return self.segmentation
+        if module_name in ["filter_localization", "register_localization", "build_trace", "build_matrix"]:
+            return self.matrix
+        raise ValueError(f"Unknown module name: {module_name}")
 
 def deep_dict_update(main_dict: dict, new_dict: dict):
     """Update recursively a nested dict with another.

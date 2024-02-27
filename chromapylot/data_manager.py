@@ -2,6 +2,8 @@ import os
 import json
 from typing import List
 from .types import get_data_type
+from .types import AnalysisType as at
+
 
 
 def get_file_path(directory, filename, extension):
@@ -40,7 +42,7 @@ def extract_files(root: str):
 
 def load_json(file_path):
     with open(file_path, "r") as file:
-        print(f"Loading {file_path}...")
+        print(f"[Loading] {file_path}")
         return json.load(file)
 
 class DataManager:
@@ -49,7 +51,7 @@ class DataManager:
         self.output_folder = run_args.output
         self.input_files = extract_files(self.input_folder)
         self.parameters_file = self.get_parameters_file()
-        self.parameters = self.get_parameters()
+        self.parameters = load_json(self.parameters_file)
         self.analysis_files = self.get_analysis_files()
 
     def get_parameters_file(self):
@@ -59,22 +61,15 @@ class DataManager:
         raise FileNotFoundError(
             "No parameters file found in input folder: ", self.input_folder
         )
-    
-    def get_parameters(self):
-        with open(self.parameters_file, "r") as file:
-            return json.load(file)
-        
-    def get_module_params(self, module_name):
-    
 
     def get_analysis_files(self):
         analysis_files = {
-            "fiducial": [],
-            "barcode": [],
-            "dapi": [],
-            "rna": [],
-            "primer": [],
-            "trace": [],
+            at.FIDUCIAL: [],
+            at.BARCODE: [],
+            at.DAPI: [],
+            at.RNA: [],
+            at.PRIMER: [],
+            at.TRACE: [],
         }
         for file in self.input_files:
             analysis_type = self.get_analysis_type(file[1], file[2])
@@ -91,23 +86,23 @@ class DataManager:
             )  # TODO check ch depending parameters
             if cycle == "DAPI":
                 if channel == "ch00":
-                    return "dapi"
+                    return at.DAPI
                 elif channel == "ch01":
-                    return "fiducial"
+                    return at.FIDUCIAL
                 elif channel == "ch02":
-                    return "rna"
+                    return at.RNA
             elif "RT" in cycle:
                 if channel == "ch00":
-                    return "fiducial"
+                    return at.FIDUCIAL
                 elif channel == "ch01":
-                    return "barcode"
+                    return at.BARCODE
             elif "mask" in cycle:
                 if channel == "ch00":
-                    return "fiducial"
+                    return at.FIDUCIAL
                 elif channel == "ch01":
-                    return "primer"
+                    return at.PRIMER
         elif "_block3D" in filename or "shifts" in filename:
-            return "fiducial"
+            return at.FIDUCIAL
 
     def get_paths_from_type(self, data_type, analysis_type):
         return [path for type, path in self.analysis_files[analysis_type] if type == data_type]
