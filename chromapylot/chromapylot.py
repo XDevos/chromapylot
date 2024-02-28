@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any
 from enum import Enum
 from data_manager import DataManager
 from run_args import RunArgs
@@ -19,20 +19,38 @@ from parameters import (
 class Pipeline:
     def __init__(self, modules: List[mod.Module]):
         self.modules = modules
-        self.supplementary_data = {}
+        self.supplementary_data: Dict[DataType, Any] = {}
 
     def prepare(self):
         first_input_type = self.modules[0].input_type
-        generated_data_type = [first_input_type]
+        generated_data_type: List[DataType] = [first_input_type]
         supplementary_data_to_find = []
         for module in self.modules:
-            # Load data to keep during all processes
-            module.load_reference_data()
+            if module.reference_type is not None:
+                # Load data to keep during all processes
+                print(f"Loading reference data for {module.__class__.__name__}.")
+                module.load_reference_data()
             # Collect data type to keep during one process
-            if module.supplementary_data:
-                self.supplementary_data.update(module.supplementary_data)
-                if module.supplementary_type not in generated_data_type:
-                    supplementary_data_to_find.append(module.supplementary_type)
+            if module.supplementary_type is not None:
+                if isinstance(module.supplementary_type, list):
+                    supp_data_found = False
+                    for i in range(len(module.supplementary_type)):
+                        if (
+                            not supp_data_found
+                            and module.supplementary_type[i] in generated_data_type
+                        ):
+                            supp_data_found = True
+                            self.supplementary_data[module.supplementary_type[i]] = None
+                            print(
+                                f"Replace {module.supplementary_type} by {module.supplementary_type[i]}."
+                            )
+                            module.supplementary_type = module.supplementary_type[i]
+                    if not supp_data_found:
+                        supplementary_data_to_find.append(module.supplementary_type)
+                else:
+                    self.supplementary_data[module.supplementary_type] = None
+                    if module.supplementary_type not in generated_data_type:
+                        supplementary_data_to_find.append(module.supplementary_type)
             generated_data_type.append(module.output_type)
         return first_input_type, supplementary_data_to_find
 
@@ -59,7 +77,7 @@ class Pipeline:
             if data_type in self.supplementary_data:
                 if self.supplementary_data[data_type] is None:
                     self.supplementary_data[data_type] = module.load_supplementary_data(
-                        os.getcwd(), cycle
+                        None, cycle
                     )
                 elif isinstance(self.supplementary_data[data_type], str):
                     self.supplementary_data[data_type] = module.load_supplementary_data(
@@ -82,7 +100,10 @@ class Pipeline:
             supplementary_data = self.load_supplementary_data(module, cycle)
             if module.switched:
                 data, supplementary_data = supplementary_data, data
-            data = module.run(data, supplementary_data)
+            if supplementary_data is None:
+                data = module.run(data)
+            else:
+                data = module.run(data, supplementary_data)
             module.save_data(data_path, data)
             self.choose_to_keep_data(module, data)
 
@@ -150,36 +171,27 @@ class AnalysisManager:
             "build_matrix": mod.BuildMatrixModule,
         }
         if module_name in module_mapping:
-            print(f"Creating module {module_name} with parameters {module_params}.")
+            print(f"Creating module {module_name}.")
             return module_mapping[module_name](module_params)
         else:
             raise ValueError(f"Module {module_name} does not exist.")
 
     def create_pipeline_modules(self, pipeline_type: AnalysisType):
         module_chain = self.get_module_chain(pipeline_type)
-        modules = []
+        modules: List[mod.Module] = []
         pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
         for i in range(len(module_chain)):
             if module_chain[i] in self.module_names:
                 module_params = pipe_params.get_module_params(module_chain[i])
                 modules.append(self.create_module(module_chain[i], module_params))
                 # check if we don't break the chain
-                if (
-                    len(modules) >= 2
-                    and modules[-2].output_type != modules[-1].input_type
+                if len(modules) >= 2 and not modules[-1].is_compatible(
+                    modules[-2].output_type
                 ):
-                    print(f"modules[-2].output_type = {modules[-2].output_type}")
-                    print(f"modules[-1].input_type = {modules[-1].input_type}")
-                    print(
-                        f"modules[-1].supplementary_type = {modules[-1].supplementary_type}"
+                    raise ValueError(
+                        f"Module {module_chain[i]} cannot be used without {module_chain[i - 1]}, for {pipeline_type} analysis."
                     )
-                    if modules[-2].output_type == modules[-1].supplementary_type:
-                        modules[-1].switch_input_supplementary()
-                    else:
-                        print(f"modules: {modules}")
-                        raise ValueError(
-                            f"Module {module_chain[i]} cannot be used without {module_chain[i - 1]}, for {pipeline_type} analysis."
-                        )
+        return modules
 
     def sort_analysis_types(self):
         analysis_types = self.data_manager.get_analysis_types()
@@ -192,14 +204,14 @@ class AnalysisManager:
 
     def create_pipelines(self):
         for analysis_type in self.ordered_analysis_types:
+            print(f"Creating pipeline for analysis {analysis_type}.")
             modules = self.create_pipeline_modules(analysis_type)
             self.pipelines[analysis_type] = Pipeline(modules)
 
     def launch_analysis(self):
         for analysis_type in self.ordered_analysis_types:
-            input_type, sup_types_to_find = self.pipelines[analysis_type].prepare(
-                self.data_manager
-            )
+            print(f"Launching analysis {analysis_type}.")
+            input_type, sup_types_to_find = self.pipelines[analysis_type].prepare()
             input_paths = self.data_manager.get_paths_from_type(
                 input_type, analysis_type
             )
