@@ -38,6 +38,7 @@ class DataType(Enum):
     MATRIX_3D = "MATRIX_3D"
     MATRIX_2D = "MATRIX_2D"
 
+
 class AnalysisType(Enum):
     FIDUCIAL = "fiducial"
     BARCODE = "barcode"
@@ -87,7 +88,7 @@ ExampleType = Literal[
     "mask_3d_table_filtered",
 ]
 
-    
+
 def get_data_type(filename, extension):
     if extension in ["png", "log", "md"]:
         return None
@@ -126,6 +127,16 @@ def get_data_type(filename, extension):
             return DataType.TABLE_2D
     else:
         raise ValueError(f"Unknown type of data: {filename}.{extension}")
-    
-def is_similar(strict_data_type: DataType, lazy_data_type: DataType):
-    return lazy_data_type.value in strict_data_type.value
+
+
+def first_type_accept_second(first_type: DataType, second_type: DataType):
+    """Check if the first type of data can accept the second type of data.
+    Example:
+    >>> first_type_accept_second(DataType.IMAGE_3D, DataType.IMAGE_3D_SHIFTED)
+    True
+    >>> first_type_accept_second(DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D)
+    False
+    >>> first_type_accept_second(DataType.IMAGE_3D, DataType.IMAGE_2D)
+    False
+    """
+    return first_type.value in second_type.value

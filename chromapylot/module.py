@@ -2,7 +2,7 @@ from tifffile import imread, imsave
 from typing import Any, List, Union
 from scipy.ndimage import shift
 from data_manager import get_file_path
-from core_types import DataType
+from core_types import DataType, first_type_accept_second
 import numpy as np
 import json
 from extract_module import extract_properties
@@ -31,7 +31,7 @@ class Module:
         self.supplementary_type = supplementary_type
         self.switched = False
 
-    def run(self, data: Any):
+    def run(self, data: Any, supplementary_data: Any = None):
         raise NotImplementedError
 
     def load_data(self, input_path):
@@ -60,6 +60,7 @@ class Module:
         """
         Switch the input type with the supplementary type.
         """
+        print(f"Switching input and supplementary types for {self.__class__.__name__}.")
         self.switched = True
         self.input_type, self.supplementary_type = (
             self.supplementary_type,
@@ -77,23 +78,28 @@ class Module:
             bool: True if the module is compatible, False otherwise.
         """
         if isinstance(self.input_type, list):
-            for input_type in self.input_type:
-                if data_type == input_type:
-                    self.input_type = input_type
+            for input in self.input_type:
+                if first_type_accept_second(input, data_type):
+                    print(f"Replace input type {self.input_type} with {input}.")
+                    self.input_type = input
                     return True
-        else:
-            if data_type == self.input_type:
-                return True
+        elif first_type_accept_second(self.input_type, data_type):
+            return True
+        # Input type(s) aren't compatible, now check if the supplementary type(s) is compatible.
         if isinstance(self.supplementary_type, list):
-            for supplementary_type in self.supplementary_type:
-                if data_type == supplementary_type:
-                    self.supplementary_type = supplementary_type
+            for sup_type in self.supplementary_type:
+                if first_type_accept_second(sup_type, data_type):
+                    print(
+                        f"Replace supplementary type {self.supplementary_type} with {sup_type}."
+                    )
+                    self.supplementary_type = sup_type
                     self.switch_input_supplementary()
                     return True
             return False
-        if data_type == self.supplementary_type:
+        if first_type_accept_second(self.supplementary_type, data_type):
             self.switch_input_supplementary()
             return True
+        # No compatible type found.
         return False
 
 
@@ -163,8 +169,8 @@ class ShiftModule(Module):
         super().__init__(
             input_type=input_type,
             output_type=output_type,
-            reference_type=[DataType.SHIFT_DICT, None],
-            supplementary_type=[DataType.SHIFT_TUPLE, None],
+            reference_type=DataType.SHIFT_DICT,
+            supplementary_type=DataType.SHIFT_TUPLE,
         )
         self.reference_data = None
 
@@ -177,6 +183,7 @@ class ShiftModule(Module):
         return shift(array_2d_or_3d, shift_tuple)
 
     def load_supplementary_data(self, input_path, cycle):
+        print(f"input_path: {input_path}")
         if self.reference_data is None:
             if input_path is None:
                 return (0, 0)
@@ -185,6 +192,9 @@ class ShiftModule(Module):
                 return self.reference_data[cycle]
         else:
             return self.reference_data[cycle]
+
+    def load_reference_data(self):
+        pass
 
 
 class Shift3DModule(ShiftModule):
