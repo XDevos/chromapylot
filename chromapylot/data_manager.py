@@ -136,7 +136,7 @@ class DataManager:
         )
 
     def dict_elt_have_same_length(self, dict):
-        if len(set([len(v) for v in dict.values()])) != 1:
+        if dict and len(set([len(v) for v in dict.values()])) != 1:
             raise ValueError(
                 "All values must have the same length in the dictionary:\n", dict
             )
