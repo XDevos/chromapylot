@@ -1,13 +1,13 @@
 import os
 import json
 from typing import List
-from .types import get_data_type
-from .types import AnalysisType as at
-
+from core_types import get_data_type
+from core_types import AnalysisType as at
 
 
 def get_file_path(directory, filename, extension):
     return os.path.join(directory, f"{filename}.{extension}")
+
 
 def extract_files(root: str):
     """Extract recursively file informations of all files into a given directory.
@@ -40,10 +40,12 @@ def extract_files(root: str):
 
     return files
 
+
 def load_json(file_path):
     with open(file_path, "r") as file:
         print(f"[Loading] {file_path}")
         return json.load(file)
+
 
 class DataManager:
     def __init__(self, run_args):
@@ -105,7 +107,11 @@ class DataManager:
             return at.FIDUCIAL
 
     def get_paths_from_type(self, data_type, analysis_type):
-        return [path for type, path in self.analysis_files[analysis_type] if type == data_type]
+        return [
+            path
+            for type, path in self.analysis_files[analysis_type]
+            if type == data_type
+        ]
 
     def get_cycle_from_path(self, data_path):
         split_path = os.path.basename(data_path).split("_")

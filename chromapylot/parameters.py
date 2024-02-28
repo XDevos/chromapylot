@@ -10,12 +10,14 @@ import os
 from dataclasses import asdict, dataclass, field
 from os import path
 from typing import Dict, List, Union
-from .types import AnalysisType
+from core_types import AnalysisType
 
 from dataclasses_json import CatchAll, LetterCase, Undefined, dataclass_json
 
+
 def print_section(section: str):
     print(f"$ Load: {section}")
+
 
 def load_json(file_name):
     """Load a JSON file like a python dict
@@ -34,7 +36,6 @@ def load_json(file_name):
         with open(file_name, encoding="utf-8") as json_file:
             return json.load(json_file)
     return None
-
 
 
 def warn_default(key, val):
@@ -117,6 +118,7 @@ class ProjectionParams:
         z_project_option (str): Projection option. Options: sum, MIP.
         unknown_params (Dict[str, Any]): Dictionary to store unknown parameters.
     """
+
     # pylint: disable=invalid-name
     folder: str = set_default("folder", "project")
     mode: str = set_default("mode", "full")
@@ -165,17 +167,11 @@ class RegistrationParams:
     register_global_folder: str = set_default(
         "register_global_folder", "register_global"
     )
-    register_local_folder: str = set_default(
-        "register_local_folder", "register_local"
-    )
+    register_local_folder: str = set_default("register_local_folder", "register_local")
     outputFile: str = set_default("outputFile", "shifts")
     referenceFiducial: str = set_default("referenceFiducial", "RT27")
-    localAlignment: str = set_default(
-        "localAlignment", "block3D"
-    )
-    alignByBlock: bool = set_default(
-        "alignByBlock", True
-    )
+    localAlignment: str = set_default("localAlignment", "block3D")
+    alignByBlock: bool = set_default("alignByBlock", True)
     tolerance: float = set_default("tolerance", 0.1)
     lower_threshold: float = set_default("lower_threshold", 0.999)
     higher_threshold: float = set_default("higher_threshold", 0.9999999)
@@ -183,9 +179,7 @@ class RegistrationParams:
     _3D_higher_threshold: Union[float, str] = set_default(
         "_3D_higher_threshold", "None"
     )
-    background_sigma: float = set_default(
-        "background_sigma", 3.0
-    )
+    background_sigma: float = set_default("background_sigma", 3.0)
     blockSize: int = set_default("blockSize", 256)
     blockSizeXY: int = set_default("blockSizeXY", 128)
     upsample_factor: int = set_default("upsample_factor", 100)
@@ -286,7 +280,9 @@ class SegmentationParams:
     _3dAP_flux_min: Union[int, str] = set_default("_3dAP_flux_min", "None")
     _3dAP_brightest: Union[int, str] = set_default("_3dAP_brightest", "None")
     _3dAP_distTolerance: Union[int, str] = set_default("_3dAP_distTolerance", "None")
-    _3D_threshold_over_std: Union[int, str] = set_default("_3D_threshold_over_std", "None")
+    _3D_threshold_over_std: Union[int, str] = set_default(
+        "_3D_threshold_over_std", "None"
+    )
     _3D_sigma: Union[int, str] = set_default("_3D_sigma", "None")
     _3D_boxSize: Union[int, str] = set_default("_3D_boxSize", "None")
     _3D_area_min: Union[int, str] = set_default("_3D_area_min", "None")
@@ -296,8 +292,12 @@ class SegmentationParams:
     _3D_psf_z: Union[int, str] = set_default("_3D_psf_z", "None")
     _3D_psf_yx: Union[int, str] = set_default("_3D_psf_yx", "None")
     _3D_lower_threshold: Union[float, str] = set_default("_3D_lower_threshold", "None")
-    _3D_higher_threshold: Union[float, str] = set_default("_3D_higher_threshold", "None")
-    unknown_params: CatchAll = field(default_factory=lambda: {})  # Catch-all field for unknown parameters
+    _3D_higher_threshold: Union[float, str] = set_default(
+        "_3D_higher_threshold", "None"
+    )
+    unknown_params: CatchAll = field(
+        default_factory=lambda: {}
+    )  # Catch-all field for unknown parameters
 
     def __post_init__(self):
         # Handle default values for certain parameters
@@ -418,9 +418,7 @@ class MatrixParams:
     )
     flux_min: int = set_default("flux_min", 10)
     flux_min_3D: float = set_default("flux_min_3D", 0.1)
-    KDtree_distance_threshold_mum: int = set_default(
-        "KDtree_distance_threshold_mum", 1
-    )
+    KDtree_distance_threshold_mum: int = set_default("KDtree_distance_threshold_mum", 1)
     toleranceDrift: Union[int, List[int]] = set_default("toleranceDrift", [3, 1, 1])
     remove_uncorrected_localizations: bool = set_default(
         "remove_uncorrected_localizations", True
@@ -435,13 +433,25 @@ class MatrixParams:
 
 class PipelineParams:
     def __init__(self, raw_params: Dict[str, Dict[str, dict]], label: AnalysisType):
-        labelled_params = deep_dict_update(raw_params["common"], raw_params["labels"][label.value])
+        labelled_params = deep_dict_update(
+            raw_params["common"], raw_params["labels"][label.value]
+        )
 
-        self.acquisition = AcquisitionParams.from_dict(labelled_params.get("acquisition", None))
-        self.projection = ProjectionParams.from_dict(labelled_params.get("zProject", None))
-        self.registration = RegistrationParams.from_dict(labelled_params.get("alignImages", None))
-        self.segmentation = SegmentationParams.from_dict(labelled_params.get("segmentedObjects", None))
-        self.matrix = MatrixParams.from_dict(labelled_params.get("buildsPWDmatrix", None))
+        self.acquisition = AcquisitionParams.from_dict(
+            labelled_params.get("acquisition", None)
+        )
+        self.projection = ProjectionParams.from_dict(
+            labelled_params.get("zProject", None)
+        )
+        self.registration = RegistrationParams.from_dict(
+            labelled_params.get("alignImages", None)
+        )
+        self.segmentation = SegmentationParams.from_dict(
+            labelled_params.get("segmentedObjects", None)
+        )
+        self.matrix = MatrixParams.from_dict(
+            labelled_params.get("buildsPWDmatrix", None)
+        )
 
         self.highlight_deprecated_params(labelled_params)
 
@@ -489,11 +499,25 @@ class PipelineParams:
             return self.projection
         if module_name in ["register_global", "register_local", "shift_2d", "shift_3d"]:
             return self.registration
-        if module_name in ["segment_2d", "segment_3d", "extract_2d", "extract_3d", "filter_mask", "select_mask_2d", "select_mask_3d"]:
+        if module_name in [
+            "segment_2d",
+            "segment_3d",
+            "extract_2d",
+            "extract_3d",
+            "filter_mask",
+            "select_mask_2d",
+            "select_mask_3d",
+        ]:
             return self.segmentation
-        if module_name in ["filter_localization", "register_localization", "build_trace", "build_matrix"]:
+        if module_name in [
+            "filter_localization",
+            "register_localization",
+            "build_trace",
+            "build_matrix",
+        ]:
             return self.matrix
         raise ValueError(f"Unknown module name: {module_name}")
+
 
 def deep_dict_update(main_dict: dict, new_dict: dict):
     """Update recursively a nested dict with another.

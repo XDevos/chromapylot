@@ -1,11 +1,20 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from typing import List, Dict, Union
 from enum import Enum
-from .data_manager import DataManager
-from .run_args import RunArgs
+from data_manager import DataManager
+from run_args import RunArgs
 import os
-from . import module as mod
-from .types import DataType, AnalysisType, ModuleName
-from .parameters import ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams, PipelineParams
+import module as mod
+from core_types import DataType, AnalysisType, ModuleName
+from parameters import (
+    ProjectionParams,
+    RegistrationParams,
+    SegmentationParams,
+    MatrixParams,
+    PipelineParams,
+)
+
 
 class Pipeline:
     def __init__(self, modules: List[mod.Module]):
@@ -114,7 +123,13 @@ class AnalysisManager:
                 "build_matrix",
             ]
 
-    def create_module(self, module_name: ModuleName, module_params: Union[ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams]):
+    def create_module(
+        self,
+        module_name: ModuleName,
+        module_params: Union[
+            ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams
+        ],
+    ):
         module_mapping = {
             "project": mod.ProjectModule,
             "skip": mod.SkipModule,
@@ -155,7 +170,9 @@ class AnalysisManager:
                 ):
                     print(f"modules[-2].output_type = {modules[-2].output_type}")
                     print(f"modules[-1].input_type = {modules[-1].input_type}")
-                    print(f"modules[-1].supplementary_type = {modules[-1].supplementary_type}")
+                    print(
+                        f"modules[-1].supplementary_type = {modules[-1].supplementary_type}"
+                    )
                     if modules[-2].output_type == modules[-1].supplementary_type:
                         modules[-1].switch_input_supplementary()
                     else:
@@ -183,8 +200,12 @@ class AnalysisManager:
             input_type, sup_types_to_find = self.pipelines[analysis_type].prepare(
                 self.data_manager
             )
-            input_paths = self.data_manager.get_paths_from_type(input_type, analysis_type)
-            sup_paths = self.data_manager.get_sup_paths_by_cycle(sup_types_to_find, analysis_type)
+            input_paths = self.data_manager.get_paths_from_type(
+                input_type, analysis_type
+            )
+            sup_paths = self.data_manager.get_sup_paths_by_cycle(
+                sup_types_to_find, analysis_type
+            )
             for data_path in input_paths:
                 cycle = self.data_manager.get_cycle_from_path(data_path)
                 if cycle not in sup_paths:
@@ -196,6 +217,7 @@ class AnalysisManager:
                 raise ValueError(
                     f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
                 )
+
 
 def main():
     run_args = RunArgs()
