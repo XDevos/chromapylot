@@ -1,7 +1,7 @@
 import os
 import json
 from typing import List
-from core_types import get_data_type
+from core_types import get_data_type, first_type_accept_second, DataType
 from core_types import AnalysisType as at
 
 
@@ -76,12 +76,24 @@ class DataManager:
         for file in self.input_files:
             analysis_type = self.get_analysis_type(file[1], file[2])
             data_type = get_data_type(file[1], file[2])
-            if analysis_type:
+            if analysis_type and data_type:
                 analysis_files[analysis_type].append((data_type, file[0]))
+                # Manage the specific case of the TRACE type
+                if first_type_accept_second(DataType.SEGMENTED, data_type):
+                    analysis_files[at.TRACE].append((data_type, file[0]))
         return analysis_files
 
+    def get_paths_from_analysis_and_data_type(self, analysis_type, data_type):
+        return [
+            path
+            for type, path in self.analysis_files[analysis_type]
+            if first_type_accept_second(data_type, type)
+        ]
+
     def get_analysis_type(self, filename, extension):
-        if extension in ["tif", "tiff", "npy"]:
+        if extension in ["png", "log", "md"] or "parameters" == filename:
+            return None
+        elif extension in ["tif", "tiff", "npy"]:
             cycle = self.get_cycle_from_path(filename)
             channel = self.get_channel_from_path(
                 filename
@@ -103,14 +115,24 @@ class DataManager:
                     return at.FIDUCIAL
                 elif channel == "ch01":
                     return at.PRIMER
+            elif "matrix" in filename:
+                return at.TRACE
         elif "_block3D" in filename or "shifts" in filename:
             return at.FIDUCIAL
+        elif extension in ["dat", "ecsv"]:
+            if "Trace" in filename or "_barcode" in filename:
+                return at.TRACE
+        else:
+            raise ValueError(
+                f"File {filename}.{extension} does not match any analysis type."
+            )
 
     def get_paths_from_type(self, data_type, analysis_type):
+        print(f"Looking for {data_type} in {analysis_type}")
         return [
             path
             for type, path in self.analysis_files[analysis_type]
-            if type == data_type
+            if first_type_accept_second(data_type, type)
         ]
 
     def get_cycle_from_path(self, data_path):
@@ -142,11 +164,10 @@ class DataManager:
             )
 
     def get_analysis_types(self):
-        types = []
-        for type in self.analysis_files:
-            if len(self.analysis_files[type]) > 0:
-                types.append(type)
-        return types
+        order = ["fiducial", "barcode", "DAPI", "RNA", "primer", "trace"]
+        order = [at(x) for x in order]
+        analysis_types = [x for x in order if len(self.analysis_files[x]) > 0]
+        return analysis_types
 
     def get_sup_paths_by_cycle(self, sup_types_to_find, analysis_type):
         """

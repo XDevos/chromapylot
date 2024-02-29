@@ -40,6 +40,13 @@ def _parse_run_args():
         default=3,
         help="Dimension of input data, choice between 2, 3, 23.\nDEFAULT: 3",
     )
+    parser.add_argument(
+        "-A",
+        "--analysis",
+        type=str,
+        default="all",
+        help="Comma-separated list of analysis type to run (all, fiducial, barcode, trace, DAPI, primer, RNA).\nDEFAULT: all",
+    )
 
     return parser.parse_args()
 
@@ -52,6 +59,8 @@ class RunArgs:
         self.commands = self.parse_command(parsed_args.command)
         self.input = parsed_args.input
         self.output = parsed_args.output
+        self.dimension = parsed_args.dimension
+        self.analysis_types = parsed_args.analysis
         self._check_args()
 
     @classmethod
@@ -96,3 +105,20 @@ class RunArgs:
         for command in self.commands:
             if command.lower() not in available_commands:
                 raise ValueError(f"Command {command} is not available.")
+        available_dimensions = [2, 3, 23]
+        if self.dimension not in available_dimensions:
+            raise ValueError(
+                f"Dimension {self.dimension} is not available, choose between (2, 3, 23)."
+            )
+        available_analysis_types = [
+            "all",
+            "fiducial",
+            "barcode",
+            "trace",
+            "dapi",
+            "primer",
+            "rna",
+        ]
+        for analysis_type in self.analysis_types.split(","):
+            if analysis_type.lower() not in available_analysis_types:
+                raise ValueError(f"Analysis type {analysis_type} is not available.")

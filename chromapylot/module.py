@@ -1,10 +1,11 @@
 from tifffile import imread, imsave
-from typing import Any, List, Union
+from typing import Any, List, Union, Dict
 from scipy.ndimage import shift
 from data_manager import get_file_path
 from core_types import DataType, first_type_accept_second
 import numpy as np
 import json
+import os
 from extract_module import extract_properties
 from astropy.table import Table
 from parameters import (
@@ -37,7 +38,7 @@ class Module:
     def load_data(self, input_path):
         raise NotImplementedError
 
-    def load_reference_data(self):
+    def load_reference_data(self, paths: List[str]):
         raise NotImplementedError
 
     def load_supplementary_data(self, input_path, cycle):
@@ -53,7 +54,7 @@ class Module:
         """
         raise NotImplementedError
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         raise NotImplementedError
 
     def switch_input_supplementary(self):
@@ -115,8 +116,8 @@ class TiffModule(Module):
         image = imread(image_path)
         return image
 
-    def save_data(self, output_path, data):
-        imsave(get_file_path(output_path, "_" + self.output_type, "tif"), data)
+    def save_data(self, data, output_dir, input_path):
+        raise NotImplementedError
 
 
 class ProjectModule(Module):
@@ -132,7 +133,7 @@ class ProjectModule(Module):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving 2D image.")
 
 
@@ -156,7 +157,7 @@ class SkipModule(Module):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving 3D image.")
 
 
@@ -193,7 +194,7 @@ class ShiftModule(Module):
         else:
             return self.reference_data[cycle]
 
-    def load_reference_data(self):
+    def load_reference_data(self, paths: List[str]):
         pass
 
 
@@ -205,14 +206,14 @@ class Shift3DModule(ShiftModule):
         )
 
     def run(self, array_2d_or_3d, shift_tuple):
-        print("Shifting 3D image.")
+        print(f"Shifting 3D image with {shift_tuple}.")
         return array_2d_or_3d
 
     def load_data(self, input_path):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving 3D image.")
 
 
@@ -231,7 +232,7 @@ class Shift2DModule(ShiftModule):
         print("Loading 2D image.")
         return np.ones((10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving 2D image.")
 
 
@@ -250,10 +251,10 @@ class RegisterGlobalModule(Module):
         print("Loading 2D image.")
         return np.ones((10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving shift tuple.")
 
-    def load_reference_data(self):
+    def load_reference_data(self, paths: List[str]):
         return {
             "DAPI": [0, 0],
             "RT1": [0, 0],
@@ -282,10 +283,10 @@ class RegisterLocalModule(Module):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving registration table.")
 
-    def load_reference_data(self):
+    def load_reference_data(self, paths: List[str]):
         print("Loading 3D image.")
         self.reference_data = np.ones((10, 10, 10))
 
@@ -305,7 +306,7 @@ class Segment3DModule(Module):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving 3D image.")
 
 
@@ -324,7 +325,7 @@ class Segment2DModule(Module):
         print("Loading 2D image.")
         return np.ones((10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving 2D image.")
 
 
@@ -349,9 +350,9 @@ class ExtractModule(Module):
         masks = np.load(mask_path)
         return masks
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         data.write(
-            get_file_path(output_path, "_props", "ecsv"),
+            get_file_path(output_dir, "_props", "ecsv"),
             format="ascii.ecsv",
             overwrite=True,
         )
@@ -360,9 +361,7 @@ class ExtractModule(Module):
 class Extract3DModule(ExtractModule):
     def __init__(self, params: SegmentationParams):
         super().__init__(
-            input_type=[
-                DataType.IMAGE_3D_SEGMENTED,
-            ],
+            input_type=DataType.IMAGE_3D_SEGMENTED,
             output_type=DataType.TABLE_3D,
             supplementary_type=[
                 DataType.IMAGE_3D_SHIFTED,
@@ -378,16 +377,14 @@ class Extract3DModule(ExtractModule):
         print("Loading 3D mask.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving properties.")
 
 
 class Extract2DModule(ExtractModule):
     def __init__(self, params: SegmentationParams):
         super().__init__(
-            input_type=[
-                DataType.IMAGE_2D_SEGMENTED,
-            ],
+            input_type=DataType.IMAGE_2D_SEGMENTED,
             output_type=DataType.TABLE_2D,
             supplementary_type=[
                 DataType.IMAGE_2D_SHIFTED,
@@ -403,7 +400,7 @@ class Extract2DModule(ExtractModule):
         print("Loading 2D mask.")
         return np.ones((10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving properties.")
 
 
@@ -425,9 +422,9 @@ class FilterTableModule(Module):
         properties_table = Table.read(props_path, format="ascii.ecsv")
         return properties_table
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         data.write(
-            get_file_path(output_path, "_filtered", "ecsv"),
+            get_file_path(output_dir, "_filtered", "ecsv"),
             format="ascii.ecsv",
             overwrite=True,
         )
@@ -445,7 +442,7 @@ class FilterMaskModule(FilterTableModule):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving filtered mask table.")
 
 
@@ -461,7 +458,7 @@ class FilterLocalizationModule(FilterTableModule):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving filtered ocalization table.")
 
 
@@ -488,8 +485,8 @@ class SelectMaskModule(Module):
         properties_table = Table.read(props_path, format="ascii.ecsv")
         return properties_table
 
-    def save_data(self, output_path, data):
-        np.save(get_file_path(output_path, "_mask_filtered", "npy"), data)
+    def save_data(self, data, output_dir, input_path):
+        np.save(get_file_path(output_dir, "_mask_filtered", "npy"), data)
 
 
 class SelectMask3DModule(SelectMaskModule):
@@ -508,7 +505,7 @@ class SelectMask3DModule(SelectMaskModule):
         print("Loading 3D mask.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving 3D mask.")
 
     def load_supplementary_data(self, input_path):
@@ -532,7 +529,7 @@ class SelectMask2DModule(SelectMaskModule):
         print("Loading 2D mask.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving 2D mask.")
 
     def load_supplementary_data(self, input_path):
@@ -545,7 +542,7 @@ class RegisterLocalizationModule(Module):
         super().__init__(
             input_type=DataType.TABLE_3D,
             output_type=DataType.TABLE_3D_REGISTERED,
-            reference_type=[DataType.REGISTRATION_TABLE, None],
+            reference_type=DataType.REGISTRATION_TABLE,
         )
 
     def run(self, table):
@@ -556,10 +553,10 @@ class RegisterLocalizationModule(Module):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving registered localization table.")
 
-    def load_reference_data(self):
+    def load_reference_data(self, paths: List[str]):
         print("Loading registration table.")
         return Table()
 
@@ -568,30 +565,119 @@ class BuildTraceModule(Module):
     def __init__(self, params: MatrixParams):
         super().__init__(
             input_type=DataType.TABLE,
-            output_type=DataType.TRACE_TABLE,
-            reference_type=DataType.IMAGE_SEGMENTED,
+            output_type=DataType.TRACE_TABLE_LIST,
+            reference_type=DataType.SEGMENTED,
         )
+        self.reference_data: Dict[str, np.ndarray] = {}
+        self.tracing_method = params.tracing_method
+        self.masks2process: Dict[str, str] = params.masks2process
+        if "masking" not in self.tracing_method:
+            self.reference_type = None
 
-    def run(self, properties):
-        print("Building trace table.")
-        return Table()
+    def init_trace_table(self):
+        trace_table = Table(
+            names=(
+                "Spot_ID",
+                "Trace_ID",
+                "x",
+                "y",
+                "z",
+                "Chrom",
+                "Chrom_Start",
+                "Chrom_End",
+                "ROI #",
+                "Mask_id",
+                "Barcode #",
+                "label",
+            ),
+            dtype=(
+                "S2",
+                "S2",
+                "f4",
+                "f4",
+                "f4",
+                "S2",
+                "int",
+                "int",
+                "int",
+                "int",
+                "int",
+                "S2",
+            ),
+        )
+        trace_table.meta["xyz_unit"] = "micron"
+        trace_table.meta["genome_assembly"] = "mm10"
+        return trace_table
+
+    def build_mask_trace_table(self, localizations, mask):
+        trace_table = self.init_trace_table()
+        for loc in localizations:
+            mask_id = mask[loc["y"], loc["x"]]
+            if mask_id != 0:
+                trace_table.add_row(
+                    [
+                        loc["Spot_ID"],
+                        loc["Trace_ID"],
+                        loc["x"],
+                        loc["y"],
+                        loc["z"],
+                        loc["Chrom"],
+                        loc["Chrom_Start"],
+                        loc["Chrom_End"],
+                        loc["ROI #"],
+                        mask_id,
+                        loc["Barcode #"],
+                        loc["label"],
+                    ]
+                )
+        return trace_table
+
+    def run(self, localizations):
+        output = []
+        if "clustering" in self.tracing_method:
+            print("Building cluster trace table.")
+            raise NotImplementedError
+        if "masking" in self.tracing_method:
+            for key, value in self.masks2process.items():
+                print(f"Building mask {value} trace table.")
+                trace_table = self.init_trace_table()
+                trace_table = self.build_mask_trace_table(
+                    localizations, self.reference_data[value]
+                )
+                output.append(trace_table)
+        return output
 
     def load_data(self, input_path):
         print("Loading properties.")
-        return Table()
+        return Table.read(input_path, format="ascii.ecsv")
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving trace table.")
+        print(f"data: {list(data)}")
+        print(f"self.tracing_method: {list(self.tracing_method)}")
+        for trace_table, method in zip(list(data), list(self.tracing_method)):
+            print(f"Saving {method} trace table.")
+            base = os.path.basename(input_path)
+            out_name = "Trace_" + "_".join(base.split("_")[1:]) + "_" + method + ".ecsv"
+            trace_table.write(
+                os.path.join(output_dir, out_name), format="ascii.ecsv", overwrite=True
+            )
 
-    def load_reference_data(self):
-        print("Loading segmented image.")
-        return np.ones((10, 10))
+    def load_reference_data(self, paths: List[str]):
+        if "masking" in self.tracing_method:
+            for key, val in self.masks2process.items():
+                for path in paths:
+                    if val in path:
+                        print(f"Loading {path} for mask {val}.")
+                        self.reference_data[val] = np.load(path)
+        else:
+            print("No reference data needed for tracing method {self.tracing_method}.")
 
 
 class BuildMatrixModule(Module):
     def __init__(self, params: MatrixParams):
         super().__init__(
-            input_type=DataType.TRACE_TABLE,
+            input_type=[DataType.TRACE_TABLE_LIST, DataType.TRACE_TABLE],
             output_type=DataType.MATRIX,
         )
 
@@ -603,5 +689,5 @@ class BuildMatrixModule(Module):
         print("Loading trace table.")
         return Table()
 
-    def save_data(self, output_path, data):
+    def save_data(self, data, output_dir, input_path):
         print("Saving matrix.")

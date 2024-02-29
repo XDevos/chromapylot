@@ -17,19 +17,25 @@ from parameters import (
 
 
 class Pipeline:
-    def __init__(self, modules: List[mod.Module]):
+    def __init__(self, analysis_type: AnalysisType, modules: List[mod.Module]):
+        self.analysis_type = analysis_type
         self.modules = modules
         self.supplementary_data: Dict[DataType, Any] = {}
 
-    def prepare(self):
+    def prepare(self, data_manager: DataManager):
         first_input_type = self.modules[0].input_type
         generated_data_type: List[DataType] = [first_input_type]
         supplementary_data_to_find = []
         for module in self.modules:
             if module.reference_type is not None:
                 # Load data to keep during all processes
-                print(f"Loading reference data for {module.__class__.__name__}.")
-                module.load_reference_data()
+                print(
+                    f"Loading reference data for {module.__class__.__name__} with {self.analysis_type} and {module.reference_type}."
+                )
+                paths = data_manager.get_paths_from_analysis_and_data_type(
+                    self.analysis_type, module.reference_type
+                )
+                module.load_reference_data(paths)
             # Collect data type to keep during one process
             if module.supplementary_type is not None:
                 if isinstance(module.supplementary_type, list):
@@ -90,7 +96,11 @@ class Pipeline:
             return None
 
     def process(
-        self, data_path: str, supplementary_paths: Dict[DataType, str], cycle: str
+        self,
+        data_path: str,
+        output_dir: str,
+        supplementary_paths: Dict[DataType, str],
+        cycle: str,
     ):
         print(f"Processing data from cycle {cycle}.")
         data = self.modules[0].load_data(data_path)
@@ -104,14 +114,15 @@ class Pipeline:
                 data = module.run(data)
             else:
                 data = module.run(data, supplementary_data)
-            module.save_data(data_path, data)
+            module.save_data(data, output_dir, data_path)
             self.choose_to_keep_data(module, data)
 
 
 class AnalysisManager:
     def __init__(self, data_manager: DataManager):
         self.data_manager = data_manager
-        self.ordered_analysis_types = self.sort_analysis_types()
+        self.found_analysis_types = self.data_manager.get_analysis_types()
+        self.analysis_to_process = []
         self.module_names = []
         self.pipelines: Dict[AnalysisType, Pipeline] = {
             "fiducial": None,
@@ -182,6 +193,9 @@ class AnalysisManager:
         pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
         for i in range(len(module_chain)):
             if module_chain[i] in self.module_names:
+                print(
+                    f"[Pipeline-{pipeline_type.name}] Checking module {module_chain[i]}."
+                )
                 module_params = pipe_params.get_module_params(module_chain[i])
                 modules.append(self.create_module(module_chain[i], module_params))
                 # check if we don't break the chain
@@ -193,25 +207,21 @@ class AnalysisManager:
                     )
         return modules
 
-    def sort_analysis_types(self):
-        analysis_types = self.data_manager.get_analysis_types()
-        print(f"Analysis types found: {analysis_types}")
-        order = ["fiducial", "barcode", "DAPI", "RNA", "primer", "trace"]
-        order = [AnalysisType(x) for x in order]
-        analysis_types = [x for x in order if x in analysis_types]
-        print(f"Analysis types to run: {analysis_types}")
-        return analysis_types
-
     def create_pipelines(self):
-        for analysis_type in self.ordered_analysis_types:
-            print(f"Creating pipeline for analysis {analysis_type}.")
+        for analysis_type in self.found_analysis_types:
             modules = self.create_pipeline_modules(analysis_type)
-            self.pipelines[analysis_type] = Pipeline(modules)
+            if modules:
+                self.analysis_to_process.append(analysis_type)
+                print(f"Creating pipeline for analysis {analysis_type}.")
+                self.pipelines[analysis_type] = Pipeline(analysis_type, modules)
 
     def launch_analysis(self):
-        for analysis_type in self.ordered_analysis_types:
+        output_dir = self.data_manager.output_folder
+        for analysis_type in self.analysis_to_process:
             print(f"Launching analysis {analysis_type}.")
-            input_type, sup_types_to_find = self.pipelines[analysis_type].prepare()
+            input_type, sup_types_to_find = self.pipelines[analysis_type].prepare(
+                self.data_manager
+            )
             input_paths = self.data_manager.get_paths_from_type(
                 input_type, analysis_type
             )
@@ -223,7 +233,7 @@ class AnalysisManager:
                 if cycle not in sup_paths:
                     sup_paths[cycle] = {}
                 self.pipelines[analysis_type].process(
-                    data_path, sup_paths.pop(cycle), cycle
+                    data_path, output_dir, sup_paths.pop(cycle), cycle
                 )
             if sup_paths:
                 raise ValueError(
