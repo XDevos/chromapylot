@@ -178,7 +178,7 @@ class AnalysisManager:
             "select_mask_3d": mod.SelectMask3DModule,
             "filter_localization": mod.FilterLocalizationModule,
             "register_localization": mod.RegisterLocalizationModule,
-            "build_trace": mod.BuildTraceModule,
+            "build_trace": mod.BuildTrace3DModule,
             "build_matrix": mod.BuildMatrixModule,
         }
         if module_name in module_mapping:
