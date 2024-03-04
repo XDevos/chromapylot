@@ -104,22 +104,6 @@ class Module:
         return False
 
 
-class TiffModule(Module):
-    def __init__(self):
-        super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_3D)
-
-    def run(self, array_3d):
-        raise NotImplementedError
-
-    def load_data(self, input_path):
-        image_path = get_file_path(input_path, "", "tif")
-        image = imread(image_path)
-        return image
-
-    def save_data(self, data, output_dir, input_path):
-        raise NotImplementedError
-
-
 class ProjectModule(Module):
     def __init__(self, params: ProjectionParams):
         super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_2D)
@@ -639,8 +623,8 @@ class BuildTrace3DModule(Module):
 
             # binarizes coordinate
             y_int = int(np.nan_to_num(x_sub_pix_pos, nan=-1))
-            x_int = int(np.nan_to_num(x_sub_pix_pos, nan=-1))
-            z_int = int(np.nan_to_num(x_sub_pix_pos, nan=-1)) + int(self.z_offset)
+            x_int = int(np.nan_to_num(y_sub_pix_pos, nan=-1))
+            z_int = int(np.nan_to_num(z_sub_pix_pos, nan=-1)) + int(self.z_offset)
 
             if (
                 x_int < axis_size["x"]
