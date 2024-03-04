@@ -433,9 +433,7 @@ class MatrixParams:
 
 class PipelineParams:
     def __init__(self, raw_params: Dict[str, Dict[str, dict]], label: AnalysisType):
-        labelled_params = deep_dict_update(
-            raw_params["common"], raw_params["labels"][label.value]
-        )
+        labelled_params = merge_common_and_labels(raw_params, label)
         self.acquisition = AcquisitionParams.from_dict(
             labelled_params.get("acquisition", None)
         )
@@ -539,3 +537,11 @@ def deep_dict_update(main_dict: dict, new_dict: dict):
         else:
             main_deep_copy[key] = value
     return main_deep_copy
+
+
+def merge_common_and_labels(raw_params, label):
+    common_params = raw_params["common"]
+    if label.value not in raw_params["labels"]:
+        return common_params
+    label_params = raw_params["labels"][label.value]
+    return deep_dict_update(common_params, label_params)
