@@ -436,22 +436,19 @@ class PipelineParams:
         labelled_params = deep_dict_update(
             raw_params["common"], raw_params["labels"][label.value]
         )
-
         self.acquisition = AcquisitionParams.from_dict(
             labelled_params.get("acquisition", None)
         )
         self.projection = ProjectionParams.from_dict(
-            labelled_params.get("zProject", None)
+            labelled_params.get("zProject", {})
         )
         self.registration = RegistrationParams.from_dict(
-            labelled_params.get("alignImages", None)
+            labelled_params.get("alignImages", {})
         )
         self.segmentation = SegmentationParams.from_dict(
-            labelled_params.get("segmentedObjects", None)
+            labelled_params.get("segmentedObjects", {})
         )
-        self.matrix = MatrixParams.from_dict(
-            labelled_params.get("buildsPWDmatrix", None)
-        )
+        self.matrix = MatrixParams.from_dict(labelled_params.get("buildsPWDmatrix", {}))
 
         self.highlight_deprecated_params(labelled_params)
 
