@@ -16,9 +16,7 @@ def _parse_run_args(command_line_args):
     """
     parser = ArgumentParser()
     parser.add_argument(
-        "-C",
-        "--command",
-        help="Comma-separated list of module names to run.",
+        "-C", "--command", help="Comma-separated list of module names to run.",
     )
     parser.add_argument(
         "-I",
