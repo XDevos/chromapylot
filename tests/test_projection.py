@@ -14,7 +14,7 @@ import tempfile
 from data_manager import extract_files
 
 # sys.path.append("..")
-from chromapylot import main
+from chromapylot.chromapylot import main
 from tests.testing_tools.comparison import compare_npy_files, image_pixel_differences
 
 # Build a temporary directory

@@ -9,7 +9,7 @@ import tempfile
 from data_manager import extract_files
 
 # sys.path.append("..")
-from chromapylot import main
+from chromapylot.chromapylot import main
 from tests.testing_tools.comparison import (
     compare_ecsv_files,
     compare_line_by_line,
