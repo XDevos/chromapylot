@@ -158,8 +158,11 @@ class AnalysisManager:
     def create_module(
         self,
         module_name: CommandName,
-        module_params: Union[
-            ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams
+        module_params: Dict[
+            str,
+            Union[
+                ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams
+            ],
         ],
     ):
         module_mapping = {
@@ -183,7 +186,7 @@ class AnalysisManager:
         }
         if module_name in module_mapping:
             print(f"Creating module {module_name}.")
-            return module_mapping[module_name](module_params)
+            return module_mapping[module_name](**module_params)
         else:
             raise ValueError(f"Module {module_name} does not exist.")
 

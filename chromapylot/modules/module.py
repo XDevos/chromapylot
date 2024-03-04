@@ -1,11 +1,10 @@
-from tifffile import imread, imsave
+from tifffile import imread
 from typing import Any, List, Union, Dict
 from scipy.ndimage import shift
 from data_manager import get_file_path
 from core_types import DataType, first_type_accept_second
 import numpy as np
 import json
-import os
 from extract_module import extract_properties
 from astropy.table import Table
 from parameters import (
@@ -105,9 +104,9 @@ class Module:
 
 
 class ProjectModule(Module):
-    def __init__(self, params: ProjectionParams):
+    def __init__(self, projection_params: ProjectionParams):
         super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_2D)
-        self.params = params
+        self.params = projection_params
 
     def run(self, array_3d):
         print("Projecting 3D image to 2D.")
@@ -122,7 +121,7 @@ class ProjectModule(Module):
 
 
 class SkipModule(Module):
-    def __init__(self, params: AcquisitionParams):
+    def __init__(self, acquisition_params: AcquisitionParams):
         """
         Parameters:
         z_binning (int): The number of z-planes to skip.
@@ -131,7 +130,7 @@ class SkipModule(Module):
             input_type=DataType.IMAGE_3D,
             output_type=DataType.IMAGE_3D,
         )
-        self.z_binning = params.zBinning
+        self.z_binning = acquisition_params.zBinning
 
     def run(self, array_3d):
         print(f"Skipping every {self.z_binning} z-planes.")
@@ -183,7 +182,7 @@ class ShiftModule(Module):
 
 
 class Shift3DModule(ShiftModule):
-    def __init__(self, params: RegistrationParams):
+    def __init__(self, registration_params: RegistrationParams):
         super().__init__(
             input_type=DataType.IMAGE_3D,
             output_type=DataType.IMAGE_3D_SHIFTED,
@@ -202,7 +201,7 @@ class Shift3DModule(ShiftModule):
 
 
 class Shift2DModule(ShiftModule):
-    def __init__(self, params: RegistrationParams):
+    def __init__(self, registration_params: RegistrationParams):
         super().__init__(
             input_type=DataType.IMAGE_2D,
             output_type=DataType.IMAGE_2D_SHIFTED,
@@ -221,7 +220,7 @@ class Shift2DModule(ShiftModule):
 
 
 class RegisterGlobalModule(Module):
-    def __init__(self, params: RegistrationParams):
+    def __init__(self, registration_params: RegistrationParams):
         super().__init__(
             input_type=DataType.IMAGE_2D,
             output_type=DataType.SHIFT_TUPLE,
@@ -253,7 +252,7 @@ class RegisterGlobalModule(Module):
 
 
 class RegisterLocalModule(Module):
-    def __init__(self, params: RegistrationParams):
+    def __init__(self, registration_params: RegistrationParams):
         super().__init__(
             input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
             output_type=DataType.REGISTRATION_TABLE,
@@ -276,7 +275,7 @@ class RegisterLocalModule(Module):
 
 
 class Segment3DModule(Module):
-    def __init__(self, params: SegmentationParams):
+    def __init__(self, segmentation_params: SegmentationParams):
         super().__init__(
             input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
             output_type=DataType.IMAGE_3D_SEGMENTED,
@@ -295,7 +294,7 @@ class Segment3DModule(Module):
 
 
 class Segment2DModule(Module):
-    def __init__(self, params: SegmentationParams):
+    def __init__(self, segmentation_params: SegmentationParams):
         super().__init__(
             input_type=[DataType.IMAGE_2D_SHIFTED, DataType.IMAGE_2D],
             output_type=DataType.IMAGE_2D_SEGMENTED,
@@ -343,7 +342,7 @@ class ExtractModule(Module):
 
 
 class Extract3DModule(ExtractModule):
-    def __init__(self, params: SegmentationParams):
+    def __init__(self, segmentation_params: SegmentationParams):
         super().__init__(
             input_type=DataType.IMAGE_3D_SEGMENTED,
             output_type=DataType.TABLE_3D,
@@ -366,7 +365,7 @@ class Extract3DModule(ExtractModule):
 
 
 class Extract2DModule(ExtractModule):
-    def __init__(self, params: SegmentationParams):
+    def __init__(self, segmentation_params: SegmentationParams):
         super().__init__(
             input_type=DataType.IMAGE_2D_SEGMENTED,
             output_type=DataType.TABLE_2D,
@@ -415,7 +414,7 @@ class FilterTableModule(Module):
 
 
 class FilterMaskModule(FilterTableModule):
-    def __init__(self, params: SegmentationParams):
+    def __init__(self, segmentation_params: SegmentationParams):
         super().__init__()
 
     def run(self, table):
@@ -431,7 +430,7 @@ class FilterMaskModule(FilterTableModule):
 
 
 class FilterLocalizationModule(FilterTableModule):
-    def __init__(self, params: MatrixParams):
+    def __init__(self, matrix_params: MatrixParams):
         super().__init__()
 
     def run(self, table):
@@ -474,7 +473,7 @@ class SelectMaskModule(Module):
 
 
 class SelectMask3DModule(SelectMaskModule):
-    def __init__(self, params: SegmentationParams):
+    def __init__(self, segmentation_params: SegmentationParams):
         super().__init__(
             input_type=DataType.IMAGE_3D_SEGMENTED,
             output_type=DataType.IMAGE_3D_SEGMENTED_SELECTED,
@@ -498,7 +497,7 @@ class SelectMask3DModule(SelectMaskModule):
 
 
 class SelectMask2DModule(SelectMaskModule):
-    def __init__(self, params: SegmentationParams):
+    def __init__(self, segmentation_params: SegmentationParams):
         super().__init__(
             input_type=DataType.IMAGE_2D_SEGMENTED,
             output_type=DataType.IMAGE_2D_SEGMENTED_SELECTED,
@@ -522,7 +521,7 @@ class SelectMask2DModule(SelectMaskModule):
 
 
 class RegisterLocalizationModule(Module):
-    def __init__(self, params: MatrixParams):
+    def __init__(self, matrix_params: MatrixParams):
         super().__init__(
             input_type=DataType.TABLE_3D,
             output_type=DataType.TABLE_3D_REGISTERED,
@@ -545,176 +544,8 @@ class RegisterLocalizationModule(Module):
         return Table()
 
 
-class BuildTrace3DModule(Module):
-    def __init__(self, params: MatrixParams):
-        super().__init__(
-            input_type=DataType.TABLE_3D,
-            output_type=DataType.TRACE_TABLE_3D_LIST,
-            reference_type=DataType.IMAGE_3D_SHIFTED,
-        )
-        self.reference_data: Dict[str, np.ndarray] = {}
-        self.z_offset = params.z_offset
-        self.tracing_method = params.tracing_method
-        self.masks2process: Dict[str, str] = params.masks2process
-        if "masking" not in self.tracing_method:
-            self.reference_type = None
-
-    def init_trace_table(self):
-        trace_table = Table(
-            names=(
-                "Spot_ID",
-                "Trace_ID",
-                "x",
-                "y",
-                "z",
-                "Chrom",
-                "Chrom_Start",
-                "Chrom_End",
-                "ROI #",
-                "Mask_id",
-                "Barcode #",
-                "label",
-            ),
-            dtype=(
-                "S2",
-                "S2",
-                "f4",
-                "f4",
-                "f4",
-                "S2",
-                "int",
-                "int",
-                "int",
-                "int",
-                "int",
-                "S2",
-            ),
-        )
-        trace_table.meta["xyz_unit"] = "micron"
-        trace_table.meta["genome_assembly"] = "mm10"
-        return trace_table
-
-    def build_mask_trace_table(self, localizations, mask):
-        trace_table = self.init_trace_table()
-        nbr_of_masks = np.max(mask)
-        barcode_nbr_by_mask_id = np.zeros(
-            nbr_of_masks + 2
-        )  # +2 to include background ([0]) and unassigned ([-1])
-
-        image_dim = mask.shape
-        if len(image_dim) == 3:
-            axis_size = {
-                "x": image_dim[1],
-                "y": image_dim[2],
-                "z": image_dim[0],
-            }
-        else:
-            raise ValueError("Segmented image dimension must be 3.")
-
-        # loops over barcode Table rows
-        print(f"> Aligning localizations to {nbr_of_masks} masks...")
-        if "registered" not in localizations.meta["comments"]:
-            print("WARNING: Localizations are not registered!")
-        for barcode_row in localizations:
-            # gets xyz coordinates
-            x_sub_pix_pos = self.barcode_map_roi.groups[0]["ycentroid"][i]
-            y_sub_pix_pos = self.barcode_map_roi.groups[0]["xcentroid"][i]
-            z_sub_pix_pos = self.barcode_map_roi.groups[0]["zcentroid"][i]
-
-            # binarizes coordinate
-            y_int = int(np.nan_to_num(x_sub_pix_pos, nan=-1))
-            x_int = int(np.nan_to_num(y_sub_pix_pos, nan=-1))
-            z_int = int(np.nan_to_num(z_sub_pix_pos, nan=-1)) + int(self.z_offset)
-
-            if (
-                x_int < axis_size["x"]
-                and y_int < axis_size["y"]
-                and z_int < axis_size["z"]
-                and x_int > 0
-                and y_int > 0
-                and z_int > 0
-            ):
-                mask_id = mask[z_int, x_int, y_int]
-
-            else:
-                # Barcode has numpy.NaN coordinates or outside the image, it is unassigned
-                mask_id = nbr_of_masks + 2
-
-            # attributes CellID to a barcode
-            trace_table
-            self.barcode_map_roi["CellID #"][i] = mask_id
-
-            # if it is not background,
-            if mask_id > 0:
-                # increments counter of number of barcodes in the cell mask attributed
-                n_barcodes_in_mask[mask_id] += 1
-
-                # stores the identify of the barcode in a mask dictionary
-                self.barcodes_in_mask[f"maskID_{str(mask_id)}"].append(i)
-
-        # Total number of masks assigned and not assigned
-        self.n_cells_assigned = np.count_nonzero(n_barcodes_in_mask > 0)
-        self.n_cells_unassigned = self.number_masks - self.n_cells_assigned
-
-        # this list contains which barcodes are allocated to which masks
-        self.n_barcodes_in_mask = n_barcodes_in_mask
-
-        print_log(
-            f"$ Number of cells assigned: {self.n_cells_assigned} \
-                | discarded: {self.n_cells_unassigned}"
-        )
-
-    def run(self, localizations):
-        output = []
-        if "clustering" in self.tracing_method:
-            print("Building cluster trace table.")
-            raise NotImplementedError
-        if "masking" in self.tracing_method:
-            for key, value in self.masks2process.items():
-                print(f"Building mask {value} trace table.")
-                trace_table = self.build_mask_trace_table(
-                    localizations, self.reference_data[value]
-                )
-                output.append(trace_table)
-        return output
-
-    def load_data(self, input_path):
-        print("Loading properties.")
-        return Table.read(input_path, format="ascii.ecsv")
-
-    def save_data(self, data, output_dir, input_path):
-        print("Saving trace table.")
-        print(f"data: {list(data)}")
-        print(f"self.tracing_method: {list(self.tracing_method)}")
-        method_names = []
-        if "clustering" in self.tracing_method:
-            method_names.append("KDtree")
-        if "masking" in self.tracing_method:
-            for key in self.masks2process.keys():
-                method_names.append(f"mask-{key}")
-        for trace_table, method in zip(list(data), method_names):
-            print(f"Saving {method} trace table.")
-            base = os.path.basename(input_path)
-            roi_nbr = trace_table["ROI #"][0]
-            barcode_2d_or_3d = "_".join(base.split("_")[1:])
-            out_name = f"Trace_{barcode_2d_or_3d}_{method}_ROI-{roi_nbr}.ecsv"
-            trace_table.write(
-                os.path.join(output_dir, out_name), format="ascii.ecsv", overwrite=True
-            )
-
-    def load_reference_data(self, paths: List[str]):
-        if "masking" in self.tracing_method:
-            for key, val in self.masks2process.items():
-                for path in paths:
-                    if val in path:
-                        print(f"Loading {path} for mask {val}.")
-                        self.reference_data[val] = np.load(path)
-        else:
-            print("No reference data needed for tracing method {self.tracing_method}.")
-
-
 class BuildMatrixModule(Module):
-    def __init__(self, params: MatrixParams):
+    def __init__(self, matrix_params: MatrixParams):
         super().__init__(
             input_type=[DataType.TRACE_TABLE_LIST, DataType.TRACE_TABLE],
             output_type=DataType.MATRIX,

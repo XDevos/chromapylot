@@ -434,19 +434,17 @@ class MatrixParams:
 class PipelineParams:
     def __init__(self, raw_params: Dict[str, Dict[str, dict]], label: AnalysisType):
         labelled_params = merge_common_and_labels(raw_params, label)
-        self.acquisition = AcquisitionParams.from_dict(
-            labelled_params.get("acquisition", None)
-        )
-        self.projection = ProjectionParams.from_dict(
-            labelled_params.get("zProject", {})
-        )
-        self.registration = RegistrationParams.from_dict(
-            labelled_params.get("alignImages", {})
-        )
-        self.segmentation = SegmentationParams.from_dict(
-            labelled_params.get("segmentedObjects", {})
-        )
-        self.matrix = MatrixParams.from_dict(labelled_params.get("buildsPWDmatrix", {}))
+        acq_p = labelled_params.get("acquisition", {})
+        prj_p = labelled_params.get("zProject", {})
+        rgt_p = labelled_params.get("alignImages", {})
+        sgm_p = labelled_params.get("segmentedObjects", {})
+        mtx_p = labelled_params.get("buildsPWDmatrix", {})
+
+        self.acquisition = AcquisitionParams.from_dict(acq_p) if acq_p else None
+        self.projection = ProjectionParams.from_dict(prj_p) if prj_p else None
+        self.registration = RegistrationParams.from_dict(rgt_p) if rgt_p else None
+        self.segmentation = SegmentationParams.from_dict(sgm_p) if sgm_p else None
+        self.matrix = MatrixParams.from_dict(mtx_p) if mtx_p else None
 
         self.highlight_deprecated_params(labelled_params)
 
@@ -489,11 +487,11 @@ class PipelineParams:
 
     def get_module_params(self, module_name: str):
         if module_name in ["acquisition", "skip"]:
-            return self.acquisition
+            return {"acquisition_params": self.acquisition}
         if module_name == "project":
-            return self.projection
+            return {"projection_params": self.projection}
         if module_name in ["register_global", "register_local", "shift_2d", "shift_3d"]:
-            return self.registration
+            return {"registration_params": self.registration}
         if module_name in [
             "segment_2d",
             "segment_3d",
@@ -503,14 +501,18 @@ class PipelineParams:
             "select_mask_2d",
             "select_mask_3d",
         ]:
-            return self.segmentation
+            return {"segmentation_params": self.segmentation}
         if module_name in [
             "filter_localization",
             "register_localization",
-            "build_trace",
             "build_matrix",
         ]:
-            return self.matrix
+            return {"matrix_params": self.matrix}
+        if module_name in ["build_trace"]:
+            return {
+                "acquisition_params": self.acquisition,
+                "matrix_params": self.matrix,
+            }
         raise ValueError(f"Unknown module name: {module_name}")
 
 
