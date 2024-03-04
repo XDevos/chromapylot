@@ -28,6 +28,7 @@ class DataType(Enum):
     IMAGE_3D_SEGMENTED = "IMAGE_3D_SEGMENTED"
     IMAGE_2D_SHIFTED = "IMAGE_2D_SHIFTED"
     IMAGE_2D_SEGMENTED = "IMAGES_2D_SEGMENTED"
+    SEGMENTED = "SEGMENTED"
     TABLE_3D = "TABLE_3D"
     TABLE_2D = "TABLE_2D"
     TABLE = "TABLE"
@@ -52,22 +53,28 @@ class AnalysisType(Enum):
     TRACE = "trace"
 
 
-ModuleName = Literal[
-    "project",
-    "register_global",
-    "skip",
-    "shift",
-    "shift_fiducial",
-    "register_local",
-    "filter_table",
-    "filter_mask",
-    "segment",
-    "extract",
-    "filter_localization",
-    "register_localization",
-    "build_trace",
-    "build_matrix",
-]
+class CommandName(Enum):
+    PROJECT = "project"
+    SKIP = "skip"
+    SHIFT_3D = "shift_3d"
+    SHIFT_2D = "shift_2d"
+    REGISTER_GLOBAL = "register_global"
+    REGISTER_LOCAL = "register_local"
+    SEGMENT_3D = "segment_3d"
+    SEGMENT_2D = "segment_2d"
+    EXTRACT_3D = "extract_3d"
+    EXTRACT_2D = "extract_2d"
+    FILTER_MASK = "filter_mask"
+    SELECT_MASK_3D = "select_mask_3d"
+    SELECT_MASK_2D = "select_mask_2d"
+    FILTER_TABLE = "filter_table"
+    FILTER_LOCALIZATION = "filter_localization"
+    REGISTER_LOCALIZATION = "register_localization"
+    BUILD_TRACE_3D = "build_trace_3d"
+    BUILD_TRACE_2D = "build_trace_2d"
+    BUILD_MATRIX_3D = "build_matrix_3d"
+    BUILD_MATRIX_2D = "build_matrix_2d"
+
 
 ExampleType = Literal[
     "fiducial_3d",

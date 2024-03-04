@@ -3,6 +3,7 @@
 
 import os
 from argparse import ArgumentParser
+from core_types import CommandName
 
 
 def _parse_run_args(command_line_args):
@@ -81,19 +82,7 @@ class RunArgs:
 
     @staticmethod
     def _get_default_commands():
-        return [
-            "project",
-            "skip",
-            "shift_3d",
-            "shift_2d",
-            "register_global",
-            "register_local",
-            "extract",
-            "filter_table",
-            "select_mask",
-            "build_trace",
-            "build_matrix",
-        ]
+        return [command.value for command in CommandName]
 
     def _check_args(self):
         """Check run arguments"""

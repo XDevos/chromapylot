@@ -6,7 +6,7 @@ from data_manager import DataManager
 from run_args import RunArgs
 import os
 import module as mod
-from core_types import DataType, AnalysisType, ModuleName
+from core_types import DataType, AnalysisType, CommandName
 from parameters import (
     ProjectionParams,
     RegistrationParams,
@@ -136,7 +136,7 @@ class AnalysisManager:
     def parse_commands(self, commands: List[str]):
         self.module_names = list(set(commands))
 
-    def get_module_chain(self, pipeline_type: AnalysisType) -> List[ModuleName]:
+    def get_module_chain(self, pipeline_type: AnalysisType) -> List[CommandName]:
         if pipeline_type == AnalysisType.FIDUCIAL:
             return ["skip", "project", "register_global", "shift_3d", "register_local"]
         elif pipeline_type == AnalysisType.BARCODE:
@@ -157,7 +157,7 @@ class AnalysisManager:
 
     def create_module(
         self,
-        module_name: ModuleName,
+        module_name: CommandName,
         module_params: Union[
             ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams
         ],
