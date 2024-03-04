@@ -547,7 +547,7 @@ class RegisterLocalizationModule(Module):
 class BuildMatrixModule(Module):
     def __init__(self, matrix_params: MatrixParams):
         super().__init__(
-            input_type=[DataType.TRACE_TABLE_LIST, DataType.TRACE_TABLE],
+            input_type=[DataType.TRACES_LIST, DataType.TRACES],
             output_type=DataType.MATRIX,
         )
 

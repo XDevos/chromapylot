@@ -36,10 +36,11 @@ class DataType(Enum):
     TABLE = "TABLE"
     TABLE_FILTERED = "TABLE_FILTERED"
     TABLE_3D_REGISTERED = "TABLE_3D_REGISTERED"
-    TRACE_TABLE = "TRACE_TABLE"
-    TRACE_TABLE_3D_LIST = "TRACE_TABLE_3D_LIST"
-    TRACE_TABLE_3D = "TRACE_TABLE_3D"
-    TRACE_TABLE_2D = "TRACE_TABLE_2D"
+    TRACES = "TRACES"
+    TRACES_LIST = "TRACES_LIST"
+    TRACES_LIST_3D = "TRACES_LIST_3D"
+    TRACES_3D = "TRACES_3D"
+    TRACES_2D = "TRACES_2D"
     MATRIX_3D = "MATRIX_3D"
     MATRIX_2D = "MATRIX_2D"
     MATRIX = "MATRIX"
@@ -130,9 +131,9 @@ def get_data_type(filename, extension):
         if "_block3D" in filename:
             return DataType.REGISTRATION_TABLE
         elif "Trace_3D" in filename:
-            return DataType.TRACE_TABLE_3D
+            return DataType.TRACES_3D
         elif "Trace" in filename:
-            return DataType.TRACE_TABLE_2D
+            return DataType.TRACES_2D
         elif "_3D_barcode" in filename or "_3D_mask" in filename:
             return DataType.TABLE_3D
         elif "_barcode" in filename or "_mask" in filename:

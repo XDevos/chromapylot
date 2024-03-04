@@ -47,6 +47,13 @@ def load_json(file_path):
         return json.load(file)
 
 
+def save_ecsv(table, path):
+    directory = os.path.dirname(path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    table.write(path, format="ascii.ecsv", overwrite=True)
+
+
 class DataManager:
     def __init__(self, run_args):
         self.input_folder = run_args.input
