@@ -7,7 +7,7 @@ import os
 import shutil
 import tempfile
 
-from core.data_manager import extract_files
+from data_manager import extract_files
 
 # sys.path.append("..")
 from chromapylot import main
@@ -29,7 +29,8 @@ shutil.copytree("pyhim-small-dataset/localize_2d/IN", tmp_localize_2d_in)
 def template_test_localize_2d(mode: str):
     """Check Localize2D feature with all possibilities"""
     inputs = os.path.join(tmp_localize_2d_in, mode)
-    main(["-F", inputs, "-C", "localize_2d"])
+    print(f"inputs: {inputs}")
+    main(["-I", inputs, "-O", inputs, "-C", "segment_2d,extract_2d", "-A", "barcode"])
     generated_align_images = os.path.join(inputs, "segmentedObjects")
     reference_outputs = f"pyhim-small-dataset/localize_2d/OUT/{mode}/segmentedObjects/"
     generated_files = extract_files(generated_align_images)

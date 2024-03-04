@@ -11,7 +11,7 @@ import os
 import shutil
 import tempfile
 
-from core.data_manager import extract_files
+from data_manager import extract_files
 
 # sys.path.append("..")
 from chromapylot import main
@@ -28,7 +28,7 @@ shutil.copytree("pyhim-small-dataset/projection/IN", tmp_projection_in)
 def template_test_project(mode: str):
     """Check Project feature with all possibilities"""
     inputs = os.path.join(tmp_projection_in, mode)
-    main(["-F", inputs, "-C", "project"])
+    main(["-I", inputs, "-O", inputs, "-C", "project", "-A", "all"])
     generated_z_project = os.path.join(inputs, "zProject")
     reference_outputs = f"pyhim-small-dataset/projection/OUT/{mode}/zProject/"
     generated_files = extract_files(generated_z_project)

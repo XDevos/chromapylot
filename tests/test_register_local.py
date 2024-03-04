@@ -7,7 +7,7 @@ import os
 import shutil
 import tempfile
 
-from core.data_manager import extract_files
+from data_manager import extract_files
 
 # sys.path.append("..")
 from chromapylot import main
@@ -29,7 +29,7 @@ shutil.copytree("pyhim-small-dataset/register_local/IN", tmp_register_local_in)
 def template_test_register_local(mode: str):
     """Check RegisterLocal feature with all possibilities"""
     inputs = os.path.join(tmp_register_local_in, mode)
-    main(["-F", inputs, "-C", "register_local"])
+    main(["-I", inputs, "-O", inputs, "-C", "shift_3d,register_local"])
     generated_register_local = os.path.join(inputs, "alignImages")
     reference_outputs = f"pyhim-small-dataset/register_local/OUT/{mode}/alignImages/"
     generated_files = extract_files(generated_register_local)

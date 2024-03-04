@@ -6,7 +6,7 @@ import os
 import shutil
 import tempfile
 
-from core.data_manager import extract_files
+from data_manager import extract_files
 
 # sys.path.append("..")
 from chromapylot import main
@@ -26,7 +26,7 @@ tmp_traces_inputs = os.path.join(tmp_resources, "traces_dataset/IN")
 
 def test_make_projections():
     """Check 'project'"""
-    main(["-F", tmp_small_inputs, "-C", "project"])
+    main(["-I", tmp_small_inputs, "-O", tmp_small_inputs, "-C", "project", "-A", "all"])
     tmp_z_project = os.path.join(tmp_small_inputs, "zProject/data")
     out_z_project = (
         "pyhim-small-dataset/resources/small_dataset/OUT/makeProjections/data"
@@ -42,7 +42,16 @@ def test_make_projections():
 
 def test_register_global():
     """Check register_global"""
-    main(["-F", tmp_small_inputs, "-C", "register_global"])
+    main(
+        [
+            "-I",
+            tmp_small_inputs,
+            "-O",
+            tmp_small_inputs,
+            "-C",
+            "register_global,shift_2d",
+        ]
+    )
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/data"
@@ -68,7 +77,18 @@ def test_register_global():
 
 def test_align_images_3d():
     """Check register_local"""
-    main(["-F", tmp_small_inputs, "-C", "register_local"])
+    main(
+        [
+            "-I",
+            tmp_small_inputs,
+            "-O",
+            tmp_small_inputs,
+            "-C",
+            "shift_3d,register_local",
+            "-A",
+            "fiducial",
+        ]
+    )
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages3D/data"
@@ -84,7 +104,18 @@ def test_align_images_3d():
 
 def test_segment_masks_3d():
     """Check mask_3d"""
-    main(["-F", tmp_small_inputs, "-C", "mask_3d"])
+    main(
+        [
+            "-I",
+            tmp_small_inputs,
+            "-O",
+            tmp_small_inputs,
+            "-C",
+            "segment_3d",
+            "-A",
+            "DAPI",
+        ]
+    )
     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects/data")
     out_segmented_objects = (
         "pyhim-small-dataset/resources/small_dataset/OUT/segmentMasks3D/data"
@@ -115,7 +146,7 @@ def test_segment_masks_3d():
 
 def test_build_traces():
     """Check build_traces"""
-    main(["-F", tmp_traces_inputs, "-C", "build_traces"])
+    main(["-I", tmp_traces_inputs, "-O", tmp_traces_inputs, "-C", "build_trace_3d"])
     tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix/data")
     out_builds_pwd_matrix = (
         "pyhim-small-dataset/resources/traces_dataset/OUT/build_traces/data"
@@ -131,7 +162,7 @@ def test_build_traces():
 
 def test_build_matrix():
     """Check build_matrix"""
-    main(["-F", tmp_traces_inputs, "-C", "build_matrix"])
+    main(["-I", tmp_traces_inputs, "-O", tmp_traces_inputs, "-C", "build_matrix_3d"])
     tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix/data")
     out_builds_pwd_matrix = (
         "pyhim-small-dataset/resources/traces_dataset/OUT/build_matrix/data"

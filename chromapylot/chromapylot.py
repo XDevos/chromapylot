@@ -241,8 +241,8 @@ class AnalysisManager:
                 )
 
 
-def main():
-    run_args = RunArgs()
+def main(command_line_args=None):
+    run_args = RunArgs(command_line_args)
     data_manager = DataManager(run_args)
     analysis_manager = AnalysisManager(data_manager)
     analysis_manager.parse_commands(run_args.commands)

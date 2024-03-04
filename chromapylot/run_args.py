@@ -5,7 +5,7 @@ import os
 from argparse import ArgumentParser
 
 
-def _parse_run_args():
+def _parse_run_args(command_line_args):
     """Parse run arguments
 
     Returns
@@ -20,14 +20,14 @@ def _parse_run_args():
         help="Comma-separated list of module names to run.",
     )
     parser.add_argument(
-        "-N",
+        "-I",
         "--input",
         type=str,
         default=os.getcwd(),
         help="Folder path with input data.\nDEFAULT: Current directory",
     )
     parser.add_argument(
-        "-U",
+        "-O",
         "--output",
         type=str,
         default=os.getcwd(),
@@ -48,14 +48,14 @@ def _parse_run_args():
         help="Comma-separated list of analysis type to run (all, fiducial, barcode, trace, DAPI, primer, RNA).\nDEFAULT: all",
     )
 
-    return parser.parse_args()
+    return parser.parse_args(command_line_args)
 
 
 class RunArgs:
     """Store and check run arguments"""
 
-    def __init__(self):
-        parsed_args = _parse_run_args()
+    def __init__(self, command_line_args):
+        parsed_args = _parse_run_args(command_line_args)
         self.commands = self.parse_command(parsed_args.command)
         self.input = parsed_args.input
         self.output = parsed_args.output
