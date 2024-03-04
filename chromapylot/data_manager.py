@@ -58,7 +58,7 @@ class DataManager:
 
     def get_parameters_file(self):
         for file in self.input_files:
-            if file[1] == "parameters" and file[2] == "json":
+            if file[1] in ["parameters", "infoList"] and file[2] == "json":
                 return file[0]
         raise FileNotFoundError(
             "No parameters file found in input folder: ", self.input_folder
@@ -91,7 +91,7 @@ class DataManager:
         ]
 
     def get_analysis_type(self, filename, extension):
-        if extension in ["png", "log", "md"] or "parameters" == filename:
+        if extension in ["png", "log", "md"] or filename in ["parameters", "infoList"]:
             return None
         elif extension in ["tif", "tiff", "npy"]:
             cycle = self.get_cycle_from_path(filename)
