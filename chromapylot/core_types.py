@@ -122,7 +122,7 @@ def get_data_type(filename, extension):
         elif "_Masks" in filename:
             return DataType.IMAGE_2D_SEGMENTED
     elif extension == "json":
-        if "shifts" in filename:
+        if filename in ["shifts", "register_global"]:
             return DataType.SHIFT_DICT
     elif extension in ["ecsv", "dat"]:
         if "_block3D" in filename:

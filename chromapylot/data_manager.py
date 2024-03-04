@@ -117,7 +117,7 @@ class DataManager:
                     return at.PRIMER
             elif "matrix" in filename:
                 return at.TRACE
-        elif "_block3D" in filename or "shifts" in filename:
+        elif "_block3D" in filename or filename in ["shifts", "register_global"]:
             return at.FIDUCIAL
         elif extension in ["dat", "ecsv"]:
             if "Trace" in filename or "_barcode" in filename:
