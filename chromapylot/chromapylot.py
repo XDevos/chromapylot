@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from typing import List, Dict, Union, Any
-from enum import Enum
 from data_manager import DataManager
 from run_args import RunArgs
-import os
-import chromapylot.modules.module as mod
+import modules.module as mod
 from core_types import DataType, AnalysisType, CommandName
 from parameters import (
     ProjectionParams,
@@ -14,6 +12,7 @@ from parameters import (
     MatrixParams,
     PipelineParams,
 )
+from modules.build_trace import BuildTrace3DModule
 
 
 class Pipeline:
@@ -151,8 +150,8 @@ class AnalysisManager:
             return [
                 "filter_localization",
                 "register_localization",
-                "build_trace",
-                "build_matrix",
+                "build_trace_3d",
+                "build_matrix_3d",
             ]
 
     def create_module(
@@ -181,7 +180,7 @@ class AnalysisManager:
             "select_mask_3d": mod.SelectMask3DModule,
             "filter_localization": mod.FilterLocalizationModule,
             "register_localization": mod.RegisterLocalizationModule,
-            "build_trace": mod.BuildTrace3DModule,
+            "build_trace_3d": BuildTrace3DModule,
             "build_matrix": mod.BuildMatrixModule,
         }
         if module_name in module_mapping:
@@ -215,13 +214,17 @@ class AnalysisManager:
             modules = self.create_pipeline_modules(analysis_type)
             if modules:
                 self.analysis_to_process.append(analysis_type)
-                print(f"Creating pipeline for analysis {analysis_type}.")
+                print(f"Creating pipeline for analysis {analysis_type}")
                 self.pipelines[analysis_type] = Pipeline(analysis_type, modules)
+            else:
+                print(f"No pipeline to create for analysis {analysis_type}")
+        if not self.analysis_to_process:
+            raise ValueError("No analysis to process.")
 
     def launch_analysis(self):
         output_dir = self.data_manager.output_folder
         for analysis_type in self.analysis_to_process:
-            print(f"Launching analysis {analysis_type}.")
+            print(f"Launching analysis {analysis_type}")
             input_type, sup_types_to_find = self.pipelines[analysis_type].prepare(
                 self.data_manager
             )

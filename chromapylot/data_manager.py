@@ -83,12 +83,24 @@ class DataManager:
                     analysis_files[at.TRACE].append((data_type, file[0]))
         return analysis_files
 
-    def get_paths_from_analysis_and_data_type(self, analysis_type, data_type):
+    def _get_paths_from_analysis_and_data_type(self, analysis_type, data_type):
         return [
             path
             for type, path in self.analysis_files[analysis_type]
             if first_type_accept_second(data_type, type)
         ]
+
+    def get_paths_from_analysis_and_data_type(self, analysis_type, data_type):
+        if isinstance(data_type, list):
+            paths = self._get_paths_from_analysis_and_data_type(
+                analysis_type, data_type[0]
+            )
+            if not paths:
+                return self._get_paths_from_analysis_and_data_type(
+                    analysis_type, data_type[1]
+                )
+            return paths
+        return self._get_paths_from_analysis_and_data_type(analysis_type, data_type)
 
     def get_analysis_type(self, filename, extension):
         if extension in ["png", "log", "md"] or filename in ["parameters", "infoList"]:

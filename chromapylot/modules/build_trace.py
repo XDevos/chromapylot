@@ -2,9 +2,9 @@ import os
 from typing import Dict, List
 import numpy as np
 from astropy.table import Table
-from chromapylot.modules.module import Module
-from chromapylot.parameters import MatrixParams, AcquisitionParams
-from chromapylot.core_types import DataType
+from modules.module import Module
+from parameters import MatrixParams, AcquisitionParams
+from core_types import DataType
 import uuid
 
 
@@ -111,7 +111,10 @@ class BuildTrace3DModule(Module):
         super().__init__(
             input_type=DataType.TABLE_3D,
             output_type=DataType.TRACE_TABLE_3D_LIST,
-            reference_type=DataType.IMAGE_3D_SHIFTED,
+            reference_type=[
+                DataType.IMAGE_3D_SEGMENTED_SELECTED,
+                DataType.IMAGE_3D_SEGMENTED,
+            ],
         )
         self.reference_data: Dict[str, np.ndarray] = {}
         self.z_offset = matrix_params.z_offset
