@@ -5,7 +5,7 @@ from enum import Enum
 from data_manager import DataManager
 from run_args import RunArgs
 import os
-import module as mod
+import chromapylot.modules.module as mod
 from core_types import DataType, AnalysisType, CommandName
 from parameters import (
     ProjectionParams,
