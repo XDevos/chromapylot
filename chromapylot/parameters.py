@@ -505,8 +505,7 @@ class PipelineParams:
         if module_name in [
             "filter_localization",
             "register_localization",
-            "build_matrix_3d",
-            "build_matrix_2d",
+            "build_matrix",
         ]:
             return {"matrix_params": self.matrix}
         if module_name in ["build_trace_3d", "build_trace_2d"]:

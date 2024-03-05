@@ -4,7 +4,7 @@
 Util functions for testing
 """
 
-
+import copy
 import numpy as np
 from astropy.table import Table
 from PIL import Image  # 'Image' is used to load images
@@ -109,3 +109,75 @@ def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_sta
                         )
                 line_index += 1
             return is_same
+
+
+def compare_trace_table(ref_file, generated_file):
+    ref_table = Table.read(ref_file, format="ascii.ecsv")
+    gen_table = Table.read(generated_file, format="ascii.ecsv")
+    if len(ref_table) == 0 or len(ref_table) != len(gen_table):
+        print(f"len: {len(ref_table)} != {len(gen_table)}")
+        return False
+
+    for i in range(len(ref_table)):
+        if ref_table[i]["Spot_ID"] != gen_table[i]["Spot_ID"]:
+            if ref_table[i]["Spot_ID"] in gen_table["Spot_ID"]:
+                # get the index in gen_table["Spot_ID"]
+                index = np.where(gen_table["Spot_ID"] == ref_table[i]["Spot_ID"])[0][0]
+                # swith row inside gen_table
+                deepcopy = copy.deepcopy(gen_table[i])
+                gen_table[i] = gen_table[index]
+                gen_table[index] = deepcopy
+                print(f"Switched {i} with {index} in gen_table['Spot_ID']")
+            else:
+                print(f"i: {i}")
+                print(
+                    f"Spot_ID: {ref_table[i]['Spot_ID']} != {gen_table[i]['Spot_ID']}"
+                )
+                return False
+        if not np.isclose(ref_table[i]["x"], gen_table[i]["x"], atol=1e-4):
+            print(f"i: {i}")
+            print(f"x: {ref_table[i]['x']} != {gen_table[i]['x']}")
+            return False
+        if not np.isclose(ref_table[i]["y"], gen_table[i]["y"], atol=1e-4):
+            print(f"i: {i}")
+            print(f"y: {ref_table[i]['y']} != {gen_table[i]['y']}")
+            return False
+        if not np.isclose(ref_table[i]["z"], gen_table[i]["z"], atol=1e-4):
+            print(f"i: {i}")
+            print(f"z: {ref_table[i]['z']} != {gen_table[i]['z']}")
+            return False
+        if ref_table[i]["Chrom"] != gen_table[i]["Chrom"]:
+            print(f"i: {i}")
+            print(f"Chrom: {ref_table[i]['Chrom']} != {gen_table[i]['Chrom']}")
+            return False
+        if ref_table[i]["Chrom_Start"] != gen_table[i]["Chrom_Start"]:
+            print(f"i: {i}")
+            print(
+                f"Chrom_Start: {ref_table[i]['Chrom_Start']} != {gen_table[i]['Chrom_Start']}"
+            )
+            return False
+        if ref_table[i]["Chrom_End"] != gen_table[i]["Chrom_End"]:
+            print(f"i: {i}")
+            print(
+                f"Chrom_End: {ref_table[i]['Chrom_End']} != {gen_table[i]['Chrom_End']}"
+            )
+            return False
+        if ref_table[i]["ROI #"] != gen_table[i]["ROI #"]:
+            print(f"i: {i}")
+            print(f"ROI #: {ref_table[i]['ROI #']} != {gen_table[i]['ROI #']}")
+            return False
+        if ref_table[i]["Mask_id"] != gen_table[i]["Mask_id"]:
+            print(f"i: {i}")
+            print(f"Mask_id: {ref_table[i]['Mask_id']} != {gen_table[i]['Mask_id']}")
+            return False
+        if ref_table[i]["Barcode #"] != gen_table[i]["Barcode #"]:
+            print(f"i: {i}")
+            print(
+                f"Barcode #: {ref_table[i]['Barcode #']} != {gen_table[i]['Barcode #']}"
+            )
+            return False
+        if ref_table[i]["label"] != gen_table[i]["label"]:
+            print(f"i: {i}")
+            print(f"label: {ref_table[i]['label']} != {gen_table[i]['label']}")
+            return False
+    return True

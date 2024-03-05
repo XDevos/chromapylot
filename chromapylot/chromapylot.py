@@ -4,6 +4,7 @@ from typing import List, Dict, Union, Any
 from data_manager import DataManager
 from run_args import RunArgs
 import modules.module as mod
+from datetime import datetime
 from core_types import DataType, AnalysisType, CommandName
 from parameters import (
     ProjectionParams,
@@ -151,7 +152,7 @@ class AnalysisManager:
                 "filter_localization",
                 "register_localization",
                 "build_trace_3d",
-                "build_matrix_3d",
+                "build_matrix",
             ]
 
     def create_module(
@@ -248,12 +249,15 @@ class AnalysisManager:
 
 
 def main(command_line_args=None):
+    begin_time = datetime.now()
     run_args = RunArgs(command_line_args)
     data_manager = DataManager(run_args)
     analysis_manager = AnalysisManager(data_manager)
     analysis_manager.parse_commands(run_args.commands)
     analysis_manager.create_pipelines()
     analysis_manager.launch_analysis()
+    print("\n==================== Normal termination ====================\n")
+    print(f"Elapsed time: {datetime.now() - begin_time}")
 
 
 if __name__ == "__main__":

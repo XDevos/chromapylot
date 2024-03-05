@@ -52,6 +52,7 @@ def save_ecsv(table, path):
     if not os.path.exists(directory):
         os.makedirs(directory)
     table.write(path, format="ascii.ecsv", overwrite=True)
+    print(f"[Saving] {path}")
 
 
 class DataManager:
@@ -110,7 +111,11 @@ class DataManager:
         return self._get_paths_from_analysis_and_data_type(analysis_type, data_type)
 
     def get_analysis_type(self, filename, extension):
-        if extension in ["png", "log", "md"] or filename in ["parameters", "infoList"]:
+        if extension in ["png", "log", "md"] or filename in [
+            "parameters",
+            "parameters_loaded",
+            "infoList",
+        ]:
             return None
         elif extension in ["tif", "tiff", "npy"]:
             cycle = self.get_cycle_from_path(filename)

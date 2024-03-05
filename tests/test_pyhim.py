@@ -14,6 +14,7 @@ from tests.testing_tools.comparison import (
     compare_ecsv_files,
     compare_line_by_line,
     compare_npy_files,
+    compare_trace_table,
 )
 
 # build a temporary directory
@@ -153,7 +154,7 @@ def test_segment_masks_3d():
 def test_build_traces():
     """Check build_traces"""
     main(["-I", tmp_traces_inputs, "-O", tmp_traces_inputs, "-C", "build_trace_3d"])
-    tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix/data")
+    tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "tracing/data")
     out_builds_pwd_matrix = (
         "pyhim-small-dataset/resources/traces_dataset/OUT/build_traces/data"
     )
@@ -165,13 +166,13 @@ def test_build_traces():
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_builds_pwd_matrix, filename)
         out_file = os.path.join(out_builds_pwd_matrix, filename)
-        assert compare_ecsv_files(tmp_file, out_file, columns_to_remove=["Trace_ID"])
+        assert compare_trace_table(tmp_file, out_file)
 
 
 def test_build_matrix():
     """Check build_matrix"""
-    main(["-I", tmp_traces_inputs, "-O", tmp_traces_inputs, "-C", "build_matrix_3d"])
-    tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix/data")
+    main(["-I", tmp_traces_inputs, "-O", tmp_traces_inputs, "-C", "build_matrix"])
+    tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "tracing/data")
     out_builds_pwd_matrix = (
         "pyhim-small-dataset/resources/traces_dataset/OUT/build_matrix/data"
     )

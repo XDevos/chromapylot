@@ -75,8 +75,7 @@ class CommandName(Enum):
     REGISTER_LOCALIZATION = "register_localization"
     BUILD_TRACE_3D = "build_trace_3d"
     BUILD_TRACE_2D = "build_trace_2d"
-    BUILD_MATRIX_3D = "build_matrix_3d"
-    BUILD_MATRIX_2D = "build_matrix_2d"
+    BUILD_MATRIX = "build_matrix"
 
 
 ExampleType = Literal[

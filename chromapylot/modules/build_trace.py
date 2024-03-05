@@ -10,6 +10,26 @@ from data_manager import save_ecsv
 import matplotlib.pyplot as plt
 from stardist import random_label_cmap
 from matplotlib.patches import Polygon
+from scipy.spatial import KDTree
+
+
+def remove_duplicated_barcodes_to_simulate_pyhim_wrong_output(n_loc, group_list):
+    # deep copy of group_list
+    group_list_copy = group_list.copy()
+    ow_rep = np.ones((n_loc, 2), dtype=int) * (-1)
+    # iterates over traces to remove duplicated barcodes
+    for trace_id, trace in enumerate(group_list):
+        for idx, locus_id in enumerate(trace):
+            prec_trace_id = ow_rep[locus_id, 0]
+            prec_idx = ow_rep[locus_id, 1]
+            if prec_trace_id != -1 and prec_idx != -1:
+                group_list_copy[prec_trace_id][prec_idx] = -1
+            ow_rep[locus_id, 0] = trace_id
+            ow_rep[locus_id, 1] = idx
+    # also remove the trace_id <= 1
+    group_list_copy[0] = [-1]
+    group_list_copy[1] = [-1]
+    return group_list_copy
 
 
 def init_localization_table():
@@ -84,15 +104,13 @@ def init_trace_table():
             "S2",
         ),
     )
-    trace_table.meta["xyz_unit"] = "micron"
-    trace_table.meta["genome_assembly"] = "mm10"
+    trace_table.meta["comments"] = ["xyz_unit=micron", "genome_assembly=mm10"]
     return trace_table
 
 
 def add_localization_to_trace_table(
     localization, trace_table, trace_buid, x, y, z, mask_id
 ):
-
     entry = [
         localization["Buid"],  # spot uid
         trace_buid,  # trace uid
@@ -109,18 +127,6 @@ def add_localization_to_trace_table(
     ]
 
     trace_table.add_row(entry)
-    # trace_table[-1]["Spot_ID"] = localization["Buid"]
-    # trace_table[-1]["Trace_ID"] = trace_buid
-    # trace_table[-1]["x"] = x
-    # trace_table[-1]["y"] = y
-    # trace_table[-1]["z"] = z
-    # trace_table[-1]["Chrom"] = "xxxxx"
-    # trace_table[-1]["Chrom_Start"] = 0
-    # trace_table[-1]["Chrom_End"] = 999999999
-    # trace_table[-1]["ROI #"] = localization["ROI #"]
-    # trace_table[-1]["Mask_id"] = mask_id
-    # trace_table[-1]["Barcode #"] = localization["Barcode #"]
-    # trace_table[-1]["label"] = ""
     return trace_table
 
 
@@ -144,6 +150,7 @@ class BuildTrace3DModule(Module):
             self.reference_type = None
         self.pixel_size_xy = acquisition_params.pixelSizeXY
         self.pixel_size_z = acquisition_params.pixelSizeZ * acquisition_params.zBinning
+        self.kdtree_distance_threshold_mum = matrix_params.KDtree_distance_threshold_mum
         self.dirname = "tracing"
 
     def convert_coords(self, x, y, z):
@@ -162,8 +169,7 @@ class BuildTrace3DModule(Module):
             vector with coordinates in nanometers.
 
         """
-
-        return (x * self.pixel_size_xy, y * self.pixel_size_xy, z * self.pixel_size_z)
+        return [x * self.pixel_size_xy, y * self.pixel_size_xy, z * self.pixel_size_z]
 
     def build_mask_trace_table(self, localizations, mask):
         trace_table = init_trace_table()
@@ -182,11 +188,11 @@ class BuildTrace3DModule(Module):
             }
         else:
             raise ValueError("Segmented image dimension must be 3.")
-
-        # loops over barcode Table rows
-        print(f"> Aligning localizations to {nbr_of_masks} masks...")
         if "registered" not in localizations.meta["comments"]:
             print("WARNING: Localizations are not 3D registered!")
+
+        print(f"> Aligning localizations to {nbr_of_masks} masks...")
+        # loops over barcode Table rows
         for barcode_row in localizations:
             # gets xyz coordinates
             x_sub_pix = barcode_row["ycentroid"]
@@ -248,11 +254,72 @@ class BuildTrace3DModule(Module):
 
         return trace_table
 
+    def build_traces_by_kdtree(self, localizations):
+        # initializes trace table
+        trace_table = init_trace_table()
+        n_localizations = len(localizations)
+        print(f"> Building traces by KDTree for {n_localizations} localizations.")
+        # build traces by spatial clustering
+        coordinates = np.concatenate(
+            [
+                self.pixel_size_xy
+                * localizations["ycentroid"].data.reshape(n_localizations, 1),
+                self.pixel_size_xy
+                * localizations["xcentroid"].data.reshape(n_localizations, 1),
+                self.pixel_size_z
+                * localizations["zcentroid"].data.reshape(n_localizations, 1),
+            ],
+            axis=1,
+        )
+        # gets tree of coordinates
+        print(f"> Creating KDTree for 3 dimensions.")
+        x_tree = KDTree(coordinates)
+
+        ## set distance thresold
+        r = self.kdtree_distance_threshold_mum
+        # Groups points when they're less than r away
+        points = [x_tree.query_ball_point(element, r, p=2.0) for element in coordinates]
+
+        # Get unique groups
+        groups = list({tuple(x) for x in points})
+        group_list = [list(x) for x in groups]
+        n_cells_assigned = len(group_list)
+
+        group_list_copy = remove_duplicated_barcodes_to_simulate_pyhim_wrong_output(
+            len(localizations), group_list
+        )
+
+        # iterates over traces
+        for trace_id, trace in enumerate(group_list_copy):
+            trace_buid = str(uuid.uuid4())
+            # iterates over localizations in trace
+            for locus_id in trace:
+                if locus_id != -1:
+                    x_nm, y_nm, z_nm = self.convert_coords(
+                        localizations[locus_id]["xcentroid"],
+                        localizations[locus_id]["ycentroid"],
+                        localizations[locus_id]["zcentroid"],
+                    )
+                    # Adds localization to trace table
+                    trace_table = add_localization_to_trace_table(
+                        localizations[locus_id],
+                        trace_table,
+                        trace_buid,
+                        x_nm,
+                        y_nm,
+                        z_nm,
+                        trace_id,
+                    )
+
+        print(f"$ [Number of cells]\n\t| assigned: {n_cells_assigned}")
+        return trace_table
+
     def run(self, localizations):
         output = []
         if "clustering" in self.tracing_method:
             print("Building cluster trace table.")
-            raise NotImplementedError
+            trace_table = self.build_traces_by_kdtree(localizations)
+            output.append(trace_table)
         if "masking" in self.tracing_method:
             for key, value in self.masks2process.items():
                 print(f"Building mask {value} trace table.")
@@ -280,7 +347,6 @@ class BuildTrace3DModule(Module):
         self._plot_traces(trace_table, png_path, mask)
 
     def _plot_traces(self, data, png_path, masks):
-
         pixel_size = [self.pixel_size_xy, self.pixel_size_xy, self.pixel_size_z]
 
         # initializes figure
@@ -310,9 +376,9 @@ class BuildTrace3DModule(Module):
         titles = ["Z-projection", "X-projection", "Y-projection"]
 
         # plots masks if available
-        if len(masks.shape) == 3:
+        if masks and len(masks.shape) == 3:
             masks = np.max(masks, axis=0)
-        if len(masks.shape) == 2:
+        if masks and len(masks.shape) == 2:
             ax[0].imshow(masks, cmap=random_label_cmap(), alpha=0.3)
 
         # makes plot
@@ -321,7 +387,7 @@ class BuildTrace3DModule(Module):
         )
         ax[0].set_title(titles[0])
 
-        ax[1].scatter(x, y, s=5, c=colors, alpha=0.9, cmap="hsv")
+        ax[1].scatter(x, z, s=5, c=colors, alpha=0.9, cmap="hsv")
         ax[1].set_title(titles[1])
 
         ax[2].scatter(y, z, s=5, c=colors, alpha=0.9, cmap="hsv")
@@ -337,10 +403,7 @@ class BuildTrace3DModule(Module):
         for trace, color in zip(data_traces.groups, colors_traces):
             # Plots polygons for each trace
             poly_coord = np.array(
-                [
-                    (trace["x"].data) / pixel_size[0],
-                    (trace["y"].data) / pixel_size[1],
-                ]
+                [(trace["x"].data) / pixel_size[0], (trace["y"].data) / pixel_size[1],]
             ).T
             polygon = Polygon(
                 poly_coord,
@@ -353,10 +416,9 @@ class BuildTrace3DModule(Module):
             ax[0].add_patch(polygon)
 
         # saves output figure
-        try:
-            fig.savefig(png_path)
-        except ValueError:
-            print(f"\nValue error while saving output figure with traces:{png_path}")
+        fig.savefig(png_path)
+        plt.close(fig)
+        print(f"Saved {png_path}.")
 
     def save_data(self, data, output_dir, input_path):
         method_names = []
