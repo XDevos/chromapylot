@@ -16,7 +16,9 @@ def _parse_run_args(command_line_args):
     """
     parser = ArgumentParser()
     parser.add_argument(
-        "-C", "--command", help="Comma-separated list of module names to run.",
+        "-C",
+        "--command",
+        help="Comma-separated list of module names to run.",
     )
     parser.add_argument(
         "-I",
@@ -46,6 +48,26 @@ def _parse_run_args(command_line_args):
         default="all",
         help="Comma-separated list of analysis type to run (all, fiducial, barcode, trace, DAPI, primer, RNA).\nDEFAULT: all",
     )
+    parser.add_argument(
+        "-R",
+        "--ref_file",
+        type=str,
+        default=None,
+        help="Reference file to run a module directly.\nDEFAULT: None",
+    )
+    parser.add_argument(
+        "--in_file",
+        type=str,
+        default=None,
+        help="Data file to run a module directly.\nDEFAULT: None",
+    )
+    parser.add_argument(
+        "-S",
+        "--sup_file",
+        type=str,
+        default=None,
+        help="Data file to run a module directly.\nDEFAULT: None",
+    )
 
     return parser.parse_args(command_line_args)
 
@@ -60,6 +82,9 @@ class RunArgs:
         self.output = parsed_args.output
         self.dimension = parsed_args.dimension
         self.analysis_types = parsed_args.analysis
+        self.ref_file = parsed_args.ref_file
+        self.in_file = parsed_args.in_file
+        self.sup_file = parsed_args.sup_file
         self._check_args()
 
     @classmethod

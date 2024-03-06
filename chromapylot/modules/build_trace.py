@@ -1,16 +1,21 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 from typing import Dict, List
 import numpy as np
 from astropy.table import Table
 from modules.module import Module
-from parameters import MatrixParams, AcquisitionParams
-from core_types import DataType
+from parameters import MatrixParams, AcquisitionParams, PipelineParams
+from core_types import DataType, AnalysisType
 import uuid
-from data_manager import save_ecsv
+from data_manager import save_ecsv, DataManager
 import matplotlib.pyplot as plt
 from stardist import random_label_cmap
 from matplotlib.patches import Polygon
 from scipy.spatial import KDTree
+from datetime import datetime
+from run_args import RunArgs
 
 
 def remove_duplicated_barcodes_to_simulate_pyhim_wrong_output(n_loc, group_list):
@@ -376,9 +381,9 @@ class BuildTrace3DModule(Module):
         titles = ["Z-projection", "X-projection", "Y-projection"]
 
         # plots masks if available
-        if masks and len(masks.shape) == 3:
+        if masks is not None and len(masks.shape) == 3:
             masks = np.max(masks, axis=0)
-        if masks and len(masks.shape) == 2:
+        if masks is not None and len(masks.shape) == 2:
             ax[0].imshow(masks, cmap=random_label_cmap(), alpha=0.3)
 
         # makes plot
@@ -403,7 +408,10 @@ class BuildTrace3DModule(Module):
         for trace, color in zip(data_traces.groups, colors_traces):
             # Plots polygons for each trace
             poly_coord = np.array(
-                [(trace["x"].data) / pixel_size[0], (trace["y"].data) / pixel_size[1],]
+                [
+                    (trace["x"].data) / pixel_size[0],
+                    (trace["y"].data) / pixel_size[1],
+                ]
             ).T
             polygon = Polygon(
                 poly_coord,
@@ -440,3 +448,25 @@ class BuildTrace3DModule(Module):
                         self.reference_data[val] = np.load(path)
         else:
             print("No reference data needed for tracing method {self.tracing_method}.")
+
+
+def main(command_line_args=None):
+    begin_time = datetime.now()
+    print(f"Start time: {begin_time}")
+    run_args = RunArgs(command_line_args)
+    data_manager = DataManager(run_args)
+    pipeline_type = AnalysisType.TRACE
+    pipe_params = PipelineParams(data_manager.parameters, pipeline_type)
+    mod = BuildTrace3DModule(pipe_params.acquisition, pipe_params.matrix)
+    ref_files = run_args.ref_file.split(",") if run_args.ref_file else []
+    mod.load_reference_data(ref_files)
+    input_data = mod.load_data(run_args.in_file)
+    output_data = mod.run(input_data)
+    mod.save_data(output_data, run_args.output, run_args.in_file)
+
+    print("\n==================== Normal termination ====================\n")
+    print(f"Elapsed time: {datetime.now() - begin_time}")
+
+
+if __name__ == "__main__":
+    main()
