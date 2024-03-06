@@ -9,7 +9,7 @@ from modules.module import Module
 from parameters import MatrixParams, AcquisitionParams, PipelineParams
 from core_types import DataType, AnalysisType
 import uuid
-from data_manager import save_ecsv, DataManager
+from data_manager import save_ecsv, load_json
 import matplotlib.pyplot as plt
 from stardist import random_label_cmap
 from matplotlib.patches import Polygon
@@ -453,17 +453,21 @@ class BuildTrace3DModule(Module):
 def main(command_line_args=None):
     begin_time = datetime.now()
     print(f"Start time: {begin_time}")
+
+    # INITIALIZATION
     run_args = RunArgs(command_line_args)
-    data_manager = DataManager(run_args)
-    pipeline_type = AnalysisType.TRACE
-    pipe_params = PipelineParams(data_manager.parameters, pipeline_type)
+    raw_params = load_json(os.path.join(run_args.input, "parameters.json"))
+    pipe_params = PipelineParams(raw_params, AnalysisType.TRACE)
     mod = BuildTrace3DModule(pipe_params.acquisition, pipe_params.matrix)
     ref_files = run_args.ref_file.split(",") if run_args.ref_file else []
+
+    # MODULE EXECUTION
     mod.load_reference_data(ref_files)
     input_data = mod.load_data(run_args.in_file)
     output_data = mod.run(input_data)
     mod.save_data(output_data, run_args.output, run_args.in_file)
 
+    # TERMINATION
     print("\n==================== Normal termination ====================\n")
     print(f"Elapsed time: {datetime.now() - begin_time}")
 
