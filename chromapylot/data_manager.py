@@ -3,6 +3,7 @@ import json
 from typing import List
 from core_types import get_data_type, first_type_accept_second, DataType
 from core_types import AnalysisType as at
+import numpy as np
 
 
 def get_file_path(directory, filename, extension):
@@ -52,6 +53,14 @@ def save_ecsv(table, path):
     if not os.path.exists(directory):
         os.makedirs(directory)
     table.write(path, format="ascii.ecsv", overwrite=True)
+    print(f"[Saving] {path}")
+
+
+def save_npy(array, path):
+    directory = os.path.dirname(path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    np.save(path, array)
     print(f"[Saving] {path}")
 
 
