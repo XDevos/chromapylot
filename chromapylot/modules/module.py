@@ -103,23 +103,6 @@ class Module:
         return False
 
 
-class ProjectModule(Module):
-    def __init__(self, projection_params: ProjectionParams):
-        super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_2D)
-        self.params = projection_params
-
-    def run(self, array_3d):
-        print("Projecting 3D image to 2D.")
-        return np.max(array_3d, axis=0)
-
-    def load_data(self, input_path):
-        print("Loading 3D image.")
-        return np.ones((10, 10, 10))
-
-    def save_data(self, data, output_dir, input_path):
-        print("Saving 2D image.")
-
-
 class SkipModule(Module):
     def __init__(self, acquisition_params: AcquisitionParams):
         """
@@ -127,7 +110,8 @@ class SkipModule(Module):
         z_binning (int): The number of z-planes to skip.
         """
         super().__init__(
-            input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_3D,
+            input_type=DataType.IMAGE_3D,
+            output_type=DataType.IMAGE_3D,
         )
         self.z_binning = acquisition_params.zBinning
 
@@ -183,7 +167,8 @@ class ShiftModule(Module):
 class Shift3DModule(ShiftModule):
     def __init__(self, registration_params: RegistrationParams):
         super().__init__(
-            input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_3D_SHIFTED,
+            input_type=DataType.IMAGE_3D,
+            output_type=DataType.IMAGE_3D_SHIFTED,
         )
 
     def run(self, array_2d_or_3d, shift_tuple):
@@ -201,7 +186,8 @@ class Shift3DModule(ShiftModule):
 class Shift2DModule(ShiftModule):
     def __init__(self, registration_params: RegistrationParams):
         super().__init__(
-            input_type=DataType.IMAGE_2D, output_type=DataType.IMAGE_2D_SHIFTED,
+            input_type=DataType.IMAGE_2D,
+            output_type=DataType.IMAGE_2D_SHIFTED,
         )
 
     def run(self, array_2d_or_3d, shift_tuple):
@@ -343,7 +329,10 @@ class Extract3DModule(ExtractModule):
         super().__init__(
             input_type=DataType.IMAGE_3D_SEGMENTED,
             output_type=DataType.TABLE_3D,
-            supplementary_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D,],
+            supplementary_type=[
+                DataType.IMAGE_3D_SHIFTED,
+                DataType.IMAGE_3D,
+            ],
         )
 
     def run(self, image, mask):
@@ -363,7 +352,10 @@ class Extract2DModule(ExtractModule):
         super().__init__(
             input_type=DataType.IMAGE_2D_SEGMENTED,
             output_type=DataType.TABLE_2D,
-            supplementary_type=[DataType.IMAGE_2D_SHIFTED, DataType.IMAGE_2D,],
+            supplementary_type=[
+                DataType.IMAGE_2D_SHIFTED,
+                DataType.IMAGE_2D,
+            ],
         )
 
     def run(self, image, mask):
@@ -381,7 +373,8 @@ class Extract2DModule(ExtractModule):
 class FilterTableModule(Module):
     def __init__(self):
         super().__init__(
-            input_type=DataType.TABLE, output_type=DataType.TABLE,
+            input_type=DataType.TABLE,
+            output_type=DataType.TABLE,
         )
 
     def run(self, table):

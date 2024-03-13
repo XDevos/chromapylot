@@ -14,6 +14,7 @@ from parameters import (
     PipelineParams,
 )
 from modules.build_trace import BuildTrace3DModule
+from modules.project import ProjectModule
 
 
 class Pipeline:
@@ -166,7 +167,7 @@ class AnalysisManager:
         ],
     ):
         module_mapping = {
-            "project": mod.ProjectModule,
+            "project": ProjectModule,
             "skip": mod.SkipModule,
             "shift_2d": mod.Shift2DModule,
             "shift_3d": mod.Shift3DModule,
