@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from core_types import DataType
+from chromapylot.core.core_types import DataType
 from module import Module
-from parameters import ProjectionParams
+from chromapylot.core.parameters import ProjectionParams
 from skimage.util.shape import view_as_blocks
 from tqdm import trange
 from scipy.stats import sigmaclip
@@ -12,7 +12,7 @@ import os
 from skimage import filters
 from skimage import io
 import scipy.optimize as spo
-from data_manager import save_npy
+from chromapylot.core.data_manager import save_npy
 
 
 class ProjectModule(Module):

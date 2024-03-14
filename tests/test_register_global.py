@@ -8,7 +8,7 @@ import os
 import shutil
 import tempfile
 
-from data_manager import extract_files
+from chromapylot.core.data_manager import extract_files
 
 # sys.path.append("..")
 from chromapylot.chromapylot import main

@@ -3,7 +3,7 @@
 
 import os
 from argparse import ArgumentParser
-from core_types import CommandName
+from chromapylot.core.core_types import CommandName
 
 
 def _parse_run_args(command_line_args):

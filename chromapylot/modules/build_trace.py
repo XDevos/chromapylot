@@ -6,16 +6,20 @@ from typing import Dict, List
 import numpy as np
 from astropy.table import Table
 from modules.module import Module
-from parameters import MatrixParams, AcquisitionParams, PipelineParams
-from core_types import DataType, AnalysisType
+from chromapylot.core.parameters import (
+    MatrixParams,
+    AcquisitionParams,
+    PipelineParams,
+)
+from chromapylot.core.core_types import DataType, AnalysisType
 import uuid
-from data_manager import save_ecsv, load_json
+from chromapylot.core.data_manager import save_ecsv, load_json
 import matplotlib.pyplot as plt
 from stardist import random_label_cmap
 from matplotlib.patches import Polygon
 from scipy.spatial import KDTree
 from datetime import datetime
-from run_args import RunArgs
+from chromapylot.core.run_args import RunArgs
 
 
 def remove_duplicated_barcodes_to_simulate_pyhim_wrong_output(n_loc, group_list):

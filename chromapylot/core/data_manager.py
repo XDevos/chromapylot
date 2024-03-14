@@ -1,8 +1,12 @@
 import os
 import json
 from typing import List
-from core_types import get_data_type, first_type_accept_second, DataType
-from core_types import AnalysisType as at
+from chromapylot.core.core_types import (
+    get_data_type,
+    first_type_accept_second,
+    DataType,
+)
+from chromapylot.core.core_types import AnalysisType as at
 import numpy as np
 
 

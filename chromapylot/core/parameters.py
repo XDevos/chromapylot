@@ -10,7 +10,7 @@ import os
 from dataclasses import asdict, dataclass, field
 from os import path
 from typing import Dict, List, Union
-from core_types import AnalysisType
+from chromapylot.core.core_types import AnalysisType
 
 from dataclasses_json import CatchAll, LetterCase, Undefined, dataclass_json
 
