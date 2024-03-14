@@ -126,35 +126,79 @@ class AnalysisManager:
         self.analysis_to_process = []
         self.module_names = []
         self.pipelines: Dict[AnalysisType, Pipeline] = {
-            "fiducial": None,
-            "barcode": None,
-            "dapi": None,
-            "rna": None,
-            "primer": None,
-            "trace": None,
+            "fiducial": {2: None, 3: None},
+            "barcode": {2: None, 3: None},
+            "dapi": {2: None, 3: None},
+            "rna": {2: None, 3: None},
+            "primer": {2: None, 3: None},
+            "trace": {2: None, 3: None},
         }
 
     def parse_commands(self, commands: List[str]):
         self.module_names = list(set(commands))
 
-    def get_module_chain(self, pipeline_type: AnalysisType) -> List[CommandName]:
+    def get_module_chain(
+        self, pipeline_type: AnalysisType, dim: int
+    ) -> List[CommandName]:
         if pipeline_type == AnalysisType.FIDUCIAL:
-            return ["skip", "project", "register_global", "shift_3d", "register_local"]
+            # TODO: WARNING for fiducial analysis type, if dim = 23, just execute the 3D pipeline
+            if dim == 2:
+                return ["skip", "project", "register_global"]
+            elif dim == 3:
+                return [
+                    "skip",
+                    "project",
+                    "register_global",
+                    "shift_3d",
+                    "register_local",
+                ]
         elif pipeline_type == AnalysisType.BARCODE:
-            return ["shift_3d", "segment", "extract"]
+            if dim == 2:
+                return ["skip", "project", "shift_2d", "segment_2d", "extract_2d"]
+            elif dim == 3:
+                return ["skip", "shift_3d", "segment_3d", "extract_3d"]
         elif (
             pipeline_type == AnalysisType.DAPI
             or pipeline_type == AnalysisType.RNA
             or pipeline_type == AnalysisType.PRIMER
         ):
-            return ["shift_3d", "segment", "extract", "filter_table", "filter_mask"]
+            if dim == 2:
+                return [
+                    "skip",
+                    "project",
+                    "shift_2d",
+                    "segment_2d",
+                    "extract_2d",
+                    "filter_mask",
+                    "select_mask_2d",
+                ]
+            elif dim == 3:
+                return [
+                    "skip",
+                    "shift_3d",
+                    "segment_3d",
+                    "extract_3d",
+                    "filter_mask",
+                    "select_mask_3d",
+                ]
         elif pipeline_type == AnalysisType.TRACE:
-            return [
-                "filter_localization",
-                "register_localization",
-                "build_trace_3d",
-                "build_matrix",
-            ]
+            if dim == 2:
+                return [
+                    "filter_localization",
+                    "build_trace_2d",
+                    "build_matrix_2d",
+                ]
+            elif dim == 3:
+                return [
+                    "filter_localization",
+                    "register_localization",
+                    "build_trace_3d",
+                    "build_matrix_3d",
+                ]
+        else:
+            raise ValueError(
+                f"Analysis type '{pipeline_type}' with dimension '{dim}' not found."
+            )
 
     def create_module(
         self,
@@ -191,8 +235,8 @@ class AnalysisManager:
         else:
             raise ValueError(f"Module {module_name} does not exist.")
 
-    def create_pipeline_modules(self, pipeline_type: AnalysisType):
-        module_chain = self.get_module_chain(pipeline_type)
+    def create_pipeline_modules(self, pipeline_type: AnalysisType, dim: int):
+        module_chain = self.get_module_chain(pipeline_type, dim)
         modules: List[mod.Module] = []
         pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
         for i in range(len(module_chain)):
@@ -211,42 +255,55 @@ class AnalysisManager:
                     )
         return modules
 
-    def create_pipelines(self):
+    def create_pipelines(self, dims: List[int] = [2, 3]):
         for analysis_type in self.found_analysis_types:
-            modules = self.create_pipeline_modules(analysis_type)
-            if modules:
-                self.analysis_to_process.append(analysis_type)
-                print(f"Creating pipeline for analysis {analysis_type}")
-                self.pipelines[analysis_type] = Pipeline(analysis_type, modules)
-            else:
-                print(f"No pipeline to create for analysis {analysis_type}")
+            for dim in dims:
+                modules = self.create_pipeline_modules(analysis_type, dim)
+                if modules:
+                    if analysis_type not in self.analysis_to_process:
+                        self.analysis_to_process.append(analysis_type)
+                    print(f"Creating pipeline for analysis {analysis_type}")
+                    self.pipelines[analysis_type][dim] = Pipeline(
+                        analysis_type, modules
+                    )
+                else:
+                    print(
+                        f"No pipeline to create for analysis {analysis_type} with dimension {dim}."
+                    )
+        self.check_fiducial_dimension(dims)
         if not self.analysis_to_process:
             raise ValueError("No analysis to process.")
 
-    def launch_analysis(self):
+    def check_fiducial_dimension(self, dims: List[int]):
+        if len(dims) == 2 and AnalysisType.FIDUCIAL in self.analysis_to_process:
+            pipe = self.pipelines[AnalysisType.FIDUCIAL][3]
+            # self.pipe.modules.remove("skip")
+            # self.pipe.modules.remove("project")
+            # self.pipe.modules.remove("register_global")
+
+    def launch_analysis(self, dims: List[int] = [2, 3]):
         output_dir = self.data_manager.output_folder
-        for analysis_type in self.analysis_to_process:
-            print(f"Launching analysis {analysis_type}")
-            input_type, sup_types_to_find = self.pipelines[analysis_type].prepare(
-                self.data_manager
-            )
-            input_paths = self.data_manager.get_paths_from_type(
-                input_type, analysis_type
-            )
-            sup_paths = self.data_manager.get_sup_paths_by_cycle(
-                sup_types_to_find, analysis_type
-            )
-            for data_path in input_paths:
-                cycle = self.data_manager.get_cycle_from_path(data_path)
-                if cycle not in sup_paths:
-                    sup_paths[cycle] = {}
-                self.pipelines[analysis_type].process(
-                    data_path, output_dir, sup_paths.pop(cycle), cycle
+        for dim in dims:
+            print(f"Launching analysis for dimension {dim}.")
+            for analysis_type in self.analysis_to_process:
+                print(f"Launching analysis {analysis_type}")
+                pipe = self.pipelines[analysis_type][dim]
+                input_type, sup_types_to_find = pipe.prepare(self.data_manager)
+                input_paths = self.data_manager.get_paths_from_type(
+                    input_type, analysis_type
                 )
-            if sup_paths:
-                raise ValueError(
-                    f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
+                sup_paths = self.data_manager.get_sup_paths_by_cycle(
+                    sup_types_to_find, analysis_type
                 )
+                for data_path in input_paths:
+                    cycle = self.data_manager.get_cycle_from_path(data_path)
+                    if cycle not in sup_paths:
+                        sup_paths[cycle] = {}
+                    pipe.process(data_path, output_dir, sup_paths.pop(cycle), cycle)
+                if sup_paths:
+                    raise ValueError(
+                        f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
+                    )
 
 
 def main(command_line_args=None):
@@ -255,8 +312,8 @@ def main(command_line_args=None):
     data_manager = DataManager(run_args)
     analysis_manager = AnalysisManager(data_manager)
     analysis_manager.parse_commands(run_args.commands)
-    analysis_manager.create_pipelines()
-    analysis_manager.launch_analysis()
+    analysis_manager.create_pipelines(run_args.dimension)
+    analysis_manager.launch_analysis(run_args.dimension)
     print("\n==================== Normal termination ====================\n")
     print(f"Elapsed time: {datetime.now() - begin_time}")
 

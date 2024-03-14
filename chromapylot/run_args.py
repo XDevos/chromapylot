@@ -38,7 +38,7 @@ def _parse_run_args(command_line_args):
         "-D",
         "--dimension",
         type=int,
-        default=3,
+        default=23,
         help="Dimension of input data, choice between 2, 3, 23.\nDEFAULT: 3",
     )
     parser.add_argument(
@@ -77,10 +77,10 @@ class RunArgs:
 
     def __init__(self, command_line_args):
         parsed_args = _parse_run_args(command_line_args)
-        self.commands = self.parse_command(parsed_args.command)
+        self.commands = self.parse_commands(parsed_args.command)
         self.input = parsed_args.input
         self.output = parsed_args.output
-        self.dimension = parsed_args.dimension
+        self.dimension = self.parse_dimension(parsed_args.dimension)
         self.analysis_types = parsed_args.analysis
         self.ref_file = parsed_args.ref_file
         self.in_file = parsed_args.in_file
@@ -88,7 +88,7 @@ class RunArgs:
         self._check_args()
 
     @classmethod
-    def parse_command(cls, command):
+    def parse_commands(cls, command):
         """Parse command argument
 
         Parameters
@@ -107,6 +107,29 @@ class RunArgs:
     def _get_default_commands():
         return [command.value for command in CommandName]
 
+    @classmethod
+    def parse_dimension(cls, dimension):
+        """Parse dimension argument
+
+        Parameters
+        ----------
+        dimension : int
+            Dimension of input data, choice between 2, 3, 23.
+
+        Returns
+        -------
+        List[int]
+            List of dimension of input data.
+        """
+        if dimension == 23:
+            return [2, 3]
+        elif dimension == 2 or dimension == 3:
+            return [dimension]
+        else:
+            raise ValueError(
+                f"Dimension {dimension} is not available, choose between (2, 3, 23)."
+            )
+
     def _check_args(self):
         """Check run arguments"""
         if not os.path.exists(self.input):
@@ -117,11 +140,6 @@ class RunArgs:
         for command in self.commands:
             if command.lower() not in available_commands:
                 raise ValueError(f"Command {command} is not available.")
-        available_dimensions = [2, 3, 23]
-        if self.dimension not in available_dimensions:
-            raise ValueError(
-                f"Dimension {self.dimension} is not available, choose between (2, 3, 23)."
-            )
         available_analysis_types = [
             "all",
             "fiducial",
