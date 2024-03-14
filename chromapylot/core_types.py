@@ -52,7 +52,6 @@ class AnalysisType(Enum):
     DAPI = "DAPI"
     RNA = "RNA"
     PRIMER = "primer"
-    SATELLITE = "satellite"
     TRACE = "trace"
 
 

@@ -128,8 +128,8 @@ class AnalysisManager:
         self.pipelines: Dict[AnalysisType, Pipeline] = {
             "fiducial": {2: None, 3: None},
             "barcode": {2: None, 3: None},
-            "dapi": {2: None, 3: None},
-            "rna": {2: None, 3: None},
+            "DAPI": {2: None, 3: None},
+            "RNA": {2: None, 3: None},
             "primer": {2: None, 3: None},
             "trace": {2: None, 3: None},
         }
@@ -260,10 +260,9 @@ class AnalysisManager:
             for dim in dims:
                 modules = self.create_pipeline_modules(analysis_type, dim)
                 if modules:
-                    if analysis_type not in self.analysis_to_process:
-                        self.analysis_to_process.append(analysis_type)
+                    self.analysis_to_process.append((analysis_type, dim))
                     print(f"Creating pipeline for analysis {analysis_type}")
-                    self.pipelines[analysis_type][dim] = Pipeline(
+                    self.pipelines[analysis_type.value][dim] = Pipeline(
                         analysis_type, modules
                     )
                 else:
@@ -275,35 +274,34 @@ class AnalysisManager:
             raise ValueError("No analysis to process.")
 
     def check_fiducial_dimension(self, dims: List[int]):
-        if len(dims) == 2 and AnalysisType.FIDUCIAL in self.analysis_to_process:
-            pipe = self.pipelines[AnalysisType.FIDUCIAL][3]
-            # self.pipe.modules.remove("skip")
-            # self.pipe.modules.remove("project")
-            # self.pipe.modules.remove("register_global")
+        pass
+        # if len(dims) == 2 and AnalysisType.FIDUCIAL in self.analysis_to_process:
+        #     pipe = self.pipelines["fiducial"][3]
+        # self.pipe.modules.remove("skip")
+        # self.pipe.modules.remove("project")
+        # self.pipe.modules.remove("register_global")
 
-    def launch_analysis(self, dims: List[int] = [2, 3]):
+    def launch_analysis(self):
         output_dir = self.data_manager.output_folder
-        for dim in dims:
-            print(f"Launching analysis for dimension {dim}.")
-            for analysis_type in self.analysis_to_process:
-                print(f"Launching analysis {analysis_type}")
-                pipe = self.pipelines[analysis_type][dim]
-                input_type, sup_types_to_find = pipe.prepare(self.data_manager)
-                input_paths = self.data_manager.get_paths_from_type(
-                    input_type, analysis_type
+        for analysis_type, dim in self.analysis_to_process:
+            print(f"Launching analysis {analysis_type}")
+            pipe = self.pipelines[analysis_type.value][dim]
+            input_type, sup_types_to_find = pipe.prepare(self.data_manager)
+            input_paths = self.data_manager.get_paths_from_type(
+                input_type, analysis_type
+            )
+            sup_paths = self.data_manager.get_sup_paths_by_cycle(
+                sup_types_to_find, analysis_type
+            )
+            for data_path in input_paths:
+                cycle = self.data_manager.get_cycle_from_path(data_path)
+                if cycle not in sup_paths:
+                    sup_paths[cycle] = {}
+                pipe.process(data_path, output_dir, sup_paths.pop(cycle), cycle)
+            if sup_paths:
+                raise ValueError(
+                    f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
                 )
-                sup_paths = self.data_manager.get_sup_paths_by_cycle(
-                    sup_types_to_find, analysis_type
-                )
-                for data_path in input_paths:
-                    cycle = self.data_manager.get_cycle_from_path(data_path)
-                    if cycle not in sup_paths:
-                        sup_paths[cycle] = {}
-                    pipe.process(data_path, output_dir, sup_paths.pop(cycle), cycle)
-                if sup_paths:
-                    raise ValueError(
-                        f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
-                    )
 
 
 def main(command_line_args=None):
@@ -313,7 +311,7 @@ def main(command_line_args=None):
     analysis_manager = AnalysisManager(data_manager)
     analysis_manager.parse_commands(run_args.commands)
     analysis_manager.create_pipelines(run_args.dimension)
-    analysis_manager.launch_analysis(run_args.dimension)
+    analysis_manager.launch_analysis()
     print("\n==================== Normal termination ====================\n")
     print(f"Elapsed time: {datetime.now() - begin_time}")
 
