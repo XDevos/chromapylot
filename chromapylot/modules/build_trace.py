@@ -16,11 +16,9 @@ from stardist import random_label_cmap
 
 from chromapylot.core.core_types import AnalysisType, DataType
 from chromapylot.core.data_manager import load_json, save_ecsv
-from chromapylot.parameters.parameters import (
-    AcquisitionParams,
-    MatrixParams,
-    PipelineParams,
-)
+from chromapylot.parameters.parameters import PipelineParams
+from chromapylot.parameters.acquisition_params import AcquisitionParams
+from chromapylot.parameters.matrix_params import MatrixParams
 from chromapylot.core.run_args import RunArgs
 
 
