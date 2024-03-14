@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Union
 from dask import delayed, compute
+from dask.distributed import Client
 
 from modules import module as mod
 from modules.build_trace import BuildTrace3DModule
@@ -179,6 +180,10 @@ class AnalysisManager:
         # self.pipe.modules.remove("register_global")
 
     def launch_analysis(self):
+        # Create a Dask client with 4 workers
+        client = Client(n_workers=4)
+        print(client.dashboard_link)
+
         output_dir = self.data_manager.output_folder
         for analysis_type, dim in self.analysis_to_process:
             tasks = []  # list to hold the tasks
@@ -204,5 +209,8 @@ class AnalysisManager:
                 raise ValueError(
                     f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
                 )
-            # use dask.compute to start the computation
-            compute(*tasks)
+            # use Dask client to start the computation
+            client.compute(tasks, sync=True)
+
+        # Close the client
+        client.close()
