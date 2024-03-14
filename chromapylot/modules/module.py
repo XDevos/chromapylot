@@ -9,9 +9,13 @@ from tifffile import imread
 
 from chromapylot.core.core_types import DataType, first_type_accept_second
 from chromapylot.core.data_manager import get_file_path
-from chromapylot.core.parameters import (AcquisitionParams, MatrixParams,
-                                         ProjectionParams, RegistrationParams,
-                                         SegmentationParams)
+from chromapylot.parameters.parameters import (
+    AcquisitionParams,
+    MatrixParams,
+    ProjectionParams,
+    RegistrationParams,
+    SegmentationParams,
+)
 
 
 class Module:

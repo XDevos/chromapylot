@@ -5,7 +5,6 @@ import os
 
 import numpy as np
 import scipy.optimize as spo
-from module import Module
 from scipy.stats import sigmaclip
 from skimage import filters, io
 from skimage.util.shape import view_as_blocks
@@ -13,7 +12,8 @@ from tqdm import trange
 
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import save_npy
-from chromapylot.core.parameters import ProjectionParams
+from chromapylot.parameters.parameters import ProjectionParams
+from chromapylot.modules.module import Module
 
 
 class ProjectModule(Module):
