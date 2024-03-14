@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
+
 import numpy as np
-from chromapylot.core.core_types import DataType
+import scipy.optimize as spo
 from module import Module
-from chromapylot.core.parameters import ProjectionParams
+from scipy.stats import sigmaclip
+from skimage import filters, io
 from skimage.util.shape import view_as_blocks
 from tqdm import trange
-from scipy.stats import sigmaclip
-import os
-from skimage import filters
-from skimage import io
-import scipy.optimize as spo
+
+from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import save_npy
+from chromapylot.core.parameters import ProjectionParams
 
 
 class ProjectModule(Module):

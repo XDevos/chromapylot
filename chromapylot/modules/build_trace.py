@@ -2,23 +2,22 @@
 # -*- coding: utf-8 -*-
 
 import os
+import uuid
+from datetime import datetime
 from typing import Dict, List
+
+import matplotlib.pyplot as plt
 import numpy as np
 from astropy.table import Table
-from modules.module import Module
-from chromapylot.core.parameters import (
-    MatrixParams,
-    AcquisitionParams,
-    PipelineParams,
-)
-from chromapylot.core.core_types import DataType, AnalysisType
-import uuid
-from chromapylot.core.data_manager import save_ecsv, load_json
-import matplotlib.pyplot as plt
-from stardist import random_label_cmap
 from matplotlib.patches import Polygon
+from modules.module import Module
 from scipy.spatial import KDTree
-from datetime import datetime
+from stardist import random_label_cmap
+
+from chromapylot.core.core_types import AnalysisType, DataType
+from chromapylot.core.data_manager import load_json, save_ecsv
+from chromapylot.core.parameters import (AcquisitionParams, MatrixParams,
+                                         PipelineParams)
 from chromapylot.core.run_args import RunArgs
 
 

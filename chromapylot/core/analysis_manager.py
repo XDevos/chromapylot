@@ -1,16 +1,14 @@
-from typing import List, Dict, Union, Any
-from chromapylot.core.data_manager import DataManager
-from chromapylot.core.core_types import AnalysisType, CommandName
-from chromapylot.core.parameters import (
-    ProjectionParams,
-    RegistrationParams,
-    SegmentationParams,
-    MatrixParams,
-    PipelineParams,
-)
+from typing import Any, Dict, List, Union
+
+from modules import module as mod
 from modules.build_trace import BuildTrace3DModule
 from modules.project import ProjectModule
-from modules import module as mod
+
+from chromapylot.core.core_types import AnalysisType, CommandName
+from chromapylot.core.data_manager import DataManager
+from chromapylot.core.parameters import (MatrixParams, PipelineParams,
+                                         ProjectionParams, RegistrationParams,
+                                         SegmentationParams)
 from chromapylot.core.pipeline import Pipeline
 
 

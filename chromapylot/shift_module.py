@@ -1,5 +1,5 @@
-from scipy.ndimage import shift
 import numpy as np
+from scipy.ndimage import shift
 
 
 def shift_3d_array_subpixel(array_3d, shift_values):

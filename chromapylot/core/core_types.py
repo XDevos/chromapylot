@@ -1,6 +1,5 @@
-from typing import Literal
 from enum import Enum
-
+from typing import Literal
 
 DataType = Literal[
     "_3d",

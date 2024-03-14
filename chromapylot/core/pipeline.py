@@ -1,7 +1,9 @@
-from typing import List, Dict, Any
-from chromapylot.core.data_manager import DataManager
+from typing import Any, Dict, List
+
 import modules.module as mod
-from chromapylot.core.core_types import DataType, AnalysisType
+
+from chromapylot.core.core_types import AnalysisType, DataType
+from chromapylot.core.data_manager import DataManager
 
 
 class Pipeline:

@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
-from chromapylot.core.run_args import RunArgs
-from chromapylot.core.data_manager import DataManager
+
 from chromapylot.core.analysis_manager import AnalysisManager
+from chromapylot.core.data_manager import DataManager
+from chromapylot.core.run_args import RunArgs
 
 
 def main(command_line_args=None):

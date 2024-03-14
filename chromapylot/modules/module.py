@@ -1,19 +1,17 @@
-from tifffile import imread
-from typing import Any, List, Union, Dict
-from scipy.ndimage import shift
-from chromapylot.core.data_manager import get_file_path
-from chromapylot.core.core_types import DataType, first_type_accept_second
-import numpy as np
 import json
-from extract_module import extract_properties
+from typing import Any, Dict, List, Union
+
+import numpy as np
 from astropy.table import Table
-from chromapylot.core.parameters import (
-    ProjectionParams,
-    AcquisitionParams,
-    RegistrationParams,
-    SegmentationParams,
-    MatrixParams,
-)
+from extract_module import extract_properties
+from scipy.ndimage import shift
+from tifffile import imread
+
+from chromapylot.core.core_types import DataType, first_type_accept_second
+from chromapylot.core.data_manager import get_file_path
+from chromapylot.core.parameters import (AcquisitionParams, MatrixParams,
+                                         ProjectionParams, RegistrationParams,
+                                         SegmentationParams)
 
 
 class Module:

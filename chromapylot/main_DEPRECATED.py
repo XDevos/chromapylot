@@ -2,11 +2,11 @@ import json
 import os
 
 import numpy as np
-from tifffile import imread, imsave
 from astropy.table import Table
+from tifffile import imread, imsave
 
-from .shift_module import shift_3d_array_subpixel
 from .extract_module import extract_properties
+from .shift_module import shift_3d_array_subpixel
 
 
 def get_img_name(label_name):

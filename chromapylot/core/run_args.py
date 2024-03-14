@@ -3,6 +3,7 @@
 
 import os
 from argparse import ArgumentParser
+
 from chromapylot.core.core_types import CommandName
 
 

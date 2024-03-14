@@ -1,13 +1,12 @@
-import os
 import json
+import os
 from typing import List
-from chromapylot.core.core_types import (
-    get_data_type,
-    first_type_accept_second,
-    DataType,
-)
-from chromapylot.core.core_types import AnalysisType as at
+
 import numpy as np
+
+from chromapylot.core.core_types import AnalysisType as at
+from chromapylot.core.core_types import (DataType, first_type_accept_second,
+                                         get_data_type)
 
 
 def get_file_path(directory, filename, extension):
