@@ -12,7 +12,7 @@ from tqdm import trange
 
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import save_npy
-from chromapylot.parameters.parameters import ProjectionParams
+from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.modules.module import Module
 
 

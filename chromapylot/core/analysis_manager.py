@@ -6,13 +6,12 @@ from modules.project import ProjectModule
 
 from chromapylot.core.core_types import AnalysisType, CommandName
 from chromapylot.core.data_manager import DataManager
-from chromapylot.parameters.parameters import (
-    MatrixParams,
-    PipelineParams,
-    ProjectionParams,
-    RegistrationParams,
-    SegmentationParams,
-)
+from chromapylot.parameters.matrix_params import MatrixParams
+from chromapylot.parameters.pipeline_params import PipelineParams
+from chromapylot.parameters.projection_params import ProjectionParams
+from chromapylot.parameters.registration_params import RegistrationParams
+from chromapylot.parameters.segmentation_params import SegmentationParams
+
 from chromapylot.core.pipeline import Pipeline
 
 
