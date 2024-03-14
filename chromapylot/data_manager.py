@@ -60,6 +60,8 @@ def save_npy(array, path):
     directory = os.path.dirname(path)
     if not os.path.exists(directory):
         os.makedirs(directory)
+    if array.shape <= (1, 1):
+        raise ValueError(f"Image is empty! Expected file {path} to be saved.")
     np.save(path, array)
     print(f"[Saving] {path}")
 

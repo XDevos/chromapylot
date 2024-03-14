@@ -29,7 +29,7 @@ def template_test_project(mode: str):
     """Check Project feature with all possibilities"""
     inputs = os.path.join(tmp_projection_in, mode)
     main(["-I", inputs, "-O", inputs, "-C", "project", "-A", "all"])
-    generated_z_project = os.path.join(inputs, "zProject")
+    generated_z_project = os.path.join(inputs, "project")
     reference_outputs = f"pyhim-small-dataset/projection/OUT/{mode}/zProject/"
     generated_files = extract_files(generated_z_project)
     reference_files = extract_files(reference_outputs)

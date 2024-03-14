@@ -38,6 +38,7 @@ class ProjectModule(Module):
                 focal_plane_matrix,
                 focus_plane,
             ) = self._projection_laplacian(array_3d)
+            return img_projected
 
     def _projection_laplacian(self, img):
         focal_plane_matrix, z_range, block = reinterpolate_focal_plane(
