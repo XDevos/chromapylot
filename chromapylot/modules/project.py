@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import os
+import matplotlib
+
+matplotlib.use("Agg")
 
 import numpy as np
 import scipy.optimize as spo
@@ -18,17 +21,19 @@ from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import save_npy
 from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.modules.module import Module
+from chromapylot.core.data_manager import DataManager
 
 
 class ProjectModule(Module):
     def __init__(self, projection_params: ProjectionParams):
         super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_2D)
+        self.supplementary_type = "cycle"
         self.mode = projection_params.mode
         self.dirname = "project"
         self.block_size = projection_params.block_size
         self.zwindows = projection_params.zwindows
-        self.focal_plane_matrix = None
-        self.focus_plane = None
+        self.focal_plane_matrix = {}
+        self.focus_plane = {}
 
     def load_data(self, input_path):
         return io.imread(input_path).squeeze()
@@ -42,23 +47,25 @@ class ProjectModule(Module):
         png_path = os.path.join(output_dir, self.dirname, png_filename)
         self._save_png(data, png_path)
         if self.mode == "laplacian":
+            cycle = DataManager.get_cycle_from_path(input_path)
+            print(f"Saving focal plane for cycle {cycle}")
             focal_filename = base + "_focalPlaneMatrix.png"
             focal_path = os.path.join(output_dir, self.dirname, focal_filename)
-            self._save_focal_plane(focal_path)
+            self._save_focal_plane(focal_path, cycle)
 
-    def run(self, array_3d):
+    def run(self, array_3d, cycle: str = None):
         if self.mode == "laplacian":
-            img_projected = self._projection_laplacian(array_3d)
+            img_projected = self._projection_laplacian(array_3d, cycle)
             return img_projected
 
-    def _projection_laplacian(self, img):
+    def _projection_laplacian(self, img, cycle: str):
         focal_plane_matrix, z_range, block = reinterpolate_focal_plane(
             img, block_size_xy=self.block_size, window=self.zwindows
         )
         output = reassemble_images(focal_plane_matrix, block, window=self.zwindows)
 
-        self.focal_plane_matrix = focal_plane_matrix
-        self.focus_plane = z_range[0]
+        self.focal_plane_matrix[cycle] = focal_plane_matrix
+        self.focus_plane[cycle] = z_range[0]
         return output
 
     def _save_png(self, data, output_path):
@@ -74,20 +81,20 @@ class ProjectModule(Module):
         fig.savefig(output_path)
         plt.close(fig)
 
-    def _save_focal_plane(self, output_path):
+    def _save_focal_plane(self, output_path, cycle: str):
         cbarlabels = ["focalPlane"]
         fig, axes = plt.subplots(1, 1)
         fig.set_size_inches((2, 5))
-        fig.suptitle(f"focal plane = {self.focus_plane:.2f}")
+        fig.suptitle(f"focal plane = {self.focus_plane[cycle]:.2f}")
         cbar_kw = {"fraction": 0.046, "pad": 0.04}
 
         ax = axes
         # image_show_with_values_single(
-        #     ax, self.focal_plane_matrix, "focalPlane", 6, cbar_kw
+        #     ax, self.focal_plane_matrix[cycle], "focalPlane", 6, cbar_kw
         # )
-        row = [str(x) for x in range(self.focal_plane_matrix.shape[0])]
+        row = [str(x) for x in range(self.focal_plane_matrix[cycle].shape[0])]
         im, _ = heatmap(
-            self.focal_plane_matrix,
+            self.focal_plane_matrix[cycle],
             row,
             row,
             ax=ax,
@@ -107,8 +114,8 @@ class ProjectModule(Module):
         fig.tight_layout()
         plt.savefig(output_path)
         plt.close(fig)
-        self.focal_plane_matrix = None
-        self.focus_plane = None
+        self.focal_plane_matrix[cycle] = None
+        self.focus_plane[cycle] = None
 
 
 # =============================================================================

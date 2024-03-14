@@ -5,8 +5,11 @@ from typing import List
 import numpy as np
 
 from chromapylot.core.core_types import AnalysisType as at
-from chromapylot.core.core_types import (DataType, first_type_accept_second,
-                                         get_data_type)
+from chromapylot.core.core_types import (
+    DataType,
+    first_type_accept_second,
+    get_data_type,
+)
 
 
 def get_file_path(directory, filename, extension):
@@ -125,7 +128,7 @@ class DataManager:
         return self._get_paths_from_analysis_and_data_type(analysis_type, data_type)
 
     def get_analysis_type(self, filename, extension):
-        if extension in ["png", "log", "md"] or filename in [
+        if extension in ["png", "log", "md", "table", None] or filename in [
             "parameters",
             "parameters_loaded",
             "infoList",
@@ -155,7 +158,11 @@ class DataManager:
                     return at.PRIMER
             elif "matrix" in filename:
                 return at.TRACE
-        elif "_block3D" in filename or filename in ["shifts", "register_global"]:
+        elif "_block3D" in filename or filename in [
+            "shifts",
+            "register_global",
+            "alignImages",
+        ]:
             return at.FIDUCIAL
         elif extension in ["dat", "ecsv"]:
             if "Trace" in filename or "_barcode" in filename:
@@ -173,7 +180,8 @@ class DataManager:
             if first_type_accept_second(data_type, type)
         ]
 
-    def get_cycle_from_path(self, data_path):
+    @staticmethod
+    def get_cycle_from_path(data_path):
         split_path = os.path.basename(data_path).split("_")
         if len(split_path) >= 3:
             return split_path[2]

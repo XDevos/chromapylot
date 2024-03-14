@@ -3,6 +3,10 @@
 
 import os
 import uuid
+import matplotlib
+
+matplotlib.use("Agg")
+
 from datetime import datetime
 from typing import Dict, List
 

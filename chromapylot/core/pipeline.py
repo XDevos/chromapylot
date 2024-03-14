@@ -27,26 +27,22 @@ class Pipeline:
                 )
                 module.load_reference_data(paths)
             # Collect data type to keep during one process
-            if module.supplementary_type is not None:
-                if isinstance(module.supplementary_type, list):
+            sup_type = module.supplementary_type
+            if sup_type is not None and sup_type != "cycle":
+                if isinstance(sup_type, list):
                     supp_data_found = False
-                    for i in range(len(module.supplementary_type)):
-                        if (
-                            not supp_data_found
-                            and module.supplementary_type[i] in generated_data_type
-                        ):
+                    for i in range(len(sup_type)):
+                        if not supp_data_found and sup_type[i] in generated_data_type:
                             supp_data_found = True
-                            self.supplementary_data[module.supplementary_type[i]] = None
-                            print(
-                                f"Replace {module.supplementary_type} by {module.supplementary_type[i]}."
-                            )
-                            module.supplementary_type = module.supplementary_type[i]
+                            self.supplementary_data[sup_type[i]] = None
+                            print(f"Replace {sup_type} by {sup_type[i]}.")
+                            sup_type = sup_type[i]
                     if not supp_data_found:
-                        supplementary_data_to_find.append(module.supplementary_type)
+                        supplementary_data_to_find.append(sup_type)
                 else:
-                    self.supplementary_data[module.supplementary_type] = None
-                    if module.supplementary_type not in generated_data_type:
-                        supplementary_data_to_find.append(module.supplementary_type)
+                    self.supplementary_data[sup_type] = None
+                    if sup_type not in generated_data_type:
+                        supplementary_data_to_find.append(sup_type)
             generated_data_type.append(module.output_type)
         return first_input_type, supplementary_data_to_find
 
@@ -70,7 +66,9 @@ class Pipeline:
     def load_supplementary_data(self, module: mod.Module, cycle: str):
         data_type = module.supplementary_type
         if data_type:
-            if data_type in self.supplementary_data:
+            if data_type == "cycle":
+                return cycle
+            elif data_type in self.supplementary_data:
                 if self.supplementary_data[data_type] is None:
                     self.supplementary_data[data_type] = module.load_supplementary_data(
                         None, cycle

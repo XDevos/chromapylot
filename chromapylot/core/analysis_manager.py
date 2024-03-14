@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Union
+from dask import delayed, compute
 
 from modules import module as mod
 from modules.build_trace import BuildTrace3DModule
@@ -180,6 +181,7 @@ class AnalysisManager:
     def launch_analysis(self):
         output_dir = self.data_manager.output_folder
         for analysis_type, dim in self.analysis_to_process:
+            tasks = []  # list to hold the tasks
             print(f"Launching analysis {analysis_type}")
             pipe = self.pipelines[analysis_type.value][dim]
             input_type, sup_types_to_find = pipe.prepare(self.data_manager)
@@ -193,8 +195,14 @@ class AnalysisManager:
                 cycle = self.data_manager.get_cycle_from_path(data_path)
                 if cycle not in sup_paths:
                     sup_paths[cycle] = {}
-                pipe.process(data_path, output_dir, sup_paths.pop(cycle), cycle)
+                # wrap the pipe.process call with delayed
+                task = delayed(pipe.process)(
+                    data_path, output_dir, sup_paths.pop(cycle), cycle
+                )
+                tasks.append(task)
             if sup_paths:
                 raise ValueError(
                     f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
                 )
+            # use dask.compute to start the computation
+            compute(*tasks)
