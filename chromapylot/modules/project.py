@@ -23,6 +23,12 @@ from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.modules.module import Module
 from chromapylot.core.data_manager import DataManager
 
+from datetime import datetime
+from chromapylot.core.data_manager import load_json
+from chromapylot.core.run_args import RunArgs
+from chromapylot.parameters.pipeline_params import PipelineParams
+from chromapylot.core.core_types import AnalysisType
+
 
 class ProjectModule(Module):
     def __init__(self, projection_params: ProjectionParams):
@@ -36,6 +42,7 @@ class ProjectModule(Module):
         self.focus_plane = {}
 
     def load_data(self, input_path):
+        print(f"[Loading] 3D image from {input_path}")
         return io.imread(input_path).squeeze()
 
     def save_data(self, data, output_dir, input_path):
@@ -52,11 +59,15 @@ class ProjectModule(Module):
             focal_filename = base + "_focalPlaneMatrix.png"
             focal_path = os.path.join(output_dir, self.dirname, focal_filename)
             self._save_focal_plane(focal_path, cycle)
+        else:
+            raise NotImplementedError
 
     def run(self, array_3d, cycle: str = None):
         if self.mode == "laplacian":
             img_projected = self._projection_laplacian(array_3d, cycle)
             return img_projected
+        else:
+            raise NotImplementedError
 
     def _projection_laplacian(self, img, cycle: str):
         focal_plane_matrix, z_range, block = reinterpolate_focal_plane(
@@ -236,7 +247,17 @@ def find_focal_plane(data, threshold_fwhm=20):
     # finds focal plane
     raw_images = [data[i, :, :] for i in range(data.shape[0])]
     laplacian_variance = [np.var(filters.laplace(img)) for img in raw_images]
-    laplacian_variance = laplacian_variance / max(laplacian_variance)
+    # Check if max(laplacian_variance) is zero
+    if np.max(laplacian_variance) != 0:
+        laplacian_variance = laplacian_variance / np.max(laplacian_variance)
+    else:
+        # Handle the case when max(laplacian_variance) is zero
+        laplacian_variance = np.zeros_like(laplacian_variance)
+
+    # If laplacian_variance contains NaN values
+    if np.isnan(laplacian_variance).any():
+        # Handle or remove NaN values
+        laplacian_variance = np.nan_to_num(laplacian_variance)
     x_coord = range(len(laplacian_variance))
     fit_result = fit_1d_gaussian_scipy(
         x_coord,
@@ -486,6 +507,7 @@ def annotate_heatmap(
     # Loop over the data and create a `Text` for each "pixel".
     # Change the text's color depending on the data.
     texts = []
+    data = data.filled(np.nan)
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
             new_kwargs.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
@@ -493,3 +515,28 @@ def annotate_heatmap(
             texts.append(text)
 
     return texts
+
+
+def main(command_line_args=None):
+    begin_time = datetime.now()
+    print(f"Start time: {begin_time}")
+
+    # INITIALIZATION
+    run_args = RunArgs(command_line_args)
+    raw_params = load_json(os.path.join(run_args.input, "parameters.json"))
+    pipe_params = PipelineParams(raw_params, AnalysisType.TRACE)
+    mod = ProjectModule(pipe_params.projection)
+
+    # MODULE EXECUTION
+    input_data = mod.load_data(run_args.in_file)
+    cycle = DataManager.get_cycle_from_path(run_args.in_file)
+    output_data = mod.run(input_data, cycle)
+    mod.save_data(output_data, run_args.output, run_args.in_file)
+
+    # TERMINATION
+    print("\n==================== Normal termination ====================\n")
+    print(f"Elapsed time: {datetime.now() - begin_time}")
+
+
+if __name__ == "__main__":
+    main()
