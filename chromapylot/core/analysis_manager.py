@@ -179,14 +179,17 @@ class AnalysisManager:
         # self.pipe.modules.remove("project")
         # self.pipe.modules.remove("register_global")
 
-    def launch_analysis(self):
-        # Create a Dask client with 4 workers
-        client = Client(n_workers=4)
-        print(client.dashboard_link)
+    def launch_analysis(self, use_dask=False):
+        client = None
+        if use_dask:
+            # Create a Dask client with 4 workers
+            client = Client(n_workers=8)
+            print(client.dashboard_link)
 
         output_dir = self.data_manager.output_folder
         for analysis_type, dim in self.analysis_to_process:
-            tasks = []  # list to hold the tasks
+            if use_dask:
+                tasks = []  # list to hold the tasks
             print(f"Launching analysis {analysis_type}")
             pipe = self.pipelines[analysis_type.value][dim]
             input_type, sup_types_to_find = pipe.prepare(self.data_manager)
@@ -200,17 +203,22 @@ class AnalysisManager:
                 cycle = self.data_manager.get_cycle_from_path(data_path)
                 if cycle not in sup_paths:
                     sup_paths[cycle] = {}
-                # wrap the pipe.process call with delayed
-                task = delayed(pipe.process)(
-                    data_path, output_dir, sup_paths.pop(cycle), cycle
-                )
-                tasks.append(task)
+                if use_dask:
+                    # wrap the pipe.process call with delayed
+                    task = delayed(pipe.process)(
+                        data_path, output_dir, sup_paths.pop(cycle), cycle
+                    )
+                    tasks.append(task)
+                else:
+                    pipe.process(data_path, output_dir, sup_paths.pop(cycle), cycle)
             if sup_paths:
                 raise ValueError(
                     f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
                 )
-            # use Dask client to start the computation
-            client.compute(tasks, sync=True)
+            # use Dask client to start the computation if use_dask is True
+            if use_dask:
+                client.compute(tasks, sync=True)
 
         # Close the client
-        client.close()
+        if client is not None:
+            client.close()
