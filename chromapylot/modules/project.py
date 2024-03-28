@@ -29,6 +29,8 @@ from chromapylot.core.run_args import RunArgs
 from chromapylot.parameters.pipeline_params import PipelineParams
 from chromapylot.core.core_types import AnalysisType
 
+from apifish.stack import projection
+
 
 class ProjectModule(Module):
     def __init__(self, projection_params: ProjectionParams):
@@ -38,6 +40,10 @@ class ProjectModule(Module):
         self.dirname = "project"
         self.block_size = projection_params.block_size
         self.zwindows = projection_params.zwindows
+        self.window_security = projection_params.window_security
+        self.z_project_option = projection_params.z_project_option
+        self.zmin = projection_params.zmin
+        self.zmax = projection_params.zmax
         self.focal_plane_matrix = {}
         self.focus_plane = {}
 
@@ -59,15 +65,105 @@ class ProjectModule(Module):
             focal_filename = base + "_focalPlaneMatrix.png"
             focal_path = os.path.join(output_dir, self.dirname, focal_filename)
             self._save_focal_plane(focal_path, cycle)
-        else:
-            raise NotImplementedError
 
     def run(self, array_3d, cycle: str = None):
         if self.mode == "laplacian":
             img_projected = self._projection_laplacian(array_3d, cycle)
             return img_projected
+        elif self.mode == "automatic":
+            zmin, zmax = self._precise_z_planes_auto(array_3d)
+            return self.projection_2d(array_3d[zmin : zmax + 1])
+        elif self.mode == "full":
+            return self.projection_2d(array_3d)
+        elif self.mode == "manual":
+            zmin, zmax = self.check_zmin_zmax(array_3d.shape[0])
+            return self.projection_2d(array_3d[zmin : zmax + 1])
         else:
-            raise NotImplementedError
+            raise ValueError(
+                f"Projection mode UNRECOGNIZED: {self.mode}\n> Available mode: automatic,full,manual,laplacian"
+            )
+
+    def _precise_z_planes_auto(self, img):
+        """
+        Calculates the focal planes based max standard deviation
+        Finds best focal plane by determining the max of the std deviation vs z curve
+        """
+        win_sec = self.window_security
+        print(f"win_sec: {win_sec}")
+        print(f"zmin: {self.zmin}")
+        print(f"zmax: {self.zmax}")
+        zmin, zmax = self.check_zmin_zmax(img.shape[0])
+
+        print(f"zmin: {zmin}")
+        print(f"zmax: {zmax}")
+        nb_of_planes = zmax - zmin
+        print(f"nb_of_planes: {nb_of_planes}")
+        std_matrix = np.zeros(nb_of_planes)
+        mean_matrix = np.zeros(nb_of_planes)
+
+        # calculate STD in each plane
+        for i in range(nb_of_planes):
+            std_matrix[i] = np.std(img[i])
+            mean_matrix[i] = np.mean(img[i])
+
+        max_std = np.max(std_matrix)
+        i_focus_plane = np.where(std_matrix == max_std)[0][0]
+
+        # Select a window to avoid being on the edges of the stack
+        if i_focus_plane < win_sec or (i_focus_plane > nb_of_planes - win_sec):
+            focus_plane = i_focus_plane
+        else:
+            # interpolate zfocus
+            axis_z = range(
+                max(
+                    zmin,
+                    i_focus_plane - win_sec,
+                    min(zmax, i_focus_plane + win_sec),
+                )
+            )
+            std_matrix -= np.min(std_matrix)
+            std_matrix /= np.max(std_matrix)
+
+            try:
+                print(f"axis_z: {axis_z}")
+                print(f"len std_matrix: {len(std_matrix)}")
+                fitgauss = spo.curve_fit(
+                    projection.gaussian, axis_z, std_matrix[axis_z[0] : axis_z[-1] + 1]
+                )
+                focus_plane = int(fitgauss[0][1])
+            except RuntimeError:
+                print("Warning, too many iterations")
+                focus_plane = i_focus_plane
+
+        zmin = max(win_sec, focus_plane - self.zwindows)
+        zmax = min(nb_of_planes, win_sec + nb_of_planes, focus_plane + self.zwindows)
+
+        return zmin, zmax
+
+    def projection_2d(self, img):
+        if self.z_project_option == "MIP":
+            return img.max(axis=0)
+        elif self.z_project_option == "sum":
+            return projection.sum_projection(img)
+        else:
+            print(
+                f"ERROR: option not recognized. Expected: MIP or sum. Read: {self.z_project_option}"
+            )
+
+    def check_zmin_zmax(self, n_planes):
+        zmin = self.zmin
+        zmax = self.zmax
+        if self.zmin < 0:
+            print(f"zmin < 0: {self.zmin}")
+            zmin = 0
+        if self.zmax > n_planes:
+            print(f"zmax > n_planes: {self.zmax} > {n_planes}")
+            zmax = n_planes
+        if self.zmin > zmax:
+            print(f"zmin > zmax: {self.zmin} > {self.zmax}")
+            zmin = zmax
+            print(f"zmin set to zmax: {zmin}")
+        return zmin, zmax
 
     def _projection_laplacian(self, img, cycle: str):
         focal_plane_matrix, z_range, block = reinterpolate_focal_plane(
@@ -523,7 +619,7 @@ def main(command_line_args=None):
 
     # INITIALIZATION
     run_args = RunArgs(command_line_args)
-    raw_params = load_json(os.path.join(run_args.input, "parameters.json"))
+    raw_params = load_json(os.path.join(run_args.input, "infoList.json"))
     pipe_params = PipelineParams(raw_params, AnalysisType.TRACE)
     mod = ProjectModule(pipe_params.projection)
 
