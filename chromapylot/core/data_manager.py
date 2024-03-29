@@ -71,6 +71,10 @@ def save_npy(array, path, out_dir_length):
     print(f"> $OUTPUT{short_path}")
 
 
+def get_roi_number_from_image_path(image_path):
+    return os.path.basename(image_path).split("_")[3]
+
+
 class DataManager:
     def __init__(self, run_args):
         self.input_folder = run_args.input

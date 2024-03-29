@@ -5,6 +5,7 @@ from dask.distributed import Client
 from modules import module as mod
 from modules.build_trace import BuildTrace3DModule
 from modules.project import ProjectModule
+from modules.register_global import RegisterGlobalModule
 
 from chromapylot.core.core_types import AnalysisType, CommandName
 from chromapylot.core.data_manager import DataManager
@@ -131,7 +132,7 @@ class AnalysisManager:
             "skip": mod.SkipModule,
             "shift_2d": mod.Shift2DModule,
             "shift_3d": mod.Shift3DModule,
-            "register_global": mod.RegisterGlobalModule,
+            "register_global": RegisterGlobalModule,
             "register_local": mod.RegisterLocalModule,
             "segment_2d": mod.Segment2DModule,
             "segment_3d": mod.Segment3DModule,
