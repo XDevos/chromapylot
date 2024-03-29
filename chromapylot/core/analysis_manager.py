@@ -19,11 +19,20 @@ from chromapylot.core.pipeline import Pipeline
 from chromapylot.core.core_logging import print_analysis_type
 
 from chromapylot.core.core_logging import print_text_inside
+import multiprocessing
+import os
+
+import numpy as np
+from dask.distributed import Client, LocalCluster
 
 
 class AnalysisManager:
-    def __init__(self, data_manager: DataManager):
+    def __init__(
+        self, data_manager: DataManager, dims: List[int] = [2, 3], n_threads: int = 1
+    ):
         self.data_manager = data_manager
+        self.dims = dims
+        self.n_threads = n_threads
         self.found_analysis_types = self.data_manager.get_analysis_types()
         self.analysis_to_process = []
         self.module_names = []
@@ -43,8 +52,13 @@ class AnalysisManager:
         self, pipeline_type: AnalysisType, dim: int
     ) -> List[CommandName]:
         if pipeline_type == AnalysisType.FIDUCIAL:
-            # TODO: WARNING for fiducial analysis type, if dim = 23, just execute the 3D pipeline
             if dim == 2:
+                if len(self.dims) == 2:
+                    # TODO: WARNING for fiducial analysis type, if dim = 23, just execute the 3D pipeline
+                    print(
+                        "> If both dimensions are required, there isn't pipeline for FIDUCIAL 2D."
+                    )
+                    return []
                 return ["skip", "project", "register_global"]
             elif dim == 3:
                 return [
@@ -155,10 +169,10 @@ class AnalysisManager:
                     )
         return modules
 
-    def create_pipelines(self, dims: List[int] = [2, 3]):
+    def create_pipelines(self):
         print_text_inside("Creating pipelines", "=")
         for analysis_type in self.found_analysis_types:
-            for dim in dims:
+            for dim in self.dims:
                 modules = self.create_pipeline_modules(analysis_type, dim)
                 if modules:
                     self.analysis_to_process.append((analysis_type, dim))
@@ -169,24 +183,28 @@ class AnalysisManager:
                     )
                 else:
                     print("> IGNORED")
-        self.check_fiducial_dimension(dims)
         if not self.analysis_to_process:
             raise ValueError("No analysis to process.")
 
-    def check_fiducial_dimension(self, dims: List[int]):
-        pass
-        # if len(dims) == 2 and AnalysisType.FIDUCIAL in self.analysis_to_process:
-        #     pipe = self.pipelines["fiducial"][3]
-        # self.pipe.modules.remove("skip")
-        # self.pipe.modules.remove("project")
-        # self.pipe.modules.remove("register_global")
-
-    def launch_analysis(self, use_dask=False):
+    def launch_analysis(self):
         client = None
+        use_dask = self.n_threads > 1
         if use_dask:
-            # Create a Dask client with 4 workers
-            client = Client(n_workers=8)
-            print(client.dashboard_link)
+            n_workers = find_n_workers(self.n_threads)
+            if n_workers > 1:
+                cluster = LocalCluster(
+                    n_workers=n_workers,
+                    threads_per_worker=1,
+                    memory_limit="64GB",
+                )
+                # Create a Dask client with 4 workers
+                client = Client(cluster)
+                print(client.dashboard_link)
+                print(
+                    "$ Go to http://localhost:8787/status for information on progress..."
+                )
+            else:
+                use_dask = False
 
         output_dir = self.data_manager.output_folder
         for analysis_type, dim in self.analysis_to_process:
@@ -207,10 +225,18 @@ class AnalysisManager:
                     sup_paths[cycle] = {}
                 if use_dask:
                     # wrap the pipe.process call with delayed
-                    task = delayed(pipe.process)(
-                        data_path, output_dir, sup_paths.pop(cycle), cycle
+                    # task = delayed(pipe.process)(
+                    #     data_path, output_dir, sup_paths.pop(cycle), cycle
+                    # )
+                    tasks.append(
+                        client.submit(
+                            pipe.process,
+                            data_path,
+                            output_dir,
+                            sup_paths.pop(cycle),
+                            cycle,
+                        )
                     )
-                    tasks.append(task)
                 else:
                     pipe.process(data_path, output_dir, sup_paths.pop(cycle), cycle)
             if sup_paths:
@@ -219,8 +245,33 @@ class AnalysisManager:
                 )
             # use Dask client to start the computation if use_dask is True
             if use_dask:
-                client.compute(tasks, sync=True)
+                client.gather(tasks)
 
         # Close the client
-        if client is not None:
+        if use_dask:
+            cluster.close()
             client.close()
+
+
+def find_n_workers(n_threads: int) -> int:
+    """Defines the number of threads allocated"""
+    n_cores = multiprocessing.cpu_count()
+    max_load = 0.8
+    memory_per_worker = 1200
+
+    # we want at least 12 GB per worker
+    free_m = int(os.popen("free -t -m").readlines()[1].split()[-1])
+
+    max_n_threads = int(
+        np.min(
+            [
+                n_cores * max_load,
+                free_m / memory_per_worker,
+            ]
+        )
+    )
+
+    n_workers = int(np.min([max_n_threads, n_threads]))
+
+    print(f"> Cluster with {n_workers} workers started ({n_threads} requested)")
+    return n_workers

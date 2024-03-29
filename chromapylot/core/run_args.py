@@ -50,6 +50,13 @@ def _parse_run_args(command_line_args):
         help="Comma-separated list of analysis type to run (all, fiducial, barcode, trace, DAPI, primer, RNA).\nDEFAULT: all",
     )
     parser.add_argument(
+        "-T",
+        "--threads",
+        type=int,
+        default=1,
+        help="Thread number to run with parallel mode.\nDEFAULT: 1 (sequential mode)",
+    )
+    parser.add_argument(
         "-R",
         "--ref_file",
         type=str,
@@ -83,6 +90,7 @@ class RunArgs:
         self.output = parsed_args.output
         self.dimension = self.parse_dimension(parsed_args.dimension)
         self.analysis_types = parsed_args.analysis
+        self.threads = parsed_args.threads
         self.ref_file = parsed_args.ref_file
         self.in_file = parsed_args.in_file
         self.sup_file = parsed_args.sup_file
