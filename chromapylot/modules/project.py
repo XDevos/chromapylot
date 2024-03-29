@@ -47,26 +47,32 @@ class ProjectModule(Module):
         self.focal_plane_matrix = {}
         self.focus_plane = {}
 
-    def load_data(self, input_path):
-        print(f"[Loading] 3D image from {input_path}")
+    def load_data(self, input_path, input_path_length):
+        print(f"[Load] {self.input_type.value}")
+        short_path = input_path[input_path_length:]
+        print(f"> $INPUT{short_path}")
         return io.imread(input_path).squeeze()
 
     def save_data(self, data, output_dir, input_path):
+        if self.mode == "laplacian":
+            print("[Save] 2D npy | 2D png | Focal plane matrix")
+        else:
+            print("[Save] 2D npy | 2D png")
         base = os.path.basename(input_path).split(".")[0]
         npy_filename = base + "_2d.npy"
         npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
-        save_npy(data, npy_path)
+        save_npy(data, npy_path, len(output_dir))
         png_filename = base + "_2d.png"
         png_path = os.path.join(output_dir, self.dirname, png_filename)
-        self._save_png(data, png_path)
+        self._save_png(data, png_path, len(output_dir))
         if self.mode == "laplacian":
             cycle = DataManager.get_cycle_from_path(input_path)
-            print(f"Saving focal plane for cycle {cycle}")
             focal_filename = base + "_focalPlaneMatrix.png"
             focal_path = os.path.join(output_dir, self.dirname, focal_filename)
-            self._save_focal_plane(focal_path, cycle)
+            self._save_focal_plane(focal_path, cycle, len(output_dir))
 
     def run(self, array_3d, cycle: str = None):
+        print(f"[Run] {self.input_type.value} -> {self.output_type.value}")
         if self.mode == "laplacian":
             img_projected = self._projection_laplacian(array_3d, cycle)
             return img_projected
@@ -175,7 +181,7 @@ class ProjectModule(Module):
         self.focus_plane[cycle] = z_range[0]
         return output
 
-    def _save_png(self, data, output_path):
+    def _save_png(self, data, output_path, len_out_dir):
         fig = plt.figure()
         size = (10, 10)
         fig.set_size_inches(size)
@@ -187,8 +193,10 @@ class ProjectModule(Module):
         ax.imshow(data, origin="lower", cmap="Greys_r", norm=norm)
         fig.savefig(output_path)
         plt.close(fig)
+        short_path = output_path[len_out_dir:]
+        print(f"> $OUTPUT{short_path}")
 
-    def _save_focal_plane(self, output_path, cycle: str):
+    def _save_focal_plane(self, output_path, cycle: str, out_dir_length):
         cbarlabels = ["focalPlane"]
         fig, axes = plt.subplots(1, 1)
         fig.set_size_inches((2, 5))
@@ -196,9 +204,6 @@ class ProjectModule(Module):
         cbar_kw = {"fraction": 0.046, "pad": 0.04}
 
         ax = axes
-        # image_show_with_values_single(
-        #     ax, self.focal_plane_matrix[cycle], "focalPlane", 6, cbar_kw
-        # )
         row = [str(x) for x in range(self.focal_plane_matrix[cycle].shape[0])]
         im, _ = heatmap(
             self.focal_plane_matrix[cycle],
@@ -221,6 +226,8 @@ class ProjectModule(Module):
         fig.tight_layout()
         plt.savefig(output_path)
         plt.close(fig)
+        short_path = output_path[out_dir_length:]
+        print(f"> $OUTPUT{short_path}")
         self.focal_plane_matrix[cycle] = None
         self.focus_plane[cycle] = None
 

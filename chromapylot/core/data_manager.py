@@ -41,16 +41,13 @@ def extract_files(root: str):
             short_filename = ".".join(split_filename)
             filepath = os.path.join(dirpath, filename)
             files.append((filepath, short_filename, extension))
-
-        if len(dirnames) > 0:
-            print(f"$ Inside {dirpath}, subdirectories detected:\n  {dirnames}")
-
     return files
 
 
 def load_json(file_path):
     with open(file_path, "r") as file:
-        print(f"[Loading] {file_path}")
+        print(f"[Load] Parameters")
+        print(f"> {file_path}")
         return json.load(file)
 
 
@@ -62,14 +59,16 @@ def save_ecsv(table, path):
     print(f"[Saving] {path}")
 
 
-def save_npy(array, path):
+def save_npy(array, path, out_dir_length):
     directory = os.path.dirname(path)
     if not os.path.exists(directory):
         os.makedirs(directory)
     if array.shape <= (1, 1):
         raise ValueError(f"Image is empty! Expected file {path} to be saved.")
     np.save(path, array)
-    print(f"[Saving] {path}")
+
+    short_path = path[out_dir_length:]
+    print(f"> $OUTPUT{short_path}")
 
 
 class DataManager:
@@ -173,12 +172,13 @@ class DataManager:
             )
 
     def get_paths_from_type(self, data_type, analysis_type):
-        print(f"Looking for {data_type} in {analysis_type}")
-        return [
+        paths = [
             path
             for type, path in self.analysis_files[analysis_type]
             if first_type_accept_second(data_type, type)
         ]
+        print(f"[Found] {len(paths)} {data_type.value} to process")
+        return paths
 
     @staticmethod
     def get_cycle_from_path(data_path):
@@ -242,3 +242,6 @@ class DataManager:
                     sup_paths_by_cycle[cycle] = {}
                 sup_paths_by_cycle[cycle][type] = path
         return sup_paths_by_cycle
+
+    def get_input_path_length(self):
+        return len(self.input_folder)

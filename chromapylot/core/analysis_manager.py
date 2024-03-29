@@ -16,6 +16,10 @@ from chromapylot.parameters.segmentation_params import SegmentationParams
 
 from chromapylot.core.pipeline import Pipeline
 
+from chromapylot.core.core_logging import print_analysis_type
+
+from chromapylot.core.core_logging import print_text_inside
+
 
 class AnalysisManager:
     def __init__(self, data_manager: DataManager):
@@ -128,20 +132,18 @@ class AnalysisManager:
             "build_matrix": mod.BuildMatrixModule,
         }
         if module_name in module_mapping:
-            print(f"Creating module {module_name}.")
+            print(f"> Add: {module_name}")
             return module_mapping[module_name](**module_params)
         else:
             raise ValueError(f"Module {module_name} does not exist.")
 
     def create_pipeline_modules(self, pipeline_type: AnalysisType, dim: int):
+        print(f"[{pipeline_type.name} {dim}D]")
         module_chain = self.get_module_chain(pipeline_type, dim)
         modules: List[mod.Module] = []
         pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
         for i in range(len(module_chain)):
             if module_chain[i] in self.module_names:
-                print(
-                    f"[Pipeline-{pipeline_type.name}] Checking module {module_chain[i]}."
-                )
                 module_params = pipe_params.get_module_params(module_chain[i])
                 modules.append(self.create_module(module_chain[i], module_params))
                 # check if we don't break the chain
@@ -154,19 +156,19 @@ class AnalysisManager:
         return modules
 
     def create_pipelines(self, dims: List[int] = [2, 3]):
+        print_text_inside("Creating pipelines", "=")
         for analysis_type in self.found_analysis_types:
             for dim in dims:
                 modules = self.create_pipeline_modules(analysis_type, dim)
                 if modules:
                     self.analysis_to_process.append((analysis_type, dim))
-                    print(f"Creating pipeline for analysis {analysis_type}")
+                    print(f"> CREATED")
+                    input_path_length = self.data_manager.get_input_path_length()
                     self.pipelines[analysis_type.value][dim] = Pipeline(
-                        analysis_type, modules
+                        analysis_type, modules, input_path_length
                     )
                 else:
-                    print(
-                        f"No pipeline to create for analysis {analysis_type} with dimension {dim}."
-                    )
+                    print("> IGNORED")
         self.check_fiducial_dimension(dims)
         if not self.analysis_to_process:
             raise ValueError("No analysis to process.")
@@ -190,7 +192,7 @@ class AnalysisManager:
         for analysis_type, dim in self.analysis_to_process:
             if use_dask:
                 tasks = []  # list to hold the tasks
-            print(f"Launching analysis {analysis_type}")
+            print_analysis_type(analysis_type, dim)
             pipe = self.pipelines[analysis_type.value][dim]
             input_type, sup_types_to_find = pipe.prepare(self.data_manager)
             input_paths = self.data_manager.get_paths_from_type(

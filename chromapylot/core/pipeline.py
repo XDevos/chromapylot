@@ -4,13 +4,20 @@ import modules.module as mod
 
 from chromapylot.core.core_types import AnalysisType, DataType
 from chromapylot.core.data_manager import DataManager
+from chromapylot.core.core_logging import print_text_inside
 
 
 class Pipeline:
-    def __init__(self, analysis_type: AnalysisType, modules: List[mod.Module]):
+    def __init__(
+        self,
+        analysis_type: AnalysisType,
+        modules: List[mod.Module],
+        input_path_length: int,
+    ):
         self.analysis_type = analysis_type
         self.modules = modules
         self.supplementary_data: Dict[DataType, Any] = {}
+        self.input_path_length = input_path_length
 
     def prepare(self, data_manager: DataManager):
         first_input_type = self.modules[0].input_type
@@ -90,8 +97,8 @@ class Pipeline:
         supplementary_paths: Dict[DataType, str],
         cycle: str,
     ):
-        print(f"Processing data from cycle {cycle}.")
-        data = self.modules[0].load_data(data_path)
+        print_text_inside(cycle, ".")
+        data = self.modules[0].load_data(data_path, self.input_path_length)
         self.choose_to_keep_input_data(data)
         self.update_supplementary_data(supplementary_paths)
         for module in self.modules:

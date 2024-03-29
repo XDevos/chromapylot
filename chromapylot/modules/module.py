@@ -33,7 +33,7 @@ class Module:
     def run(self, data: Any, supplementary_data: Any = None):
         raise NotImplementedError
 
-    def load_data(self, input_path):
+    def load_data(self, input_path, input_path_length: int):
         raise NotImplementedError
 
     def load_reference_data(self, paths: List[str]):
