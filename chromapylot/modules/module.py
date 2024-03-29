@@ -201,38 +201,6 @@ class Shift2DModule(ShiftModule):
         print("Saving 2D image.")
 
 
-class RegisterGlobalModule(Module):
-    def __init__(self, registration_params: RegistrationParams):
-        super().__init__(
-            input_type=DataType.IMAGE_2D,
-            output_type=DataType.SHIFT_TUPLE,
-            reference_type=DataType.IMAGE_2D,
-        )
-
-    def run(self, image):
-        return [0, 0]
-
-    def load_data(self, input_path):
-        print("Loading 2D image.")
-        return np.ones((10, 10))
-
-    def save_data(self, data, output_dir, input_path):
-        print("Saving shift tuple.")
-
-    def load_reference_data(self, paths: List[str]):
-        return {
-            "DAPI": [0, 0],
-            "RT1": [0, 0],
-            "RT2": [0, 0],
-            "RT3": [0, 0],
-            "mask0": [0, 0],
-            "mask1": [0, 0],
-        }
-
-    def load_supplementary_data(self, input_path, cycle):
-        return [0, 0]
-
-
 class RegisterLocalModule(Module):
     def __init__(self, registration_params: RegistrationParams):
         super().__init__(

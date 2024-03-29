@@ -224,10 +224,6 @@ class AnalysisManager:
                 if cycle not in sup_paths:
                     sup_paths[cycle] = {}
                 if use_dask:
-                    # wrap the pipe.process call with delayed
-                    # task = delayed(pipe.process)(
-                    #     data_path, output_dir, sup_paths.pop(cycle), cycle
-                    # )
                     tasks.append(
                         client.submit(
                             pipe.process,
