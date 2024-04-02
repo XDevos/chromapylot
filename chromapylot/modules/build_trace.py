@@ -342,7 +342,7 @@ class BuildTrace3DModule(Module):
                 output.append(trace_table)
         return output
 
-    def load_data(self, input_path):
+    def load_data(self, input_path, kwargs):
         print("Loading properties.")
         return Table.read(input_path, format="ascii.ecsv")
 
