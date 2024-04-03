@@ -45,7 +45,6 @@ class ProjectModule(Module):
         self.zmin = projection_params.zmin
         self.zmax = projection_params.zmax
         self.focal_plane_matrix = {}
-        self.focus_plane = {}
 
     def load_data(self, input_path, input_path_length):
         print(f"[Load] {self.input_type.value}")
@@ -174,11 +173,9 @@ class ProjectModule(Module):
     def _projection_laplacian(self, img, cycle: str):
         blocks = split_in_blocks(img, block_size_xy=self.block_size)
         focal_plane_matrix = calculate_focus_per_block(blocks)
-        focus_plane = get_focus_plane(focal_plane_matrix)
         output = reassemble_images(focal_plane_matrix, blocks, window=self.zwindows)
 
         self.focal_plane_matrix[cycle] = focal_plane_matrix
-        self.focus_plane[cycle] = focus_plane
         return output
 
     def _save_png(self, data, output_path, len_out_dir):
@@ -200,7 +197,8 @@ class ProjectModule(Module):
         cbarlabels = ["focalPlane"]
         fig, axes = plt.subplots(1, 1)
         fig.set_size_inches((2, 5))
-        fig.suptitle(f"focal plane = {self.focus_plane[cycle]:.2f}")
+        focus_plane = get_focus_plane(self.focal_plane_matrix[cycle])
+        fig.suptitle(f"focal plane = {focus_plane:.2f}")
         cbar_kw = {"fraction": 0.046, "pad": 0.04}
 
         ax = axes
@@ -229,7 +227,6 @@ class ProjectModule(Module):
         short_path = output_path[out_dir_length:]
         print(f"> $OUTPUT{short_path}")
         self.focal_plane_matrix[cycle] = None
-        self.focus_plane[cycle] = None
 
 
 # =============================================================================
