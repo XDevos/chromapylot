@@ -28,7 +28,7 @@ tmp_traces_inputs = os.path.join(tmp_resources, "traces_dataset/IN")
 def test_make_projections():
     """Check 'project'"""
     main(["-I", tmp_small_inputs, "-O", tmp_small_inputs, "-C", "project", "-A", "all"])
-    tmp_z_project = os.path.join(tmp_small_inputs, "zProject/data")
+    tmp_z_project = os.path.join(tmp_small_inputs, "project/data")
     out_z_project = (
         "pyhim-small-dataset/resources/small_dataset/OUT/makeProjections/data"
     )
