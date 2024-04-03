@@ -173,13 +173,14 @@ class ProjectModule(Module):
 
     def _projection_laplacian(self, img, cycle: str):
         blocks = split_in_blocks(img, block_size_xy=self.block_size)
-        focal_plane_matrix, z_range = reinterpolate_focal_plane(
-            blocks, window=self.zwindows
+        focal_plane_matrix = reinterpolate_focal_plane(blocks, window=self.zwindows)
+        focus_plane = get_focus_plane(
+            focal_plane_matrix, img.shape[0], window=self.zwindows
         )
         output = reassemble_images(focal_plane_matrix, blocks, window=self.zwindows)
 
         self.focal_plane_matrix[cycle] = focal_plane_matrix
-        self.focus_plane[cycle] = z_range[0]
+        self.focus_plane[cycle] = focus_plane
         return output
 
     def _save_png(self, data, output_path, len_out_dir):
@@ -248,6 +249,18 @@ def split_in_blocks(data, block_size_xy=256):
     return block
 
 
+def get_focus_plane(focal_matrix, n_z_planes, window):
+    focal_planes_to_process = focal_matrix[~np.isnan(focal_matrix)]
+    focal_plane, _, _ = sigmaclip(focal_planes_to_process, high=3, low=3)
+    focus_plane = np.mean(focal_plane)
+    if np.isnan(focus_plane):
+        # focus_plane detection failed. Using full stack.
+        focus_plane = n_z_planes // 2
+    else:
+        focus_plane = np.mean(focal_plane).astype("int64")
+    return focus_plane
+
+
 def reinterpolate_focal_plane(blocks, window=10):
     """
     Reinterpolates the focal plane of a 3D image by breking it into blocks
@@ -278,22 +291,8 @@ def reinterpolate_focal_plane(blocks, window=10):
 
     # breaks into subplanes, iterates over them and calculates the focal_plane in each subplane.
     focal_plane_matrix = calculate_focus_per_block(blocks)
-    focal_planes_to_process = focal_plane_matrix[~np.isnan(focal_plane_matrix)]
 
-    focal_plane, _, _ = sigmaclip(focal_planes_to_process, high=3, low=3)
-    focus_plane = np.mean(focal_plane)
-    n_z_planes = blocks.shape[2]
-    if np.isnan(focus_plane):
-        # focus_plane detection failed. Using full stack.
-        focus_plane = n_z_planes // 2
-        z_range = focus_plane, range(0, n_z_planes)
-    else:
-        focus_plane = np.mean(focal_plane).astype("int64")
-        zmin = np.max([focus_plane - window, 0])
-        zmax = np.min([focus_plane + window, n_z_planes])
-        z_range = focus_plane, range(zmin, zmax)
-
-    return focal_plane_matrix, z_range
+    return focal_plane_matrix
 
 
 def calculate_focus_per_block(blocks):
