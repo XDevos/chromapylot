@@ -44,7 +44,6 @@ class ProjectModule(Module):
         self.z_project_option = projection_params.z_project_option
         self.zmin = projection_params.zmin
         self.zmax = projection_params.zmax
-        self.focal_plane_matrix = {}
 
     def load_data(self, input_path, input_path_length):
         print(f"[Load] {self.input_type.value}")
@@ -53,10 +52,7 @@ class ProjectModule(Module):
         return io.imread(input_path).squeeze()
 
     def save_data(self, data, output_dir, input_path):
-        if self.mode == "laplacian":
-            print("[Save] 2D npy | 2D png | Focal plane matrix")
-        else:
-            print("[Save] 2D npy | 2D png")
+        print("[Save] 2D npy | 2D png")
         base = os.path.basename(input_path).split(".")[0]
         npy_filename = base + "_2d.npy"
         npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
@@ -64,17 +60,13 @@ class ProjectModule(Module):
         png_filename = base + "_2d.png"
         png_path = os.path.join(output_dir, self.dirname, png_filename)
         save_png(data, png_path, len(output_dir))
-        if self.mode == "laplacian":
-            cycle = DataManager.get_cycle_from_path(input_path)
-            focal_filename = base + "_focalPlaneMatrix.png"
-            focal_path = os.path.join(output_dir, self.dirname, focal_filename)
-            self._save_focal_plane(focal_path, cycle, len(output_dir))
 
     def run(self, array_3d, cycle: str = None):
         print(f"[Run] {self.input_type.value} -> {self.output_type.value}")
         if self.mode == "laplacian":
-            img_projected = self._projection_laplacian(array_3d, cycle)
-            return img_projected
+            raise ValueError(
+                "Laplacian projection is implemented with SplitInBlocks + InterpolateFocalPlane + ProjectByBlockModule modules."
+            )
         elif self.mode == "automatic":
             zmin, zmax = self._precise_z_planes_auto(array_3d)
             return self.projection_2d(array_3d[zmin : zmax + 1])
@@ -169,47 +161,6 @@ class ProjectModule(Module):
             zmin = zmax
             print(f"zmin set to zmax: {zmin}")
         return zmin, zmax
-
-    def _projection_laplacian(self, img, cycle: str):
-        blocks = split_in_blocks(img, block_size_xy=self.block_size)
-        focal_plane_matrix = calculate_focus_per_block(blocks)
-        output = reassemble_images(focal_plane_matrix, blocks, window=self.zwindows)
-        self.focal_plane_matrix[cycle] = focal_plane_matrix
-        return output
-
-    def _save_focal_plane(self, output_path, cycle: str, out_dir_length):
-        fig, axes = plt.subplots(1, 1)
-        fig.set_size_inches((2, 5))
-        focus_plane = get_focus_plane(self.focal_plane_matrix[cycle])
-        fig.suptitle(f"focal plane = {focus_plane:.2f}")
-        cbar_kw = {"fraction": 0.046, "pad": 0.04}
-
-        ax = axes
-        row = [str(x) for x in range(self.focal_plane_matrix[cycle].shape[0])]
-        im, _ = heatmap(
-            self.focal_plane_matrix[cycle],
-            row,
-            row,
-            ax=ax,
-            cmap="YlGn",
-            cbarlabel="focalPlane",
-            fontsize=6,
-            cbar_kw=cbar_kw,
-        )
-        _ = annotate_heatmap(
-            im,
-            valfmt="{x:.0f}",
-            size=6,
-            threshold=None,
-            textcolors=("black", "white"),
-        )
-
-        fig.tight_layout()
-        plt.savefig(output_path)
-        plt.close(fig)
-        short_path = output_path[out_dir_length:]
-        print(f"> $OUTPUT{short_path}")
-        self.focal_plane_matrix[cycle] = None
 
 
 class SplitInBlocks(Module):
