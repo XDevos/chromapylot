@@ -4,7 +4,12 @@ from dask.distributed import Client
 
 from modules import module as mod
 from modules.build_trace import BuildTrace3DModule
-from modules.project import ProjectModule
+from modules.project import (
+    ProjectModule,
+    ProjectByBlockModule,
+    InterpolateFocalPlane,
+    SplitInBlocks,
+)
 from modules.register_global import RegisterGlobalModule
 
 from chromapylot.core.core_types import AnalysisType, CommandName
@@ -59,10 +64,10 @@ class AnalysisManager:
                     print(
                         "> If both dimensions are required, there isn't pipeline for FIDUCIAL 2D."
                     )
-                    return []
-                return ["skip", "project", "register_global"]
+                    chain = []
+                chain = ["skip", "project", "register_global"]
             elif dim == 3:
-                return [
+                chain = [
                     "skip",
                     "project",
                     "register_global",
@@ -71,16 +76,16 @@ class AnalysisManager:
                 ]
         elif pipeline_type == AnalysisType.BARCODE:
             if dim == 2:
-                return ["skip", "project", "shift_2d", "segment_2d", "extract_2d"]
+                chain = ["skip", "project", "shift_2d", "segment_2d", "extract_2d"]
             elif dim == 3:
-                return ["skip", "shift_3d", "segment_3d", "extract_3d"]
+                chain = ["skip", "shift_3d", "segment_3d", "extract_3d"]
         elif (
             pipeline_type == AnalysisType.DAPI
             or pipeline_type == AnalysisType.RNA
             or pipeline_type == AnalysisType.PRIMER
         ):
             if dim == 2:
-                return [
+                chain = [
                     "skip",
                     "project",
                     "shift_2d",
@@ -90,7 +95,7 @@ class AnalysisManager:
                     "select_mask_2d",
                 ]
             elif dim == 3:
-                return [
+                chain = [
                     "skip",
                     "shift_3d",
                     "segment_3d",
@@ -100,13 +105,13 @@ class AnalysisManager:
                 ]
         elif pipeline_type == AnalysisType.TRACE:
             if dim == 2:
-                return [
+                chain = [
                     "filter_localization",
                     "build_trace_2d",
                     "build_matrix_2d",
                 ]
             elif dim == 3:
-                return [
+                chain = [
                     "filter_localization",
                     "register_localization",
                     "build_trace_3d",
@@ -116,6 +121,34 @@ class AnalysisManager:
             raise ValueError(
                 f"Analysis type '{pipeline_type}' with dimension '{dim}' not found."
             )
+        chain = self.explicite_intern_module(chain, pipeline_type)
+        return chain
+
+    def explicite_intern_module(
+        self, chain: List[CommandName], pipeline_type
+    ) -> List[CommandName]:
+        try:
+            index_chain = chain.index("project")
+            pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+            if pipe_params.projection.mode == "laplacian":
+                chain.pop(index_chain)
+                chain.insert(index_chain, "project_by_block")
+                chain.insert(index_chain, "interpolate_focal_plane")
+                chain.insert(index_chain, "split_in_blocks")
+        except ValueError:
+            pass
+        try:
+            index_user = self.module_names.index("project")
+            pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+            if pipe_params.projection.mode == "laplacian":
+                self.module_names.pop(index_user)
+                self.module_names.insert(index_user, "project_by_block")
+                self.module_names.insert(index_user, "interpolate_focal_plane")
+                self.module_names.insert(index_user, "split_in_blocks")
+        except ValueError:
+            pass
+
+        return chain
 
     def create_module(
         self,
@@ -129,6 +162,9 @@ class AnalysisManager:
     ):
         module_mapping = {
             "project": ProjectModule,
+            "project_by_block": ProjectByBlockModule,
+            "interpolate_focal_plane": InterpolateFocalPlane,
+            "split_in_blocks": SplitInBlocks,
             "skip": mod.SkipModule,
             "shift_2d": mod.Shift2DModule,
             "shift_3d": mod.Shift3DModule,

@@ -74,7 +74,12 @@ class PipelineParams:
     def get_module_params(self, module_name: str):
         if module_name in ["acquisition", "skip"]:
             return {"acquisition_params": self.acquisition}
-        if module_name == "project":
+        if module_name in [
+            "project",
+            "project_by_block",
+            "interpolate_focal_plane",
+            "split_in_blocks",
+        ]:
             return {"projection_params": self.projection}
         if module_name in ["register_global", "register_local", "shift_2d", "shift_3d"]:
             return {"registration_params": self.registration}

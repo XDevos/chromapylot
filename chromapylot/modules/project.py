@@ -63,7 +63,7 @@ class ProjectModule(Module):
         save_npy(data, npy_path, len(output_dir))
         png_filename = base + "_2d.png"
         png_path = os.path.join(output_dir, self.dirname, png_filename)
-        self._save_png(data, png_path, len(output_dir))
+        save_png(data, png_path, len(output_dir))
         if self.mode == "laplacian":
             cycle = DataManager.get_cycle_from_path(input_path)
             focal_filename = base + "_focalPlaneMatrix.png"
@@ -174,27 +174,10 @@ class ProjectModule(Module):
         blocks = split_in_blocks(img, block_size_xy=self.block_size)
         focal_plane_matrix = calculate_focus_per_block(blocks)
         output = reassemble_images(focal_plane_matrix, blocks, window=self.zwindows)
-
         self.focal_plane_matrix[cycle] = focal_plane_matrix
         return output
 
-    def _save_png(self, data, output_path, len_out_dir):
-        fig = plt.figure()
-        size = (10, 10)
-        fig.set_size_inches(size)
-        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-        ax.set_axis_off()
-        norm = ImageNormalize(stretch=SqrtStretch())
-        ax.set_title("2D Data")
-        fig.add_axes(ax)
-        ax.imshow(data, origin="lower", cmap="Greys_r", norm=norm)
-        fig.savefig(output_path)
-        plt.close(fig)
-        short_path = output_path[len_out_dir:]
-        print(f"> $OUTPUT{short_path}")
-
     def _save_focal_plane(self, output_path, cycle: str, out_dir_length):
-        cbarlabels = ["focalPlane"]
         fig, axes = plt.subplots(1, 1)
         fig.set_size_inches((2, 5))
         focus_plane = get_focus_plane(self.focal_plane_matrix[cycle])
@@ -229,9 +212,130 @@ class ProjectModule(Module):
         self.focal_plane_matrix[cycle] = None
 
 
-# =============================================================================
-# FOCAL PLANE INTERPOLATION
-# =============================================================================
+class SplitInBlocks(Module):
+    def __init__(self, projection_params: ProjectionParams):
+        super().__init__(
+            input_type=DataType.IMAGE_3D,
+            output_type=DataType.IMAGE_BLOCKS,
+        )
+        self.dirname = "project"
+        self.block_size = projection_params.block_size
+
+    def run(self, img):
+        return split_in_blocks(img, block_size_xy=self.block_size)
+
+    def load_data(self, input_path, in_dir_length):
+        print(f"[Load] {self.input_type.value}")
+        short_path = input_path[in_dir_length:]
+        print(f"> $INPUT{short_path}")
+        return io.imread(input_path).squeeze()
+
+    def save_data(self, data, output_dir, input_path):
+        print("No need to save data for this module.")
+        pass
+
+
+class InterpolateFocalPlane(Module):
+    def __init__(self, projection_params: ProjectionParams):
+        super().__init__(
+            input_type=DataType.IMAGE_BLOCKS,
+            output_type=DataType.MATRIX_2D,
+        )
+        self.dirname = "project"
+
+    def run(self, blocks):
+        return calculate_focus_per_block(blocks)
+
+    def load_data(self, input_path, in_dir_length):
+        print(f"[Load] {self.input_type.value}")
+        short_path = input_path[in_dir_length:]
+        print(f"> $INPUT{short_path}")
+        return np.load(input_path)
+
+    def save_data(self, data, output_dir, input_path):
+        filename = os.path.basename(input_path).split(".")[0] + "_focalPlaneMatrix.png"
+        output_path = os.path.join(output_dir, self.dirname, filename)
+        fig, axes = plt.subplots(1, 1)
+        fig.set_size_inches((2, 5))
+        focus_plane = get_focus_plane(data)
+        fig.suptitle(f"focal plane = {focus_plane:.2f}")
+        cbar_kw = {"fraction": 0.046, "pad": 0.04}
+
+        ax = axes
+        row = [str(x) for x in range(data.shape[0])]
+        im, _ = heatmap(
+            data,
+            row,
+            row,
+            ax=ax,
+            cmap="YlGn",
+            cbarlabel="focalPlane",
+            fontsize=6,
+            cbar_kw=cbar_kw,
+        )
+        _ = annotate_heatmap(
+            im,
+            valfmt="{x:.0f}",
+            size=6,
+            threshold=None,
+            textcolors=("black", "white"),
+        )
+
+        fig.tight_layout()
+        plt.savefig(output_path)
+        plt.close(fig)
+        short_path = output_path[len(output_dir) :]
+        print(f"> $OUTPUT{short_path}")
+
+
+class ProjectByBlockModule(Module):
+    def __init__(self, projection_params: ProjectionParams):
+        super().__init__(
+            input_type=DataType.MATRIX_2D,
+            supplementary_type=DataType.IMAGE_BLOCKS,
+            output_type=DataType.IMAGE_2D,
+        )
+        self.dirname = "project"
+        self.zwindows = projection_params.zwindows
+
+    def run(self, focal_matrix, blocks):
+        return reassemble_images(focal_matrix, blocks, window=self.zwindows)
+
+    def load_data(self, input_path, in_dir_length):
+        print(f"[Load] {self.input_type.value}")
+        short_path = input_path[in_dir_length:]
+        print(f"> $INPUT{short_path}")
+        return np.load(input_path)
+
+    def save_data(self, data, output_dir, input_path):
+        print("[Save] 2D npy | 2D png")
+        base = os.path.basename(input_path).split(".")[0]
+        npy_filename = base + "_2d.npy"
+        npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
+        save_npy(data, npy_path, len(output_dir))
+        png_filename = base + "_2d.png"
+        png_path = os.path.join(output_dir, self.dirname, png_filename)
+        save_png(data, png_path, len(output_dir))
+
+    # =============================================================================
+    # FOCAL PLANE INTERPOLATION
+    # =============================================================================
+
+
+def save_png(data, output_path, len_out_dir):
+    fig = plt.figure()
+    size = (10, 10)
+    fig.set_size_inches(size)
+    ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+    ax.set_axis_off()
+    norm = ImageNormalize(stretch=SqrtStretch())
+    ax.set_title("2D Data")
+    fig.add_axes(ax)
+    ax.imshow(data, origin="lower", cmap="Greys_r", norm=norm)
+    fig.savefig(output_path)
+    plt.close(fig)
+    short_path = output_path[len_out_dir:]
+    print(f"> $OUTPUT{short_path}")
 
 
 def split_in_blocks(data, block_size_xy=256):
