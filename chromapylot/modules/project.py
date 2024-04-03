@@ -172,10 +172,11 @@ class ProjectModule(Module):
         return zmin, zmax
 
     def _projection_laplacian(self, img, cycle: str):
-        focal_plane_matrix, z_range, block = reinterpolate_focal_plane(
-            img, block_size_xy=self.block_size, window=self.zwindows
+        blocks = split_in_blocks(img, block_size_xy=self.block_size)
+        focal_plane_matrix, z_range = reinterpolate_focal_plane(
+            blocks, window=self.zwindows
         )
-        output = reassemble_images(focal_plane_matrix, block, window=self.zwindows)
+        output = reassemble_images(focal_plane_matrix, blocks, window=self.zwindows)
 
         self.focal_plane_matrix[cycle] = focal_plane_matrix
         self.focus_plane[cycle] = z_range[0]
@@ -237,7 +238,17 @@ class ProjectModule(Module):
 # =============================================================================
 
 
-def reinterpolate_focal_plane(data, block_size_xy=256, window=10):
+def split_in_blocks(data, block_size_xy=256):
+    n_z_planes = data.shape[0]
+    block_size = (n_z_planes, block_size_xy, block_size_xy)
+    block = view_as_blocks(data, block_size)
+    # block.shape ~= (n_z_blocks, n_x_blocks, n_y_blocks, n_z_planes, 128, 128)
+    # But n_z_blocks = 1 due to we give the full z stack to the function
+    block = block.squeeze()  # So we remove the first dimension
+    return block
+
+
+def reinterpolate_focal_plane(blocks, window=10):
     """
     Reinterpolates the focal plane of a 3D image by breking it into blocks
     - Calculates the focal_plane and fwhm matrices by block
@@ -266,27 +277,26 @@ def reinterpolate_focal_plane(data, block_size_xy=256, window=10):
     """
 
     # breaks into subplanes, iterates over them and calculates the focal_plane in each subplane.
-    focal_plane_matrix, block = calculate_focus_per_block(
-        data, block_size_xy=block_size_xy
-    )
+    focal_plane_matrix = calculate_focus_per_block(blocks)
     focal_planes_to_process = focal_plane_matrix[~np.isnan(focal_plane_matrix)]
 
     focal_plane, _, _ = sigmaclip(focal_planes_to_process, high=3, low=3)
     focus_plane = np.mean(focal_plane)
+    n_z_planes = blocks.shape[2]
     if np.isnan(focus_plane):
         # focus_plane detection failed. Using full stack.
-        focus_plane = data.shape[0] // 2
-        z_range = focus_plane, range(0, data.shape[0])
+        focus_plane = n_z_planes // 2
+        z_range = focus_plane, range(0, n_z_planes)
     else:
         focus_plane = np.mean(focal_plane).astype("int64")
         zmin = np.max([focus_plane - window, 0])
-        zmax = np.min([focus_plane + window, data.shape[0]])
+        zmax = np.min([focus_plane + window, n_z_planes])
         z_range = focus_plane, range(zmin, zmax)
 
-    return focal_plane_matrix, z_range, block
+    return focal_plane_matrix, z_range
 
 
-def calculate_focus_per_block(data, block_size_xy=128):
+def calculate_focus_per_block(blocks):
     """
     Calculates the most likely focal plane of an image by breaking into blocks and calculating
     the focal plane in each block
@@ -298,30 +308,16 @@ def calculate_focus_per_block(data, block_size_xy=128):
     ----------
     data : TYPE
         DESCRIPTION.
-    block_size_xy : TYPE, optional
-        DESCRIPTION. The default is 512.
-
     Returns
     -------
     focal_plane_matrix: np array
         matrix containing the maximum of the laplacian variance per block
-    block: np array
-        3D block reconstruction of matrix
     """
-
-    n_z_planes = data.shape[0]
-    block_size = (n_z_planes, block_size_xy, block_size_xy)
-    block = view_as_blocks(data, block_size)
-    # block.shape ~= (n_z_blocks, n_x_blocks, n_y_blocks, n_z_planes, 128, 128)
-    # But n_z_blocks = 1 due to we give the full z stack to the function
-    block = block.squeeze()  # So we remove the first dimension
-    focal_plane_matrix = np.zeros(block.shape[0:2])  # (n_x_blocks, n_y_blocks)
-
-    for i in trange(block.shape[0]):
-        for j in range(block.shape[1]):
-            focal_plane_matrix[i, j] = find_focal_plane(block[i, j])
-
-    return focal_plane_matrix, block
+    focal_plane_matrix = np.zeros(blocks.shape[0:2])  # (n_x_blocks, n_y_blocks)
+    for i in trange(blocks.shape[0]):
+        for j in range(blocks.shape[1]):
+            focal_plane_matrix[i, j] = find_focal_plane(blocks[i, j])
+    return focal_plane_matrix
 
 
 def find_focal_plane(data, threshold_fwhm=20):
