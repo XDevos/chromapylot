@@ -173,7 +173,7 @@ class ProjectModule(Module):
 
     def _projection_laplacian(self, img, cycle: str):
         blocks = split_in_blocks(img, block_size_xy=self.block_size)
-        focal_plane_matrix = reinterpolate_focal_plane(blocks, window=self.zwindows)
+        focal_plane_matrix = calculate_focus_per_block(blocks)
         focus_plane = get_focus_plane(
             focal_plane_matrix, img.shape[0], window=self.zwindows
         )
@@ -259,40 +259,6 @@ def get_focus_plane(focal_matrix, n_z_planes, window):
     else:
         focus_plane = np.mean(focal_plane).astype("int64")
     return focus_plane
-
-
-def reinterpolate_focal_plane(blocks, window=10):
-    """
-    Reinterpolates the focal plane of a 3D image by breking it into blocks
-    - Calculates the focal_plane and fwhm matrices by block
-    - removes outliers
-    - calculates the focal plane for each block using sigmaClip statistics
-    - returns a tuple with focal plane and the range to use
-
-    Parameters
-    ----------
-    data : numpy array
-        input 3D image.
-    block_size_xy : int
-        size of blocks in XY, typically 256.
-    window : int, optional
-        number of planes before and after the focal plane to construct the z_range. The default is 0.
-
-    Returns
-    -------
-    focal_plane_matrix : numpy array
-        focal plane matrix.
-    z_range : tuple
-        focus_plane, z_range.
-    block : numpy array
-        block representation of 3D image.
-
-    """
-
-    # breaks into subplanes, iterates over them and calculates the focal_plane in each subplane.
-    focal_plane_matrix = calculate_focus_per_block(blocks)
-
-    return focal_plane_matrix
 
 
 def calculate_focus_per_block(blocks):
