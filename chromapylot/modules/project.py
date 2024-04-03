@@ -174,9 +174,7 @@ class ProjectModule(Module):
     def _projection_laplacian(self, img, cycle: str):
         blocks = split_in_blocks(img, block_size_xy=self.block_size)
         focal_plane_matrix = calculate_focus_per_block(blocks)
-        focus_plane = get_focus_plane(
-            focal_plane_matrix, img.shape[0], window=self.zwindows
-        )
+        focus_plane = get_focus_plane(focal_plane_matrix)
         output = reassemble_images(focal_plane_matrix, blocks, window=self.zwindows)
 
         self.focal_plane_matrix[cycle] = focal_plane_matrix
@@ -249,13 +247,12 @@ def split_in_blocks(data, block_size_xy=256):
     return block
 
 
-def get_focus_plane(focal_matrix, n_z_planes, window):
+def get_focus_plane(focal_matrix):
     focal_planes_to_process = focal_matrix[~np.isnan(focal_matrix)]
     focal_plane, _, _ = sigmaclip(focal_planes_to_process, high=3, low=3)
     focus_plane = np.mean(focal_plane)
     if np.isnan(focus_plane):
-        # focus_plane detection failed. Using full stack.
-        focus_plane = n_z_planes // 2
+        raise ValueError("Focus plane detection failed.")
     else:
         focus_plane = np.mean(focal_plane).astype("int64")
     return focus_plane
