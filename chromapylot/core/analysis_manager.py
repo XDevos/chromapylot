@@ -57,10 +57,20 @@ class AnalysisManager:
     def get_module_chain(
         self, pipeline_type: AnalysisType, dim: int
     ) -> List[CommandName]:
-        if pipeline_type == AnalysisType.FIDUCIAL:
+        if pipeline_type == AnalysisType.REFERENCE:
+            if dim == 2:
+                chain = ["project"]
+                if len(self.dims) == 2:
+                    print(
+                        "> If both dimensions are required, there isn't pipeline for REFERENCE 2D."
+                    )
+                    chain = []
+            elif dim == 3:
+                chain = ["project"]
+        elif pipeline_type == AnalysisType.FIDUCIAL:
             if dim == 2:
                 if len(self.dims) == 2:
-                    # TODO: WARNING for fiducial analysis type, if dim = 23, just execute the 3D pipeline
+                    # WARNING for fiducial analysis type, if dim = 23, just execute the 3D pipeline
                     print(
                         "> If both dimensions are required, there isn't pipeline for FIDUCIAL 2D."
                     )

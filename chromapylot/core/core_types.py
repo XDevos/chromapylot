@@ -47,6 +47,7 @@ class DataType(Enum):
 
 
 class AnalysisType(Enum):
+    REFERENCE = "reference"
     FIDUCIAL = "fiducial"
     BARCODE = "barcode"
     DAPI = "DAPI"

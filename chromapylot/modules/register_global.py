@@ -26,7 +26,7 @@ class RegisterGlobalModule(Module):
         super().__init__(
             input_type=DataType.IMAGE_2D,
             output_type=DataType.SHIFT_TUPLE,
-            reference_type=DataType.IMAGE_2D,
+            reference_type=[DataType.IMAGE_2D, DataType.IMAGE_3D],
         )
         self.reference_data = None
         self.ref_fiducial = registration_params.referenceFiducial
@@ -99,10 +99,13 @@ class RegisterGlobalModule(Module):
             if self.ref_fiducial in os.path.basename(path):
                 good_path = path
                 break
-        ref_img = np.load(good_path)
-        self.reference_data = remove_inhomogeneous_background(
-            ref_img, self.background_sigma
-        )
+        if good_path[-3:] == "npy":
+            ref_img = np.load(good_path)
+            self.reference_data = remove_inhomogeneous_background(
+                ref_img, self.background_sigma
+            )
+        else:
+            raise NotImplementedError("Reference data must be a 2D numpy file.")
 
     def _save_shift_tuple(self, shifts, output_dir, input_path):
         out_path = os.path.join(output_dir, self.dirname, "data", "shifts.json")

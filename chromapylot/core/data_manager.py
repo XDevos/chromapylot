@@ -94,6 +94,7 @@ class DataManager:
 
     def get_analysis_files(self):
         analysis_files = {
+            at.REFERENCE: [],
             at.FIDUCIAL: [],
             at.BARCODE: [],
             at.DAPI: [],
@@ -131,12 +132,14 @@ class DataManager:
         return self._get_paths_from_analysis_and_data_type(analysis_type, data_type)
 
     def get_analysis_type(self, filename, extension):
+        print(self.parameters["common"])
+        ref_cycle = self.get_ref_cycle()
         if extension in ["png", "log", "md", "table", None] or filename in [
             "parameters",
             "parameters_loaded",
             "infoList",
         ]:
-            return None
+            analysis_type = None
         elif extension in ["tif", "tiff", "npy"]:
             cycle = self.get_cycle_from_path(filename)
             channel = self.get_channel_from_path(
@@ -144,36 +147,46 @@ class DataManager:
             )  # TODO check ch depending parameters
             if cycle == "DAPI":
                 if channel == "ch00":
-                    return at.DAPI
+                    analysis_type = at.DAPI
                 elif channel == "ch01":
-                    return at.FIDUCIAL
+                    analysis_type = at.FIDUCIAL
                 elif channel == "ch02":
-                    return at.RNA
+                    analysis_type = at.RNA
             elif "RT" in cycle:
                 if channel == "ch00":
-                    return at.FIDUCIAL
+                    analysis_type = at.FIDUCIAL
                 elif channel == "ch01":
-                    return at.BARCODE
+                    analysis_type = at.BARCODE
             elif "mask" in cycle:
                 if channel == "ch00":
-                    return at.FIDUCIAL
+                    analysis_type = at.FIDUCIAL
                 elif channel == "ch01":
-                    return at.PRIMER
+                    analysis_type = at.PRIMER
             elif "matrix" in filename:
-                return at.TRACE
+                analysis_type = at.TRACE
         elif "_block3D" in filename or filename in [
             "shifts",
             "register_global",
             "alignImages",
         ]:
-            return at.FIDUCIAL
+            analysis_type = at.FIDUCIAL
         elif extension in ["dat", "ecsv"]:
             if "Trace" in filename or "_barcode" in filename:
-                return at.TRACE
+                analysis_type = at.TRACE
         else:
             raise ValueError(
                 f"File {filename}.{extension} does not match any analysis type."
             )
+        if ref_cycle and analysis_type == at.FIDUCIAL and ref_cycle in filename:
+            analysis_type = at.REFERENCE
+        return analysis_type
+
+    def get_ref_cycle(self):
+        return (
+            self.parameters.get("common", {})
+            .get("alignImages", {})
+            .get("referenceFiducial")
+        )
 
     def get_paths_from_type(self, data_type, analysis_type):
         paths = [
@@ -214,7 +227,7 @@ class DataManager:
             )
 
     def get_analysis_types(self):
-        order = ["fiducial", "barcode", "DAPI", "RNA", "primer", "trace"]
+        order = ["reference", "fiducial", "barcode", "DAPI", "RNA", "primer", "trace"]
         order = [at(x) for x in order]
         analysis_types = [x for x in order if len(self.analysis_files[x]) > 0]
         return analysis_types
