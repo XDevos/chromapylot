@@ -69,13 +69,13 @@ class AnalysisManager:
                 chain = ["project"]
         elif pipeline_type == AnalysisType.FIDUCIAL:
             if dim == 2:
+                chain = ["skip", "project", "register_global"]
                 if len(self.dims) == 2:
                     # WARNING for fiducial analysis type, if dim = 23, just execute the 3D pipeline
                     print(
                         "> If both dimensions are required, there isn't pipeline for FIDUCIAL 2D."
                     )
                     chain = []
-                chain = ["skip", "project", "register_global"]
             elif dim == 3:
                 chain = [
                     "skip",

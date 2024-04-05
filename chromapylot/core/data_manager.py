@@ -102,11 +102,15 @@ class DataManager:
             at.PRIMER: [],
             at.TRACE: [],
         }
+        ref_cycle = self.get_ref_cycle()
         for file in self.input_files:
             analysis_type = self.get_analysis_type(file[1], file[2])
             data_type = get_data_type(file[1], file[2])
             if analysis_type and data_type:
                 analysis_files[analysis_type].append((data_type, file[0]))
+                # Manage the specific case of the REFERENCE type
+                if ref_cycle and analysis_type == at.FIDUCIAL and ref_cycle in file[1]:
+                    analysis_files[at.REFERENCE].append((data_type, file[0]))
                 # Manage the specific case of the TRACE type
                 if first_type_accept_second(DataType.SEGMENTED, data_type):
                     analysis_files[at.TRACE].append((data_type, file[0]))
@@ -132,8 +136,6 @@ class DataManager:
         return self._get_paths_from_analysis_and_data_type(analysis_type, data_type)
 
     def get_analysis_type(self, filename, extension):
-        print(self.parameters["common"])
-        ref_cycle = self.get_ref_cycle()
         if extension in ["png", "log", "md", "table", None] or filename in [
             "parameters",
             "parameters_loaded",
@@ -177,8 +179,6 @@ class DataManager:
             raise ValueError(
                 f"File {filename}.{extension} does not match any analysis type."
             )
-        if ref_cycle and analysis_type == at.FIDUCIAL and ref_cycle in filename:
-            analysis_type = at.REFERENCE
         return analysis_type
 
     def get_ref_cycle(self):
