@@ -276,6 +276,11 @@ class CompareBlockGlobal(Module):
             )
         else:
             raise NotImplementedError("Reference data must be a 2D numpy file.")
+        
+    def load_supplementary_data(self, data_type, cycle):
+        if cycle == self.ref_fiducial:
+            return []
+        raise NotImplementedError("This method is not implemented yet.")
 
     def _save_shift_tuple(self, shifts, output_dir, input_path):
         out_path = os.path.join(output_dir, self.dirname, "data", "shifts.json")
