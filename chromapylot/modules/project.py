@@ -35,7 +35,6 @@ from apifish.stack import projection
 class ProjectModule(Module):
     def __init__(self, projection_params: ProjectionParams):
         super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_2D)
-        self.supplementary_type = "cycle"
         self.mode = projection_params.mode
         self.dirname = "project"
         self.block_size = projection_params.block_size

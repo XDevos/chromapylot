@@ -35,7 +35,7 @@ class Pipeline:
                 module.load_reference_data(paths)
             # Collect data type to keep during one process
             sup_type = module.supplementary_type
-            if sup_type is not None and sup_type != "cycle":
+            if sup_type is not None:
                 if isinstance(sup_type, list):
                     supp_data_found = False
                     for i in range(len(sup_type)):
@@ -73,9 +73,7 @@ class Pipeline:
     def load_supplementary_data(self, module: mod.Module, cycle: str):
         data_type = module.supplementary_type
         if data_type:
-            if data_type == "cycle":
-                return cycle
-            elif data_type in self.supplementary_data:
+            if data_type in self.supplementary_data:
                 if self.supplementary_data[data_type] is None:
                     self.supplementary_data[data_type] = module.load_supplementary_data(
                         None, cycle

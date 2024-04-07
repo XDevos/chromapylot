@@ -10,7 +10,7 @@ from modules.project import (
     InterpolateFocalPlane,
     SplitInBlocks,
 )
-from modules.register_global import RegisterGlobalModule
+from modules.register_global import RegisterGlobalModule, RegisterByBlock, CompareBlockGlobal
 
 from chromapylot.core.core_types import AnalysisType, CommandName
 from chromapylot.core.data_manager import DataManager
@@ -137,6 +137,7 @@ class AnalysisManager:
     def explicite_intern_module(
         self, chain: List[CommandName], pipeline_type
     ) -> List[CommandName]:
+        # Projection Laplacian
         try:
             index_chain = chain.index("project")
             pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
@@ -155,6 +156,25 @@ class AnalysisManager:
                 self.module_names.insert(index_user, "project_by_block")
                 self.module_names.insert(index_user, "interpolate_focal_plane")
                 self.module_names.insert(index_user, "split_in_blocks")
+        except ValueError:
+            pass
+        # Global Registration by block
+        try:
+            index_chain = chain.index("register_global")
+            pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+            if pipe_params.registration.alignByBlock:
+                chain.pop(index_chain)
+                chain.insert(index_chain, "compare_block_global") # CompareBlockGlobal
+                chain.insert(index_chain, "register_by_block") # RegisterByBlock
+        except ValueError:
+            pass
+        try:
+            index_user = self.module_names.index("register_global")
+            pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+            if pipe_params.registration.alignByBlock:
+                self.module_names.pop(index_user)
+                self.module_names.insert(index_user, "compare_block_global")
+                self.module_names.insert(index_user, "register_by_block")
         except ValueError:
             pass
 
@@ -179,6 +199,8 @@ class AnalysisManager:
             "shift_2d": mod.Shift2DModule,
             "shift_3d": mod.Shift3DModule,
             "register_global": RegisterGlobalModule,
+            "register_by_block": RegisterByBlock,
+            "compare_block_global": CompareBlockGlobal,
             "register_local": mod.RegisterLocalModule,
             "segment_2d": mod.Segment2DModule,
             "segment_3d": mod.Segment3DModule,

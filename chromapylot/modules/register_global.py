@@ -57,7 +57,6 @@ class RegisterGlobalModule(Module):
             (
                 shifts,
                 shift_by_block,
-                rms_image,
             ) = align_images_by_blocks(
                 ref_img,
                 raw_img,
