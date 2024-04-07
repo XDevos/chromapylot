@@ -188,13 +188,17 @@ class RegisterByBlock(Module):
             raise NotImplementedError("Reference data must be a 2D numpy file.")
 
     def _save_rms_block_map(self, shifts_and_rms, output_dir, input_path):
-        # out_path = os.path.join(output_dir, self.dirname, "data", "rms_block_map.npy")
-        # if not os.path.exists(os.path.dirname(out_path)):
-        #     os.makedirs(os.path.dirname(out_path))
-        # np.save(out_path, shifts_and_rms[:, :, 2])
-        # short_path = input_path[len(output_dir) :]
-        # print(f"> $OUTPUT{short_path}")
-        raise NotImplementedError("This method is not implemented yet.")
+        print(input_path)
+        print(shifts_and_rms[:, :, 2])
+        print(output_dir)
+        base = os.path.basename(input_path).split(".")[0]
+        npy_filename = base + "_rms_block_map.npy"
+        out_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
+        if not os.path.exists(os.path.dirname(out_path)):
+            os.makedirs(os.path.dirname(out_path))
+        np.save(out_path, shifts_and_rms[:, :, 2])
+        short_path = input_path[len(output_dir) :]
+        print(f"> $OUTPUT{short_path}")
 
     def _save_error_alignment_block_map(self, shifts_and_rms, output_dir, input_path):
         # out_path = os.path.join(output_dir, self.dirname, "data", "error_alignment_block_map.npy")
