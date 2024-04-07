@@ -21,6 +21,7 @@ from chromapylot.core.data_manager import get_roi_number_from_image_path
 from chromapylot.core.data_manager import DataManager
 from datetime import datetime
 from chromapylot.core.data_manager import save_npy
+from skimage import exposure, measure
 
 import matplotlib.pyplot as plt
 
@@ -168,10 +169,10 @@ class RegisterByBlock(Module):
     def save_data(self, data, output_dir, input_path):
         if data is None:
             return
-        print("Saving block shifts.")
+        print("Saving rms_block_map.")
         self._save_rms_block_map(data, output_dir, input_path)
+        print("Saving error_alignment_block_map.")
         self._save_error_alignment_block_map(data, output_dir, input_path)
-        self._save_block_alignments(data, output_dir, input_path)
 
     def load_reference_data(self, paths: List[str]):
         good_path = None
@@ -188,29 +189,60 @@ class RegisterByBlock(Module):
             raise NotImplementedError("Reference data must be a 2D numpy file.")
 
     def _save_rms_block_map(self, shifts_and_rms, output_dir, input_path):
-        print(input_path)
-        print(shifts_and_rms[:, :, 2])
-        print(output_dir)
         base = os.path.basename(input_path).split(".")[0]
-        npy_filename = base + "_rms_block_map.npy"
+        base = base[:-3] if base[-3:] == "_2d" else base
+        npy_filename = base + "_rmsBlockMap.npy"
         out_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
         if not os.path.exists(os.path.dirname(out_path)):
             os.makedirs(os.path.dirname(out_path))
         np.save(out_path, shifts_and_rms[:, :, 2])
-        short_path = input_path[len(output_dir) :]
+        short_path = out_path[len(output_dir) :]
         print(f"> $OUTPUT{short_path}")
 
     def _save_error_alignment_block_map(self, shifts_and_rms, output_dir, input_path):
-        # out_path = os.path.join(output_dir, self.dirname, "data", "error_alignment_block_map.npy")
-        # if not os.path.exists(os.path.dirname(out_path)):
-        #     os.makedirs(os.path.dirname(out_path))
-        # np.save(out_path, shifts_and_rms[:, :, 2])
-        # short_path = input_path[len(output_dir) :]
-        # print(f"> $OUTPUT{short_path}")
-        raise NotImplementedError("This method is not implemented yet.")
+        base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
+        npy_filename = base + "_errorAlignmentBlockMap.npy"
+        out_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
+        if not os.path.exists(os.path.dirname(out_path)):
+            os.makedirs(os.path.dirname(out_path))
+        relative_shifts = compute_relative_shifts(shifts_and_rms, self.tolerance)
+        np.save(out_path, relative_shifts)
+        short_path = out_path[len(output_dir) :]
+        print(f"> $OUTPUT{short_path}")
+        self._save_block_alignments(relative_shifts, shifts_and_rms[:, :, 2], output_dir, input_path)
 
-    def _save_block_alignments(self, shifts_and_rms, output_dir, input_path):
-        raise NotImplementedError("This method is not implemented yet.")
+    def _save_block_alignments(self, relative_shifts, rms_image, output_dir, input_path):
+        base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
+        png_filename = base + "_block_alignments.png"
+        out_path = os.path.join(output_dir, self.dirname, png_filename)
+        
+        # plotting
+        fig, axes = plt.subplots(1, 2)
+        ax = axes.ravel()
+        fig.set_size_inches((10, 5))
+
+        cbwindow = 3
+        p_1 = ax[0].imshow(relative_shifts, cmap="terrain", vmin=0, vmax=cbwindow)
+        ax[0].set_title("abs(global-block) shifts, px")
+        fig.colorbar(p_1, ax=ax[0], fraction=0.046, pad=0.04)
+
+        p_2 = ax[1].imshow(
+            rms_image,
+            cmap="terrain",
+            vmin=np.min(rms_image),
+            vmax=np.max(rms_image),
+        )
+        ax[1].set_title("RMS")
+        fig.colorbar(p_2, ax=ax[1], fraction=0.046, pad=0.04)
+
+        for axe in ax:
+            axe.axis("off")
+
+        fig.savefig(out_path)
+
+        plt.close(fig)
 
 
 class CompareBlockGlobal(Module):
@@ -253,6 +285,8 @@ class CompareBlockGlobal(Module):
 
     def save_data(self, data, output_dir, input_path):
         if data is None:
+            raw_img = np.load(input_path)
+            self._save_registered(raw_img, output_dir, input_path)
             return
         print("Saving shift tuple.")
         self._save_shift_tuple(data, output_dir, input_path)
@@ -265,7 +299,7 @@ class CompareBlockGlobal(Module):
         shifted_img = shift_image(raw_img, data)
         self._save_registered(shifted_img, output_dir, input_path)
         self._save_overlay_corrected(ref_img, shifted_img, output_dir, input_path)
-        self._save_reference_difference(raw_img, shifted_img, output_dir, input_path)
+        self._save_reference_difference(ref_img, raw_img, shifted_img, output_dir, input_path)
 
     def load_reference_data(self, paths: List[str]):
         good_path = None
@@ -302,12 +336,14 @@ class CompareBlockGlobal(Module):
 
     def _save_registered(self, shifted_img, output_dir, input_path):
         base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
         npy_filename = base + "_2d_registered.npy"
         npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
         save_npy(shifted_img, npy_path, len(output_dir))
 
     def _save_overlay_corrected(self, ref_img, shifted_img, output_dir, input_path):
         base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
         png_filename = base + "_overlay_corrected.png"
         png_path = os.path.join(output_dir, self.dirname, png_filename)
         sz = ref_img.shape
@@ -330,9 +366,43 @@ class CompareBlockGlobal(Module):
         fig.savefig(png_path)
         plt.close(fig)
 
-    def _save_reference_difference(self, raw_img, shifted_img, output_dir, input_path):
-        raise NotImplementedError("This method is not implemented yet.")
+    def _save_reference_difference(self, ref_img, raw_img, shifted_img, output_dir, input_path):
+        """
+        Overlays two images as R and B and saves them to output file
+        """
+        base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
+        png_filename = base + "_referenceDifference.png"
+        out_path = os.path.join(output_dir, self.dirname, png_filename)
+        ref_norm = ref_img / ref_img.max()
+        raw_norm = raw_img / raw_img.max()
+        shifted_norm = shifted_img / shifted_img.max()
 
+        ref_adjust, _, _, _, _ = image_adjust(
+            ref_norm, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        raw_adjust, _, _, _, _ = image_adjust(
+            raw_norm, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        shifted_adjust, _, _, _, _ = image_adjust(
+            shifted_norm, lower_threshold=0.5, higher_threshold=0.9999
+        )
+
+        cmap = "seismic"
+
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.set_size_inches((60, 30))
+
+        ax1.imshow(ref_adjust - raw_adjust, cmap=cmap)
+        ax1.axis("off")
+        ax1.set_title("uncorrected")
+
+        ax2.imshow(ref_adjust - shifted_adjust, cmap=cmap)
+        ax2.axis("off")
+        ax2.set_title("corrected")
+
+        fig.savefig(out_path)
+        plt.close(fig)
 
 def remove_inhomogeneous_background(img, background_sigma):
     # Normalises images
@@ -374,7 +444,12 @@ def compute_shifts_and_rms_by_block(ref_img, raw_img, block_size):
     return blocks
 
 
-def compute_relative_shifts(masked_block_shifts):
+def compute_relative_shifts(shifts_and_rms, tolerance):
+    shift_by_block = shifts_and_rms[:, :, :2]
+    rms_image = shifts_and_rms[:, :, 2]
+    mask = get_rms_mask(rms_image, tolerance)
+    masked_block_shifts = np.where(mask[..., None], shift_by_block, np.nan)
+
     i_blocks = masked_block_shifts.shape[0]
     j_blocks = masked_block_shifts.shape[1]
     shift_image_norm = np.zeros((i_blocks, j_blocks))
