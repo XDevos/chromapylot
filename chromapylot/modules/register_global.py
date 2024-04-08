@@ -336,7 +336,7 @@ class CompareBlockGlobal(Module):
             existing_dict = {f"ROI:{roi}": {}}
         else:
             existing_dict = load_json(out_path)
-        existing_dict[f"ROI:{roi}"][cycle] = shifts.tolist()
+        existing_dict[f"ROI:{roi}"][cycle] = list(shifts)
         with open(out_path, "w") as file:
             json.dump(existing_dict, file, ensure_ascii=False, sort_keys=True, indent=4)
 
