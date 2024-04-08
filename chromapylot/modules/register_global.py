@@ -210,14 +210,18 @@ class RegisterByBlock(Module):
         np.save(out_path, relative_shifts)
         short_path = out_path[len(output_dir) :]
         print(f"> $OUTPUT{short_path}")
-        self._save_block_alignments(relative_shifts, shifts_and_rms[:, :, 2], output_dir, input_path)
+        self._save_block_alignments(
+            relative_shifts, shifts_and_rms[:, :, 2], output_dir, input_path
+        )
 
-    def _save_block_alignments(self, relative_shifts, rms_image, output_dir, input_path):
+    def _save_block_alignments(
+        self, relative_shifts, rms_image, output_dir, input_path
+    ):
         base = os.path.basename(input_path).split(".")[0]
         base = base[:-3] if base[-3:] == "_2d" else base
         png_filename = base + "_block_alignments.png"
         out_path = os.path.join(output_dir, self.dirname, png_filename)
-        
+
         # plotting
         fig, axes = plt.subplots(1, 2)
         ax = axes.ravel()
@@ -299,7 +303,9 @@ class CompareBlockGlobal(Module):
         shifted_img = shift_image(raw_img, data)
         self._save_registered(shifted_img, output_dir, input_path)
         self._save_overlay_corrected(ref_img, shifted_img, output_dir, input_path)
-        self._save_reference_difference(ref_img, raw_img, shifted_img, output_dir, input_path)
+        self._save_reference_difference(
+            ref_img, raw_img, shifted_img, output_dir, input_path
+        )
 
     def load_reference_data(self, paths: List[str]):
         good_path = None
@@ -314,7 +320,7 @@ class CompareBlockGlobal(Module):
             )
         else:
             raise NotImplementedError("Reference data must be a 2D numpy file.")
-        
+
     def load_supplementary_data(self, data_type, cycle):
         if cycle == self.ref_fiducial:
             return []
@@ -366,7 +372,9 @@ class CompareBlockGlobal(Module):
         fig.savefig(png_path)
         plt.close(fig)
 
-    def _save_reference_difference(self, ref_img, raw_img, shifted_img, output_dir, input_path):
+    def _save_reference_difference(
+        self, ref_img, raw_img, shifted_img, output_dir, input_path
+    ):
         """
         Overlays two images as R and B and saves them to output file
         """
@@ -403,6 +411,7 @@ class CompareBlockGlobal(Module):
 
         fig.savefig(out_path)
         plt.close(fig)
+
 
 def remove_inhomogeneous_background(img, background_sigma):
     # Normalises images
@@ -478,7 +487,10 @@ def compare_to_global(ref_img, img_to_align, tolerance, shifts_and_rms):
     mean_shifts_global, _, _ = phase_cross_correlation(
         ref_img, img_to_align, upsample_factor=100
     )
-    img_2_aligned_global = shift_image(img_to_align, mean_shifts_global)
+    tempo_bugged_shift = shifts_and_rms[-1][-1][:2]
+    img_2_aligned_global = shift_image(img_to_align, tempo_bugged_shift)
+    # TODO: uncomment the line below when the refactoring of global registration is validated
+    # img_2_aligned_global = shift_image(img_to_align, mean_shifts_global)
     mean_error_global = np.sum(np.sum(np.abs(ref_img - img_2_aligned_global), axis=1))
     mean_error_raw = np.sum(np.sum(np.abs(ref_img - img_to_align), axis=1))
 
