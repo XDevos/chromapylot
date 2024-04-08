@@ -301,6 +301,7 @@ class CompareBlockGlobal(Module):
         ref_img = np.float32(self.reference_data)
         raw_img = np.float32(match_histograms(np.float32(preprocessed_img), ref_img))
         shifted_img = shift_image(raw_img, data)
+        shifted_img[shifted_img < 0] = 0
         self._save_registered(shifted_img, output_dir, input_path)
         self._save_overlay_corrected(ref_img, shifted_img, output_dir, input_path)
         self._save_reference_difference(
