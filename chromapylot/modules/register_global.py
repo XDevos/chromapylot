@@ -22,7 +22,7 @@ from chromapylot.core.data_manager import DataManager
 from datetime import datetime
 from chromapylot.core.data_manager import save_npy
 from skimage import exposure, measure
-
+from chromapylot.core.data_manager import tif_path_to_projected
 import matplotlib.pyplot as plt
 
 
@@ -180,7 +180,7 @@ class RegisterByBlock(Module):
             if self.ref_fiducial in os.path.basename(path):
                 good_path = path
                 break
-        if good_path[-3:] == "npy":
+        if good_path and good_path[-3:] == "npy":
             ref_img = np.load(good_path)
             self.reference_data = remove_inhomogeneous_background(
                 ref_img, self.background_sigma
@@ -294,7 +294,11 @@ class CompareBlockGlobal(Module):
             return
         print("Saving shift tuple.")
         self._save_shift_tuple(data, output_dir, input_path)
-        raw_img = np.load(input_path)
+        if ".tif" in input_path:
+            projected_path = tif_path_to_projected(input_path)
+            raw_img = np.load(projected_path)
+        else:
+            raw_img = np.load(input_path)
         preprocessed_img = remove_inhomogeneous_background(
             raw_img, self.background_sigma
         )

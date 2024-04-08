@@ -92,6 +92,10 @@ class DataManager:
             "No parameters file found in input folder: ", self.input_folder
         )
 
+    def refresh_input_files(self):
+        self.input_files = extract_files(self.input_folder)
+        self.analysis_files = self.get_analysis_files()
+
     def get_analysis_files(self):
         analysis_files = {
             at.REFERENCE: [],
@@ -110,7 +114,9 @@ class DataManager:
                 analysis_files[analysis_type].append((data_type, file[0]))
                 # Manage the specific case of the REFERENCE type
                 if ref_cycle and analysis_type == at.FIDUCIAL and ref_cycle in file[1]:
-                    analysis_files[at.REFERENCE].append((data_type, file[0]))
+                    analysis_files[at.REFERENCE].append(
+                        analysis_files[analysis_type].pop()
+                    )
                 # Manage the specific case of the TRACE type
                 if first_type_accept_second(DataType.SEGMENTED, data_type):
                     analysis_files[at.TRACE].append((data_type, file[0]))
@@ -124,6 +130,8 @@ class DataManager:
         ]
 
     def get_paths_from_analysis_and_data_type(self, analysis_type, data_type):
+        if analysis_type == at.FIDUCIAL:
+            analysis_type = at.REFERENCE
         if isinstance(data_type, list):
             paths = self._get_paths_from_analysis_and_data_type(
                 analysis_type, data_type[0]
@@ -262,3 +270,10 @@ class DataManager:
 
     def get_input_path_length(self):
         return len(self.input_folder)
+
+
+def tif_path_to_projected(tif_path):
+    base = os.path.basename(tif_path).split(".")[0]
+    directory = os.path.dirname(tif_path)
+    projected_path = os.path.join(directory, "project", "data", f"{base}_2d.npy")
+    return projected_path

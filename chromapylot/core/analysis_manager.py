@@ -10,7 +10,11 @@ from modules.project import (
     InterpolateFocalPlane,
     SplitInBlocks,
 )
-from modules.register_global import RegisterGlobalModule, RegisterByBlock, CompareBlockGlobal
+from modules.register_global import (
+    RegisterGlobalModule,
+    RegisterByBlock,
+    CompareBlockGlobal,
+)
 
 from chromapylot.core.core_types import AnalysisType, CommandName
 from chromapylot.core.data_manager import DataManager
@@ -43,6 +47,7 @@ class AnalysisManager:
         self.analysis_to_process = []
         self.module_names = []
         self.pipelines: Dict[AnalysisType, Pipeline] = {
+            "reference": {2: None, 3: None},
             "fiducial": {2: None, 3: None},
             "barcode": {2: None, 3: None},
             "DAPI": {2: None, 3: None},
@@ -164,9 +169,11 @@ class AnalysisManager:
             pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
             if pipe_params.registration.alignByBlock:
                 chain.pop(index_chain)
-                chain.insert(index_chain, "compare_block_global") # CompareBlockGlobal
-                chain.insert(index_chain, "register_by_block") # RegisterByBlock
+                chain.insert(index_chain, "compare_block_global")  # CompareBlockGlobal
+                chain.insert(index_chain, "register_by_block")  # RegisterByBlock
         except ValueError:
+            pass
+        except AttributeError:
             pass
         try:
             index_user = self.module_names.index("register_global")
@@ -176,6 +183,8 @@ class AnalysisManager:
                 self.module_names.insert(index_user, "compare_block_global")
                 self.module_names.insert(index_user, "register_by_block")
         except ValueError:
+            pass
+        except AttributeError:
             pass
 
         return chain
@@ -221,7 +230,7 @@ class AnalysisManager:
             raise ValueError(f"Module {module_name} does not exist.")
 
     def create_pipeline_modules(self, pipeline_type: AnalysisType, dim: int):
-        print(f"[{pipeline_type.name} {dim}D]")
+        print(f"\n[{pipeline_type.name} {dim}D]")
         module_chain = self.get_module_chain(pipeline_type, dim)
         modules: List[mod.Module] = []
         pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
@@ -277,6 +286,7 @@ class AnalysisManager:
 
         output_dir = self.data_manager.output_folder
         for analysis_type, dim in self.analysis_to_process:
+            self.data_manager.refresh_input_files()
             if use_dask:
                 tasks = []  # list to hold the tasks
             print_analysis_type(analysis_type, dim)
