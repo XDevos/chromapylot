@@ -19,9 +19,8 @@ from numpy import linalg as LA
 from chromapylot.core.data_manager import load_json
 from chromapylot.core.data_manager import get_roi_number_from_image_path
 from chromapylot.core.data_manager import DataManager
-from datetime import datetime
 from chromapylot.core.data_manager import save_npy
-from skimage import exposure, measure
+from skimage import exposure
 from chromapylot.core.data_manager import tif_path_to_projected
 import matplotlib.pyplot as plt
 

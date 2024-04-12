@@ -75,11 +75,9 @@ class Pipeline:
         if data_type:
             if data_type in self.supplementary_data:
                 if self.supplementary_data[data_type] is None:
-                    self.supplementary_data[data_type] = module.load_supplementary_data(
-                        None, cycle
-                    )
+                    return module.load_supplementary_data(None, cycle)
                 elif isinstance(self.supplementary_data[data_type], str):
-                    self.supplementary_data[data_type] = module.load_supplementary_data(
+                    return module.load_supplementary_data(
                         self.supplementary_data[data_type], cycle
                     )
                 return self.supplementary_data[data_type]

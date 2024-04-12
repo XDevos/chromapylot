@@ -108,18 +108,20 @@ class DataManager:
         }
         ref_cycle = self.get_ref_cycle()
         for file in self.input_files:
-            analysis_type = self.get_analysis_type(file[1], file[2])
+            analysis_types = self.get_analysis_type(file[1], file[2])
             data_type = get_data_type(file[1], file[2])
-            if analysis_type and data_type:
-                analysis_files[analysis_type].append((data_type, file[0]))
-                # Manage the specific case of the REFERENCE type
-                if ref_cycle and analysis_type == at.FIDUCIAL and ref_cycle in file[1]:
-                    analysis_files[at.REFERENCE].append(
-                        analysis_files[analysis_type].pop()
-                    )
-                # Manage the specific case of the TRACE type
-                if first_type_accept_second(DataType.SEGMENTED, data_type):
-                    analysis_files[at.TRACE].append((data_type, file[0]))
+            for analysis in analysis_types:
+                if analysis and data_type:
+                    analysis_files[analysis].append((data_type, file[0]))
+                    # Manage the specific case of the REFERENCE type
+                    if ref_cycle and analysis == at.FIDUCIAL and ref_cycle in file[1]:
+                        analysis_files[at.REFERENCE].append(
+                            analysis_files[analysis].pop()
+                        )
+                    # Manage the specific case of the TRACE type
+                    # TODO: see if we can refacto with the update of the analysis_types (became a list of AnalysisType)
+                    if first_type_accept_second(DataType.SEGMENTED, data_type):
+                        analysis_files[at.TRACE].append((data_type, file[0]))
         return analysis_files
 
     def _get_paths_from_analysis_and_data_type(self, analysis_type, data_type):
@@ -149,7 +151,7 @@ class DataManager:
             "parameters_loaded",
             "infoList",
         ]:
-            analysis_type = None
+            return []
         elif extension in ["tif", "tiff", "npy"]:
             cycle = self.get_cycle_from_path(filename)
             channel = self.get_channel_from_path(
@@ -157,32 +159,33 @@ class DataManager:
             )  # TODO check ch depending parameters
             if cycle == "DAPI":
                 if channel == "ch00":
-                    analysis_type = at.DAPI
+                    analysis_type = [at.DAPI]
                 elif channel == "ch01":
-                    analysis_type = at.FIDUCIAL
+                    analysis_type = [at.FIDUCIAL]
                 elif channel == "ch02":
-                    analysis_type = at.RNA
+                    analysis_type = [at.RNA]
             elif "RT" in cycle:
                 if channel == "ch00":
-                    analysis_type = at.FIDUCIAL
+                    analysis_type = [at.FIDUCIAL]
                 elif channel == "ch01":
-                    analysis_type = at.BARCODE
+                    analysis_type = [at.BARCODE]
             elif "mask" in cycle:
                 if channel == "ch00":
-                    analysis_type = at.FIDUCIAL
+                    analysis_type = [at.FIDUCIAL]
                 elif channel == "ch01":
-                    analysis_type = at.PRIMER
+                    analysis_type = [at.PRIMER]
             elif "matrix" in filename:
-                analysis_type = at.TRACE
+                analysis_type = [at.TRACE]
         elif "_block3D" in filename or filename in [
             "shifts",
             "register_global",
             "alignImages",
         ]:
-            analysis_type = at.FIDUCIAL
+            # affect list of all analysis types
+            analysis_type = list(at)
         elif extension in ["dat", "ecsv"]:
             if "Trace" in filename or "_barcode" in filename:
-                analysis_type = at.TRACE
+                analysis_type = [at.TRACE]
         else:
             raise ValueError(
                 f"File {filename}.{extension} does not match any analysis type."

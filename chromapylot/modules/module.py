@@ -1,12 +1,13 @@
 import json
 from typing import Any, Dict, List, Union
-
+import os
+from chromapylot.core.data_manager import save_npy
 import numpy as np
 from astropy.table import Table
 from extract_module import extract_properties
 from scipy.ndimage import shift
 from tifffile import imread
-
+from scipy.ndimage import shift as shift_image
 from chromapylot.core.core_types import DataType, first_type_accept_second
 from chromapylot.core.data_manager import get_file_path
 from chromapylot.parameters.acquisition_params import AcquisitionParams
@@ -149,18 +150,25 @@ class ShiftModule(Module):
         return shift(array_2d_or_3d, shift_tuple)
 
     def load_supplementary_data(self, input_path, cycle):
-        print(f"input_path: {input_path}")
         if self.reference_data is None:
+            print("ref data is none, loading from: ", input_path)
             if input_path is None:
                 return (0, 0)
             else:
                 self.reference_data = json.load(open(input_path, "r"))
                 return self.reference_data[cycle]
         else:
+            if cycle not in self.reference_data:
+                print("Cycle not found in ref data, returning (0,0)")
+                return (0, 0)
+            print("Cycle found in ref data, returning: ", self.reference_data[cycle])
             return self.reference_data[cycle]
 
     def load_reference_data(self, paths: List[str]):
-        pass
+        path = paths[0] if len(paths) == 1 else None
+        print("> Loading shift dictionary from: ", path)
+        shift_dict = json.load(open(path, "r"))
+        self.reference_data = list(shift_dict.values())[0]
 
 
 class Shift3DModule(ShiftModule):
@@ -188,17 +196,25 @@ class Shift2DModule(ShiftModule):
             input_type=DataType.IMAGE_2D,
             output_type=DataType.IMAGE_2D_SHIFTED,
         )
+        self.dirname = "register_global"
 
-    def run(self, array_2d_or_3d, shift_tuple):
-        print("Shifting 2D image.")
-        return array_2d_or_3d
+    def run(self, array_2d, shift_tuple):
+        print(f"[Shift] 2D image with {shift_tuple}.")
+        return shift_image(array_2d, shift_tuple)
 
-    def load_data(self, input_path):
-        print("Loading 2D image.")
-        return np.ones((10, 10))
+    def load_data(self, input_path, in_dir_length):
+        print(f"[Load] {self.input_type.value}")
+        short_path = input_path[in_dir_length:]
+        print(f"> $INPUT{short_path}")
+        return np.load(input_path)
 
     def save_data(self, data, output_dir, input_path):
-        print("Saving 2D image.")
+        print("[Save] 2D npy")
+        base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
+        npy_filename = base + "_2d_registered.npy"
+        npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
+        save_npy(data, npy_path, len(output_dir))
 
 
 class RegisterLocalModule(Module):
