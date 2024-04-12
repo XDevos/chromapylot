@@ -55,7 +55,7 @@ def test_register_global():
             "register_global,shift_2d",
         ]
     )
-    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
+    tmp_align_images = os.path.join(tmp_small_inputs, "register_global/data")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/data"
     )
