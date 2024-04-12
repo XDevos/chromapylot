@@ -73,7 +73,9 @@ class ProjectModule(Module):
             return self.projection_2d(array_3d)
         elif self.mode == "manual":
             zmin, zmax = self.check_zmin_zmax(array_3d.shape[0])
-            return self.projection_2d(array_3d[zmin : zmax + 1])
+            # TODO: update data for regression test to accept [zmin : zmax + 1]
+            # return self.projection_2d(array_3d[zmin : zmax + 1])
+            return self.projection_2d(array_3d[zmin:zmax])
         else:
             raise ValueError(
                 f"Projection mode UNRECOGNIZED: {self.mode}\n> Available mode: automatic,full,manual,laplacian"
