@@ -462,18 +462,14 @@ def compute_relative_shifts(shifts_and_rms, tolerance):
     shift_by_block = shifts_and_rms[:, :, :2]
     rms_image = shifts_and_rms[:, :, 2]
     mask = get_rms_mask(rms_image, tolerance)
-    masked_block_shifts = np.where(mask[..., None], shift_by_block, np.nan)
 
-    i_blocks = masked_block_shifts.shape[0]
-    j_blocks = masked_block_shifts.shape[1]
+    i_blocks = shift_by_block.shape[0]
+    j_blocks = shift_by_block.shape[1]
     shift_image_norm = np.zeros((i_blocks, j_blocks))
     for i in range(i_blocks):
         for j in range(j_blocks):
-            if np.isnan(masked_block_shifts[i, j][0]):
-                shift_image_norm[i, j] = np.nan
-            else:
-                shift_image_norm[i, j] = LA.norm(masked_block_shifts[i, j])
-    mean_shift_norm = np.mean(shift_image_norm[~np.isnan(shift_image_norm)])
+            shift_image_norm[i, j] = LA.norm(shift_by_block[i, j])
+    mean_shift_norm = np.mean(shift_image_norm[mask])
     relative_shifts = np.abs(shift_image_norm - mean_shift_norm)
     mean_relative_shifts = np.mean(relative_shifts[~np.isnan(relative_shifts)])
     print(f"*** Mean relative shifts: {mean_relative_shifts:.2f} px")
