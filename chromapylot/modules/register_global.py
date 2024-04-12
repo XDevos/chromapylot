@@ -39,43 +39,31 @@ class RegisterGlobalModule(Module):
         self.align_by_block = registration_params.alignByBlock
         self.block_size = registration_params.blockSize
         self.tolerance = registration_params.tolerance
+        self.lower_threshold = registration_params.lower_threshold
+        self.higher_threshold = registration_params.higher_threshold
 
     def run(self, raw_2d_img):
         if raw_2d_img is None:
             print("> No need to align reference image.")
             return None
-        print(f"[Run] Register Global")
-        preprocessed_img = remove_inhomogeneous_background(
-            raw_2d_img, self.background_sigma
-        )
         if self.align_by_block:
-            print("> Align by block")
-            ref_img = np.float32(self.reference_data)
-            raw_img = np.float32(
-                match_histograms(np.float32(preprocessed_img), ref_img)
+            raise NotImplementedError(
+                "align_by_block is implemented with RegisterByBlock + CompareBlockGlobal modules."
             )
-            (
-                shifts,
-                shift_by_block,
-            ) = align_images_by_blocks(
-                ref_img,
-                raw_img,
-                self.block_size,
-                tolerance=self.tolerance,
-            )
-            mask = get_rms_mask(rms_image, self.tolerance)
-            masked_block_shifts = np.where(mask[..., None], shift_by_block, np.nan)
-            relative_shifts = compute_relative_shifts(masked_block_shifts)
-            return {
-                "shifts": shifts,
-                "block_shifts": relative_shifts,
-                "rms_image": rms_image,
-            }
-
-        else:
-            # align whole image
-            print("> Align whole image")
-            raise NotImplementedError("Whole image alignment is not implemented yet.")
+        print(f"[Run] Register Global")
+        prep_2d_img = remove_inhomogeneous_background(raw_2d_img, self.background_sigma)
+        # align whole image
+        print("> Align whole image")
+        adjusted_img = image_adjust(
+            prep_2d_img, self.lower_threshold, self.higher_threshold
+        )
+        adjusted_ref = image_adjust(
+            self.reference_data, self.lower_threshold, self.higher_threshold
+        )
+        shift, _, _ = phase_cross_correlation(
+            adjusted_ref, adjusted_img, upsample_factor=100
+        )
+        return shift
 
     def load_data(self, input_path, in_dir_length):
         if self.ref_fiducial in os.path.basename(input_path):
@@ -87,17 +75,28 @@ class RegisterGlobalModule(Module):
 
     def save_data(self, data, output_dir, input_path):
         if data is None:
+            raw_img = np.load(input_path)
+            self._save_registered(raw_img, output_dir, input_path)
             return
         print("Saving shift tuple.")
-        self._save_shift_tuple(data["shifts"], output_dir, input_path)
-        # self._save_table(data["shifts"], output_dir, input_path)
-        # self._save_registered(data["shifts"], output_dir, input_path)
-        # self._save_error_alignment_block_map(data["shifts"], output_dir, input_path)
-        # self._save_rms_block_map(data["shifts"], output_dir, input_path)
-        # self._save_block_alignments(data["shifts"], output_dir, input_path)
-        # self._save_overlay_corrected(data["shifts"], output_dir, input_path)
-        # self._save_reference_difference(data["shifts"], output_dir, input_path)
-        # self._save_intensity_hist(data["shifts"], output_dir, input_path)
+        self._save_shift_tuple(data, output_dir, input_path)
+        if ".tif" in input_path:
+            projected_path = tif_path_to_projected(input_path)
+            raw_img = np.load(projected_path)
+        else:
+            raw_img = np.load(input_path)
+        preprocessed_img = remove_inhomogeneous_background(
+            raw_img, self.background_sigma
+        )
+        ref_img = np.float32(self.reference_data)
+        raw_img = np.float32(match_histograms(np.float32(preprocessed_img), ref_img))
+        shifted_img = shift_image(preprocessed_img, data)
+        shifted_img[shifted_img < 0] = 0
+        self._save_registered(shifted_img, output_dir, input_path)
+        self._save_overlay_corrected(ref_img, shifted_img, output_dir, input_path)
+        self._save_reference_difference(
+            ref_img, raw_img, shifted_img, output_dir, input_path
+        )
 
     def load_reference_data(self, paths: List[str]):
         good_path = None
@@ -126,6 +125,74 @@ class RegisterGlobalModule(Module):
         existing_dict[f"ROI:{roi}"][cycle] = shifts.tolist()
         with open(out_path, "w") as file:
             json.dump(existing_dict, file, ensure_ascii=False, sort_keys=True, indent=4)
+
+    def _save_registered(self, shifted_img, output_dir, input_path):
+        base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
+        npy_filename = base + "_2d_registered.npy"
+        npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
+        save_npy(shifted_img, npy_path, len(output_dir))
+
+    def _save_overlay_corrected(self, ref_img, shifted_img, output_dir, input_path):
+        base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
+        png_filename = base + "_overlay_corrected.png"
+        png_path = os.path.join(output_dir, self.dirname, png_filename)
+        sz = ref_img.shape
+        img_1, img_2 = (
+            ref_img / ref_img.max(),
+            shifted_img / shifted_img.max(),
+        )
+        img_1 = image_adjust(img_1, lower_threshold=0.5, higher_threshold=0.9999)
+        img_2 = image_adjust(img_2, lower_threshold=0.5, higher_threshold=0.9999)
+        fig, ax1 = plt.subplots()
+        fig.set_size_inches((30, 30))
+        null_image = np.zeros(sz)
+        rgb = np.dstack([img_1, img_2, null_image])
+        ax1.imshow(rgb)
+        ax1.axis("off")
+        fig.savefig(png_path)
+        plt.close(fig)
+
+    def _save_reference_difference(
+        self, ref_img, raw_img, shifted_img, output_dir, input_path
+    ):
+        """
+        Overlays two images as R and B and saves them to output file
+        """
+        base = os.path.basename(input_path).split(".")[0]
+        base = base[:-3] if base[-3:] == "_2d" else base
+        png_filename = base + "_referenceDifference.png"
+        out_path = os.path.join(output_dir, self.dirname, png_filename)
+        ref_norm = ref_img / ref_img.max()
+        raw_norm = raw_img / raw_img.max()
+        shifted_norm = shifted_img / shifted_img.max()
+
+        ref_adjust = image_adjust(
+            ref_norm, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        raw_adjust = image_adjust(
+            raw_norm, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        shifted_adjust = image_adjust(
+            shifted_norm, lower_threshold=0.5, higher_threshold=0.9999
+        )
+
+        cmap = "seismic"
+
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.set_size_inches((60, 30))
+
+        ax1.imshow(ref_adjust - raw_adjust, cmap=cmap)
+        ax1.axis("off")
+        ax1.set_title("uncorrected")
+
+        ax2.imshow(ref_adjust - shifted_adjust, cmap=cmap)
+        ax2.axis("off")
+        ax2.set_title("corrected")
+
+        fig.savefig(out_path)
+        plt.close(fig)
 
 
 class RegisterByBlock(Module):
@@ -361,12 +428,8 @@ class CompareBlockGlobal(Module):
             ref_img / ref_img.max(),
             shifted_img / shifted_img.max(),
         )
-        img_1, _, _, _, _ = image_adjust(
-            img_1, lower_threshold=0.5, higher_threshold=0.9999
-        )
-        img_2, _, _, _, _ = image_adjust(
-            img_2, lower_threshold=0.5, higher_threshold=0.9999
-        )
+        img_1 = image_adjust(img_1, lower_threshold=0.5, higher_threshold=0.9999)
+        img_2 = image_adjust(img_2, lower_threshold=0.5, higher_threshold=0.9999)
         fig, ax1 = plt.subplots()
         fig.set_size_inches((30, 30))
         null_image = np.zeros(sz)
@@ -390,13 +453,13 @@ class CompareBlockGlobal(Module):
         raw_norm = raw_img / raw_img.max()
         shifted_norm = shifted_img / shifted_img.max()
 
-        ref_adjust, _, _, _, _ = image_adjust(
+        ref_adjust = image_adjust(
             ref_norm, lower_threshold=0.5, higher_threshold=0.9999
         )
-        raw_adjust, _, _, _, _ = image_adjust(
+        raw_adjust = image_adjust(
             raw_norm, lower_threshold=0.5, higher_threshold=0.9999
         )
-        shifted_adjust, _, _, _, _ = image_adjust(
+        shifted_adjust = image_adjust(
             shifted_norm, lower_threshold=0.5, higher_threshold=0.9999
         )
 
@@ -574,7 +637,4 @@ def image_adjust(image, lower_threshold=0.3, higher_threshold=0.9999):
         image1, in_range=(lower_cutoff, higher_cutoff), out_range=(0, 1)
     )
 
-    # calculates histogram of intensities of adjusted image
-    hist1 = exposure.histogram(image1)
-
-    return image1, hist1_before, hist1, lower_cutoff, higher_cutoff
+    return image1
