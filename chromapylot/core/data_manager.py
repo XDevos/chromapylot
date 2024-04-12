@@ -280,3 +280,23 @@ def tif_path_to_projected(tif_path):
     directory = os.path.dirname(tif_path)
     projected_path = os.path.join(directory, "project", "data", f"{base}_2d.npy")
     return projected_path
+
+
+def create_png_path(init_filename, out_dir, module_dir, png_postfix_name):
+    base = os.path.basename(init_filename).split(".")[0]
+    base = base[:-3] if base[-3:] == "_2d" else base
+    png_filename = base + png_postfix_name
+    out_path = os.path.join(out_dir, module_dir, png_filename)
+    if not os.path.exists(os.path.dirname(out_path)):
+        os.makedirs(os.path.dirname(out_path))
+    return out_path
+
+
+def create_npy_path(init_filename, out_dir, module_dir, npy_postfix_name):
+    base = os.path.basename(init_filename).split(".")[0]
+    base = base[:-3] if base[-3:] == "_2d" else base
+    npy_filename = base + npy_postfix_name
+    out_path = os.path.join(out_dir, module_dir, "data", npy_filename)
+    if not os.path.exists(os.path.dirname(out_path)):
+        os.makedirs(os.path.dirname(out_path))
+    return out_path

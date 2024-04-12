@@ -19,18 +19,29 @@ from numpy import linalg as LA
 from chromapylot.core.data_manager import load_json
 from chromapylot.core.data_manager import get_roi_number_from_image_path
 from chromapylot.core.data_manager import DataManager
-from chromapylot.core.data_manager import save_npy
+from chromapylot.core.data_manager import (
+    save_npy,
+    create_png_path,
+    create_npy_path,
+)
 from skimage import exposure
 from chromapylot.core.data_manager import tif_path_to_projected
 import matplotlib.pyplot as plt
 
 
 class RegisterGlobalModule(Module):
-    def __init__(self, registration_params: RegistrationParams):
+    def __init__(
+        self,
+        registration_params: RegistrationParams,
+        input_type=DataType.IMAGE_2D,
+        output_type=DataType.SHIFT_TUPLE,
+        supplementary_type=None,
+    ):
         super().__init__(
-            input_type=DataType.IMAGE_2D,
-            output_type=DataType.SHIFT_TUPLE,
+            input_type=input_type,
+            output_type=output_type,
             reference_type=DataType.IMAGE_2D,
+            supplementary_type=supplementary_type,
         )
         self.dirname = "register_global"
         self.reference_data = None
@@ -48,7 +59,7 @@ class RegisterGlobalModule(Module):
             return None
         if self.align_by_block:
             raise NotImplementedError(
-                "align_by_block is implemented with RegisterByBlock + CompareBlockGlobal modules."
+                "align_by_block is running with RegisterByBlock + CompareBlockGlobal modules."
             )
         print(f"[Run] Register Global")
         prep_2d_img = remove_inhomogeneous_background(raw_2d_img, self.background_sigma)
@@ -90,7 +101,12 @@ class RegisterGlobalModule(Module):
         )
         ref_img = np.float32(self.reference_data)
         raw_img = np.float32(match_histograms(np.float32(preprocessed_img), ref_img))
-        shifted_img = shift_image(preprocessed_img, data)
+        # refactoring trick
+        shifted_img = (
+            shift_image(raw_img, data)
+            if self.align_by_block
+            else shift_image(preprocessed_img, data)
+        )
         shifted_img[shifted_img < 0] = 0
         self._save_registered(shifted_img, output_dir, input_path)
         self._save_overlay_corrected(ref_img, shifted_img, output_dir, input_path)
@@ -104,7 +120,7 @@ class RegisterGlobalModule(Module):
             if self.ref_fiducial in os.path.basename(path):
                 good_path = path
                 break
-        if good_path[-3:] == "npy":
+        if good_path and good_path[-3:] == "npy":
             ref_img = np.load(good_path)
             self.reference_data = remove_inhomogeneous_background(
                 ref_img, self.background_sigma
@@ -122,7 +138,7 @@ class RegisterGlobalModule(Module):
             existing_dict = {f"ROI:{roi}": {}}
         else:
             existing_dict = load_json(out_path)
-        existing_dict[f"ROI:{roi}"][cycle] = shifts.tolist()
+        existing_dict[f"ROI:{roi}"][cycle] = list(shifts)
         with open(out_path, "w") as file:
             json.dump(existing_dict, file, ensure_ascii=False, sort_keys=True, indent=4)
 
@@ -133,11 +149,10 @@ class RegisterGlobalModule(Module):
         npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
         save_npy(shifted_img, npy_path, len(output_dir))
 
-    def _save_overlay_corrected(self, ref_img, shifted_img, output_dir, input_path):
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        png_filename = base + "_overlay_corrected.png"
-        png_path = os.path.join(output_dir, self.dirname, png_filename)
+    def _save_overlay_corrected(self, ref_img, shifted_img, out_dir, input_path):
+        png_path = create_png_path(
+            input_path, out_dir, self.dirname, "_overlay_corrected.png"
+        )
         sz = ref_img.shape
         img_1, img_2 = (
             ref_img / ref_img.max(),
@@ -155,15 +170,14 @@ class RegisterGlobalModule(Module):
         plt.close(fig)
 
     def _save_reference_difference(
-        self, ref_img, raw_img, shifted_img, output_dir, input_path
+        self, ref_img, raw_img, shifted_img, out_dir, init_file
     ):
         """
         Overlays two images as R and B and saves them to output file
         """
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        png_filename = base + "_referenceDifference.png"
-        out_path = os.path.join(output_dir, self.dirname, png_filename)
+        out_path = create_png_path(
+            init_file, out_dir, self.dirname, "_referenceDifference.png"
+        )
         ref_norm = ref_img / ref_img.max()
         raw_norm = raw_img / raw_img.max()
         shifted_norm = shifted_img / shifted_img.max()
@@ -195,20 +209,11 @@ class RegisterGlobalModule(Module):
         plt.close(fig)
 
 
-class RegisterByBlock(Module):
+class RegisterByBlock(RegisterGlobalModule):
     def __init__(self, registration_params: RegistrationParams):
         super().__init__(
-            input_type=DataType.IMAGE_2D,
-            output_type=DataType.MATRIX_3D,
-            reference_type=DataType.IMAGE_2D,
+            registration_params=registration_params, output_type=DataType.MATRIX_3D
         )
-        self.dirname = "register_global"
-        self.reference_data = None
-        self.ref_fiducial = registration_params.referenceFiducial
-        self.background_sigma = registration_params.background_sigma
-        self.align_by_block = registration_params.alignByBlock
-        self.block_size = registration_params.blockSize
-        self.tolerance = registration_params.tolerance
 
     def run(self, raw_2d_img):
         if raw_2d_img is None:
@@ -224,14 +229,6 @@ class RegisterByBlock(Module):
         raw_img = np.float32(match_histograms(np.float32(preprocessed_img), ref_img))
         return compute_shifts_and_rms_by_block(ref_img, raw_img, self.block_size)
 
-    def load_data(self, input_path, in_dir_length):
-        if self.ref_fiducial in os.path.basename(input_path):
-            return None
-        print(f"[Load] {self.input_type.value}")
-        short_path = input_path[in_dir_length:]
-        print(f"> $INPUT{short_path}")
-        return np.load(input_path)
-
     def save_data(self, data, output_dir, input_path):
         if data is None:
             return
@@ -240,54 +237,26 @@ class RegisterByBlock(Module):
         print("Saving error_alignment_block_map.")
         self._save_error_alignment_block_map(data, output_dir, input_path)
 
-    def load_reference_data(self, paths: List[str]):
-        good_path = None
-        for path in paths:
-            if self.ref_fiducial in os.path.basename(path):
-                good_path = path
-                break
-        if good_path and good_path[-3:] == "npy":
-            ref_img = np.load(good_path)
-            self.reference_data = remove_inhomogeneous_background(
-                ref_img, self.background_sigma
-            )
-        else:
-            raise NotImplementedError("Reference data must be a 2D numpy file.")
+    def _save_rms_block_map(self, shifts_and_rms, out_dir, input_path):
+        out_path = create_npy_path(
+            input_path, out_dir, self.dirname, "_rmsBlockMap.npy"
+        )
+        save_npy(shifts_and_rms[:, :, 2], out_path, len(out_dir))
 
-    def _save_rms_block_map(self, shifts_and_rms, output_dir, input_path):
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        npy_filename = base + "_rmsBlockMap.npy"
-        out_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
-        if not os.path.exists(os.path.dirname(out_path)):
-            os.makedirs(os.path.dirname(out_path))
-        np.save(out_path, shifts_and_rms[:, :, 2])
-        short_path = out_path[len(output_dir) :]
-        print(f"> $OUTPUT{short_path}")
-
-    def _save_error_alignment_block_map(self, shifts_and_rms, output_dir, input_path):
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        npy_filename = base + "_errorAlignmentBlockMap.npy"
-        out_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
-        if not os.path.exists(os.path.dirname(out_path)):
-            os.makedirs(os.path.dirname(out_path))
+    def _save_error_alignment_block_map(self, shifts_and_rms, out_dir, input_path):
+        out_path = create_npy_path(
+            input_path, out_dir, self.dirname, "_errorAlignmentBlockMap.npy"
+        )
         relative_shifts = compute_relative_shifts(shifts_and_rms, self.tolerance)
-        np.save(out_path, relative_shifts)
-        short_path = out_path[len(output_dir) :]
-        print(f"> $OUTPUT{short_path}")
+        save_npy(relative_shifts, out_path, len(out_dir))
         self._save_block_alignments(
-            relative_shifts, shifts_and_rms[:, :, 2], output_dir, input_path
+            relative_shifts, shifts_and_rms[:, :, 2], out_dir, input_path
         )
 
-    def _save_block_alignments(
-        self, relative_shifts, rms_image, output_dir, input_path
-    ):
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        png_filename = base + "_block_alignments.png"
-        out_path = os.path.join(output_dir, self.dirname, png_filename)
-
+    def _save_block_alignments(self, relative_shifts, rms_image, out_dir, input_path):
+        out_path = create_png_path(
+            input_path, out_dir, self.dirname, "_block_alignments.png"
+        )
         # plotting
         fig, axes = plt.subplots(1, 2)
         ax = axes.ravel()
@@ -315,21 +284,13 @@ class RegisterByBlock(Module):
         plt.close(fig)
 
 
-class CompareBlockGlobal(Module):
+class CompareBlockGlobal(RegisterGlobalModule):
     def __init__(self, registration_params: RegistrationParams):
         super().__init__(
+            registration_params=registration_params,
             input_type=DataType.MATRIX_3D,
-            output_type=DataType.SHIFT_TUPLE,
-            reference_type=DataType.IMAGE_2D,
             supplementary_type=DataType.IMAGE_2D,
         )
-        self.dirname = "register_global"
-        self.reference_data = None
-        self.ref_fiducial = registration_params.referenceFiducial
-        self.background_sigma = registration_params.background_sigma
-        self.align_by_block = registration_params.alignByBlock
-        self.block_size = registration_params.blockSize
-        self.tolerance = registration_params.tolerance
 
     def run(self, shifts_and_rms, img_to_align):
         if shifts_and_rms is None:
@@ -340,144 +301,12 @@ class CompareBlockGlobal(Module):
         )
         ref_img = np.float32(self.reference_data)
         raw_img = np.float32(match_histograms(np.float32(preprocessed_img), ref_img))
-        # mask = get_rms_mask(shifts_and_rms[:, :, 2], self.tolerance)
-        # masked_block_shifts = np.where(mask[..., None], shifts_and_rms[:, :, 2], np.nan)
-        # relative_shifts = compute_relative_shifts(masked_block_shifts)
         return compare_to_global(ref_img, raw_img, self.tolerance, shifts_and_rms)
-
-    def load_data(self, input_path, in_dir_length):
-        if self.ref_fiducial in os.path.basename(input_path):
-            return None
-        print(f"[Load] {self.input_type.value}")
-        short_path = input_path[in_dir_length:]
-        print(f"> $INPUT{short_path}")
-        return np.load(input_path)
-
-    def save_data(self, data, output_dir, input_path):
-        if data is None:
-            raw_img = np.load(input_path)
-            self._save_registered(raw_img, output_dir, input_path)
-            return
-        print("Saving shift tuple.")
-        self._save_shift_tuple(data, output_dir, input_path)
-        if ".tif" in input_path:
-            projected_path = tif_path_to_projected(input_path)
-            raw_img = np.load(projected_path)
-        else:
-            raw_img = np.load(input_path)
-        preprocessed_img = remove_inhomogeneous_background(
-            raw_img, self.background_sigma
-        )
-        ref_img = np.float32(self.reference_data)
-        raw_img = np.float32(match_histograms(np.float32(preprocessed_img), ref_img))
-        shifted_img = shift_image(raw_img, data)
-        shifted_img[shifted_img < 0] = 0
-        self._save_registered(shifted_img, output_dir, input_path)
-        self._save_overlay_corrected(ref_img, shifted_img, output_dir, input_path)
-        self._save_reference_difference(
-            ref_img, raw_img, shifted_img, output_dir, input_path
-        )
-
-    def load_reference_data(self, paths: List[str]):
-        good_path = None
-        for path in paths:
-            if self.ref_fiducial in os.path.basename(path):
-                good_path = path
-                break
-        if good_path[-3:] == "npy":
-            ref_img = np.load(good_path)
-            self.reference_data = remove_inhomogeneous_background(
-                ref_img, self.background_sigma
-            )
-        else:
-            raise NotImplementedError("Reference data must be a 2D numpy file.")
 
     def load_supplementary_data(self, data_type, cycle):
         if cycle == self.ref_fiducial:
             return []
         raise NotImplementedError("This method is not implemented yet.")
-
-    def _save_shift_tuple(self, shifts, output_dir, input_path):
-        out_path = os.path.join(output_dir, self.dirname, "data", "shifts.json")
-        cycle = DataManager.get_cycle_from_path(input_path)
-        roi = get_roi_number_from_image_path(input_path)
-        if not os.path.exists(os.path.dirname(out_path)):
-            os.makedirs(os.path.dirname(out_path))
-        if not os.path.exists(out_path):
-            existing_dict = {f"ROI:{roi}": {}}
-        else:
-            existing_dict = load_json(out_path)
-        existing_dict[f"ROI:{roi}"][cycle] = list(shifts)
-        with open(out_path, "w") as file:
-            json.dump(existing_dict, file, ensure_ascii=False, sort_keys=True, indent=4)
-
-    def _save_registered(self, shifted_img, output_dir, input_path):
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        npy_filename = base + "_2d_registered.npy"
-        npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
-        save_npy(shifted_img, npy_path, len(output_dir))
-
-    def _save_overlay_corrected(self, ref_img, shifted_img, output_dir, input_path):
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        png_filename = base + "_overlay_corrected.png"
-        png_path = os.path.join(output_dir, self.dirname, png_filename)
-        sz = ref_img.shape
-        img_1, img_2 = (
-            ref_img / ref_img.max(),
-            shifted_img / shifted_img.max(),
-        )
-        img_1 = image_adjust(img_1, lower_threshold=0.5, higher_threshold=0.9999)
-        img_2 = image_adjust(img_2, lower_threshold=0.5, higher_threshold=0.9999)
-        fig, ax1 = plt.subplots()
-        fig.set_size_inches((30, 30))
-        null_image = np.zeros(sz)
-        rgb = np.dstack([img_1, img_2, null_image])
-        ax1.imshow(rgb)
-        ax1.axis("off")
-        fig.savefig(png_path)
-        plt.close(fig)
-
-    def _save_reference_difference(
-        self, ref_img, raw_img, shifted_img, output_dir, input_path
-    ):
-        """
-        Overlays two images as R and B and saves them to output file
-        """
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        png_filename = base + "_referenceDifference.png"
-        out_path = os.path.join(output_dir, self.dirname, png_filename)
-        ref_norm = ref_img / ref_img.max()
-        raw_norm = raw_img / raw_img.max()
-        shifted_norm = shifted_img / shifted_img.max()
-
-        ref_adjust = image_adjust(
-            ref_norm, lower_threshold=0.5, higher_threshold=0.9999
-        )
-        raw_adjust = image_adjust(
-            raw_norm, lower_threshold=0.5, higher_threshold=0.9999
-        )
-        shifted_adjust = image_adjust(
-            shifted_norm, lower_threshold=0.5, higher_threshold=0.9999
-        )
-
-        cmap = "seismic"
-
-        fig, (ax1, ax2) = plt.subplots(1, 2)
-        fig.set_size_inches((60, 30))
-
-        ax1.imshow(ref_adjust - raw_adjust, cmap=cmap)
-        ax1.axis("off")
-        ax1.set_title("uncorrected")
-
-        ax2.imshow(ref_adjust - shifted_adjust, cmap=cmap)
-        ax2.axis("off")
-        ax2.set_title("corrected")
-
-        fig.savefig(out_path)
-        plt.close(fig)
 
 
 def remove_inhomogeneous_background(img, background_sigma):
@@ -606,21 +435,10 @@ def image_adjust(image, lower_threshold=0.3, higher_threshold=0.9999):
     -------
     image1 : numpy array
         adjusted 3D image.
-    hist1_before : numpy array
-        histogram of pixel intensities before adjusting levels.
-    hist1 : numpy array
-        histogram of pixel intensities after adjusting levels.
-    lower_cutoff : float
-        lower cutoff used for thresholding.
-    higher_cutoff : float
-        higher cutoff used for thresholding.
 
     """
-    # print_log("> Rescaling grey levels...")
-
     # rescales image to [0,1]
     image1 = exposure.rescale_intensity(image, out_range=(0, 1))
-
     # calculates histogram of intensities
     hist1_before = exposure.histogram(image1)
 
