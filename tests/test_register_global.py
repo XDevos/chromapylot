@@ -31,7 +31,6 @@ def template_test_register_global(mode: str):
     """Check RegisterGlobal feature with all possibilities"""
     inputs = os.path.join(tmp_register_global_in, mode)
     main(["-I", inputs, "-O", inputs, "-C", "register_global"])
-    # main(["-I", inputs, "-O", inputs, "-C", "register_global,shift_2d"])
     generated_align_images = os.path.join(inputs, "register_global")
     reference_outputs = f"pyhim-small-dataset/register_global/OUT/{mode}/alignImages/"
     generated_files = extract_files(generated_align_images)
