@@ -9,7 +9,7 @@ matplotlib.use("Agg")
 import numpy as np
 import scipy.optimize as spo
 from scipy.stats import sigmaclip
-from skimage import filters, io
+from skimage import filters
 from skimage.util.shape import view_as_blocks
 from tqdm import trange
 import matplotlib.pyplot as plt
@@ -57,10 +57,7 @@ class ProjectModule(Module):
         self.zmax = projection_params.zmax
 
     def load_data(self, input_path):
-        print(f"[Load] {self.input_type.value}")
-        short_path = input_path[self.data_m.in_dir_len :]
-        print(f"> $INPUT{short_path}")
-        return io.imread(input_path).squeeze()
+        return self.data_m.load_image_3d(input_path)
 
     def save_data(self, data, input_path):
         print("[Save] 2D npy | 2D png")

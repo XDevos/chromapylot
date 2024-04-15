@@ -2,6 +2,7 @@ import json
 import os
 from typing import List
 
+from skimage import io
 import numpy as np
 
 from chromapylot.core.core_types import AnalysisType as at
@@ -11,7 +12,7 @@ from chromapylot.core.core_types import (
     get_data_type,
 )
 
-from dask.distributed import Lock, get_client
+from dask.distributed import Lock
 
 
 def get_file_path(directory, filename, extension):
@@ -285,6 +286,12 @@ class DataManager:
                     sup_paths_by_cycle[cycle] = {}
                 sup_paths_by_cycle[cycle][type] = path
         return sup_paths_by_cycle
+
+    def load_image_3d(self, path):
+        print(f"[Load] {self.input_type.value}")
+        short_path = path[self.in_dir_len :]
+        print(f"> $INPUT{short_path}")
+        return io.imread(path).squeeze()
 
 
 def tif_path_to_projected(tif_path):
