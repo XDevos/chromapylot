@@ -11,6 +11,8 @@ from chromapylot.core.core_types import (
     get_data_type,
 )
 
+from dask.distributed import Lock, get_client
+
 
 def get_file_path(directory, filename, extension):
     return os.path.join(directory, f"{filename}.{extension}")
@@ -49,6 +51,33 @@ def load_json(file_path):
         print(f"[Load] Parameters")
         print(f"> {file_path}")
         return json.load(file)
+
+
+def save_json(data, path):
+    if try_get_client():
+        with Lock(path):
+            with open(path, "w") as file:
+                json.dump(data, file, ensure_ascii=False, sort_keys=True, indent=4)
+    else:
+        with open(path, "w") as file:
+            json.dump(data, file, ensure_ascii=False, sort_keys=True, indent=4)
+
+
+def try_get_client():
+    """Chek if client is alive
+
+    Returns
+    -------
+    Dask.Client
+        Client instance or None
+    """
+    try:
+        client = get_client()
+        client.restart()
+    except ValueError:
+        client = None
+
+    return client
 
 
 def save_ecsv(table, path):

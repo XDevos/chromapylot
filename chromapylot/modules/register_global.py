@@ -16,7 +16,7 @@ from skimage.registration import phase_cross_correlation
 from tqdm import trange
 from scipy.ndimage import shift as shift_image
 from numpy import linalg as LA
-from chromapylot.core.data_manager import load_json
+from chromapylot.core.data_manager import load_json, save_json
 from chromapylot.core.data_manager import get_roi_number_from_image_path
 from chromapylot.core.data_manager import DataManager
 from chromapylot.core.data_manager import (
@@ -139,8 +139,7 @@ class RegisterGlobalModule(Module):
         else:
             existing_dict = load_json(out_path)
         existing_dict[f"ROI:{roi}"][cycle] = list(shifts)
-        with open(out_path, "w") as file:
-            json.dump(existing_dict, file, ensure_ascii=False, sort_keys=True, indent=4)
+        save_json(existing_dict, out_path)
 
     def _save_registered(self, shifted_img, out_dir, in_path):
         npy_path = create_npy_path(in_path, out_dir, self.dirname, "_2d_registered")
