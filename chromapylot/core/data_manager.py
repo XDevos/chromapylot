@@ -54,30 +54,14 @@ def load_json(file_path):
 
 
 def save_json(data, path):
-    if try_get_client():
+    try:
         with Lock(path):
             with open(path, "w") as file:
                 json.dump(data, file, ensure_ascii=False, sort_keys=True, indent=4)
-    else:
+    # Case where we don't have a dask client
+    except RuntimeError:
         with open(path, "w") as file:
             json.dump(data, file, ensure_ascii=False, sort_keys=True, indent=4)
-
-
-def try_get_client():
-    """Chek if client is alive
-
-    Returns
-    -------
-    Dask.Client
-        Client instance or None
-    """
-    try:
-        client = get_client()
-        client.restart()
-    except ValueError:
-        client = None
-
-    return client
 
 
 def save_ecsv(table, path):
