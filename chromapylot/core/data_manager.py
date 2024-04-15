@@ -91,7 +91,9 @@ def get_roi_number_from_image_path(image_path):
 class DataManager:
     def __init__(self, run_args):
         self.input_folder = run_args.input
+        self.in_dir_len = len(self.input_folder)
         self.output_folder = run_args.output
+        self.out_dir_len = len(self.output_folder)
         self.input_files = extract_files(self.input_folder)
         self.parameters_file = self.get_parameters_file()
         self.parameters = load_json(self.parameters_file)
@@ -283,12 +285,6 @@ class DataManager:
                     sup_paths_by_cycle[cycle] = {}
                 sup_paths_by_cycle[cycle][type] = path
         return sup_paths_by_cycle
-
-    def get_input_path_length(self):
-        return len(self.input_folder)
-
-    def get_output_path_length(self):
-        return len(self.output_folder)
 
 
 def tif_path_to_projected(tif_path):

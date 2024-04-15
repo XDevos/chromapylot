@@ -346,15 +346,16 @@ class BuildTrace3DModule(Module):
                 output.append(trace_table)
         return output
 
-    def load_data(self, input_path, kwargs):
+    def load_data(self, input_path):
         print("Loading properties.")
         return Table.read(input_path, format="ascii.ecsv")
 
-    def _save_one_trace_table(self, trace_table, output_dir, input_path, method):
+    def _save_one_trace_table(self, trace_table, input_path, method):
         base = os.path.basename(input_path).split(".")[0]
         roi_nbr = trace_table["ROI #"][0]
         barcode_2d_or_3d = "_".join(base.split("_")[1:])
         out_name = f"Trace_{barcode_2d_or_3d}_{method}_ROI-{roi_nbr}.ecsv"
+        output_dir = self.data_m.output_folder
         table_path = os.path.join(output_dir, self.dirname, "data", out_name)
         save_ecsv(trace_table, table_path)
         png_path = os.path.join(
@@ -440,7 +441,7 @@ class BuildTrace3DModule(Module):
         plt.close(fig)
         print(f"Saved {png_path}.")
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         method_names = []
         if "clustering" in self.tracing_method:
             method_names.append("KDtree")
@@ -449,7 +450,7 @@ class BuildTrace3DModule(Module):
                 method_names.append(f"mask-{key}")
         for trace_table, method in zip(list(data), method_names):
             print(f"Saving {method} trace table.")
-            self._save_one_trace_table(trace_table, output_dir, input_path, method)
+            self._save_one_trace_table(trace_table, input_path, method)
 
     def load_reference_data(self, paths: List[str]):
         if "masking" in self.tracing_method:

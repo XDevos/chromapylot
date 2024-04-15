@@ -36,7 +36,7 @@ class Module:
     def run(self, data: Any, supplementary_data: Any = None):
         raise NotImplementedError
 
-    def load_data(self, input_path, input_path_length: int):
+    def load_data(self, input_path):
         raise NotImplementedError
 
     def load_reference_data(self, paths: List[str]):
@@ -55,7 +55,7 @@ class Module:
         """
         raise NotImplementedError
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         raise NotImplementedError
 
     def switch_input_supplementary(self):
@@ -128,7 +128,7 @@ class SkipModule(Module):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving 3D image.")
 
 
@@ -195,7 +195,7 @@ class Shift3DModule(ShiftModule):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving 3D image.")
 
 
@@ -214,19 +214,21 @@ class Shift2DModule(ShiftModule):
         print(f"[Shift] 2D image with {shift_tuple}.")
         return shift_image(array_2d, shift_tuple)
 
-    def load_data(self, input_path, in_dir_length):
+    def load_data(self, input_path):
         print(f"[Load] {self.input_type.value}")
-        short_path = input_path[in_dir_length:]
+        short_path = input_path[self.data_m.in_dir_len :]
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("[Save] 2D npy")
         base = os.path.basename(input_path).split(".")[0]
         base = base[:-3] if base[-3:] == "_2d" else base
         npy_filename = base + "_2d_registered.npy"
-        npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
-        save_npy(data, npy_path, len(output_dir))
+        npy_path = os.path.join(
+            self.data_m.output_folder, self.dirname, "data", npy_filename
+        )
+        save_npy(data, npy_path, self.data_m.out_dir_len)
 
 
 class RegisterLocalModule(Module):
@@ -247,7 +249,7 @@ class RegisterLocalModule(Module):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving registration table.")
 
     def load_reference_data(self, paths: List[str]):
@@ -273,7 +275,7 @@ class Segment3DModule(Module):
         print("Loading 3D image.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving 3D image.")
 
 
@@ -295,7 +297,7 @@ class Segment2DModule(Module):
         print("Loading 2D image.")
         return np.ones((10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving 2D image.")
 
 
@@ -323,9 +325,9 @@ class ExtractModule(Module):
         masks = np.load(mask_path)
         return masks
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         data.write(
-            get_file_path(output_dir, "_props", "ecsv"),
+            get_file_path(self.data_m.output_folder, "_props", "ecsv"),
             format="ascii.ecsv",
             overwrite=True,
         )
@@ -353,7 +355,7 @@ class Extract3DModule(ExtractModule):
         print("Loading 3D mask.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving properties.")
 
 
@@ -379,7 +381,7 @@ class Extract2DModule(ExtractModule):
         print("Loading 2D mask.")
         return np.ones((10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving properties.")
 
 
@@ -402,9 +404,9 @@ class FilterTableModule(Module):
         properties_table = Table.read(props_path, format="ascii.ecsv")
         return properties_table
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         data.write(
-            get_file_path(output_dir, "_filtered", "ecsv"),
+            get_file_path(self.data_m.output_folder, "_filtered", "ecsv"),
             format="ascii.ecsv",
             overwrite=True,
         )
@@ -426,7 +428,7 @@ class FilterMaskModule(FilterTableModule):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving filtered mask table.")
 
 
@@ -444,7 +446,7 @@ class FilterLocalizationModule(FilterTableModule):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving filtered ocalization table.")
 
 
@@ -474,8 +476,8 @@ class SelectMaskModule(Module):
         properties_table = Table.read(props_path, format="ascii.ecsv")
         return properties_table
 
-    def save_data(self, data, output_dir, input_path):
-        np.save(get_file_path(output_dir, "_mask_filtered", "npy"), data)
+    def save_data(self, data, input_path):
+        np.save(get_file_path(self.data_m.output_folder, "_mask_filtered", "npy"), data)
 
 
 class SelectMask3DModule(SelectMaskModule):
@@ -497,7 +499,7 @@ class SelectMask3DModule(SelectMaskModule):
         print("Loading 3D mask.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving 3D mask.")
 
     def load_supplementary_data(self, input_path):
@@ -524,7 +526,7 @@ class SelectMask2DModule(SelectMaskModule):
         print("Loading 2D mask.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving 2D mask.")
 
     def load_supplementary_data(self, input_path):
@@ -549,7 +551,7 @@ class RegisterLocalizationModule(Module):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving registered localization table.")
 
     def load_reference_data(self, paths: List[str]):
@@ -573,5 +575,5 @@ class BuildMatrixModule(Module):
         print("Loading trace table.")
         return Table()
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("Saving matrix.")

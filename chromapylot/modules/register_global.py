@@ -78,21 +78,21 @@ class RegisterGlobalModule(Module):
         )
         return shift
 
-    def load_data(self, input_path, in_dir_length):
+    def load_data(self, input_path):
         if self.ref_fiducial in os.path.basename(input_path):
             return None
         print(f"[Load] {self.input_type.value}")
-        short_path = input_path[in_dir_length:]
+        short_path = input_path[self.data_m.in_dir_len :]
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         if data is None:
             raw_img = np.load(input_path)
-            self._save_registered(raw_img, output_dir, input_path)
+            self._save_registered(raw_img, input_path)
             return
         print("Saving shift tuple.")
-        self._save_shift_tuple(data, output_dir, input_path)
+        self._save_shift_tuple(data, input_path)
         if ".tif" in input_path:
             projected_path = tif_path_to_projected(input_path)
             raw_img = np.load(projected_path)
@@ -110,11 +110,9 @@ class RegisterGlobalModule(Module):
             else shift_image(preprocessed_img, data)
         )
         shifted_img[shifted_img < 0] = 0
-        self._save_registered(shifted_img, output_dir, input_path)
-        self._save_overlay_corrected(ref_img, shifted_img, output_dir, input_path)
-        self._save_reference_difference(
-            ref_img, raw_img, shifted_img, output_dir, input_path
-        )
+        self._save_registered(shifted_img, input_path)
+        self._save_overlay_corrected(ref_img, shifted_img, input_path)
+        self._save_reference_difference(ref_img, raw_img, shifted_img, input_path)
 
     def load_reference_data(self, paths: List[str]):
         good_path = None
@@ -130,8 +128,10 @@ class RegisterGlobalModule(Module):
         else:
             raise NotImplementedError("Reference data must be a 2D numpy file.")
 
-    def _save_shift_tuple(self, shifts, output_dir, input_path):
-        out_path = os.path.join(output_dir, self.dirname, "data", "shifts.json")
+    def _save_shift_tuple(self, shifts, input_path):
+        out_path = os.path.join(
+            self.data_m.output_folder, self.dirname, "data", "shifts.json"
+        )
         cycle = DataManager.get_cycle_from_path(input_path)
         roi = get_roi_number_from_image_path(input_path)
         if not os.path.exists(os.path.dirname(out_path)):
@@ -143,12 +143,16 @@ class RegisterGlobalModule(Module):
         existing_dict[f"ROI:{roi}"][cycle] = list(shifts)
         save_json(existing_dict, out_path)
 
-    def _save_registered(self, shifted_img, out_dir, in_path):
-        npy_path = create_npy_path(in_path, out_dir, self.dirname, "_2d_registered")
-        save_npy(shifted_img, npy_path, len(out_dir))
+    def _save_registered(self, shifted_img, in_path):
+        npy_path = create_npy_path(
+            in_path, self.data_m.output_folder, self.dirname, "_2d_registered"
+        )
+        save_npy(shifted_img, npy_path, self.data_m.out_dir_len)
 
-    def _save_overlay_corrected(self, ref_img, shifted_img, out_dir, in_path):
-        png_path = create_png_path(in_path, out_dir, self.dirname, "_overlay_corrected")
+    def _save_overlay_corrected(self, ref_img, shifted_img, in_path):
+        png_path = create_png_path(
+            in_path, self.data_m.output_folder, self.dirname, "_overlay_corrected"
+        )
         sz = ref_img.shape
         img_1, img_2 = (
             ref_img / ref_img.max(),
@@ -165,14 +169,12 @@ class RegisterGlobalModule(Module):
         fig.savefig(png_path)
         plt.close(fig)
 
-    def _save_reference_difference(
-        self, ref_img, raw_img, shifted_img, out_dir, init_file
-    ):
+    def _save_reference_difference(self, ref_img, raw_img, shifted_img, init_file):
         """
         Overlays two images as R and B and saves them to output file
         """
         out_path = create_png_path(
-            init_file, out_dir, self.dirname, "_referenceDifference"
+            init_file, self.data_m.output_folder, self.dirname, "_referenceDifference"
         )
         ref_norm = ref_img / ref_img.max()
         raw_norm = raw_img / raw_img.max()
@@ -229,31 +231,36 @@ class RegisterByBlock(RegisterGlobalModule):
         raw_img = np.float32(match_histograms(np.float32(preprocessed_img), ref_img))
         return compute_shifts_and_rms_by_block(ref_img, raw_img, self.block_size)
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         if data is None:
             return
         print("Saving rms_block_map.")
-        self._save_rms_block_map(data, output_dir, input_path)
+        self._save_rms_block_map(data, input_path)
         print("Saving error_alignment_block_map.")
-        self._save_error_alignment_block_map(data, output_dir, input_path)
+        self._save_error_alignment_block_map(data, input_path)
 
-    def _save_rms_block_map(self, shifts_and_rms, out_dir, input_path):
-        out_path = create_npy_path(input_path, out_dir, self.dirname, "_rmsBlockMap")
-        save_npy(shifts_and_rms[:, :, 2], out_path, len(out_dir))
-
-    def _save_error_alignment_block_map(self, shifts_and_rms, out_dir, input_path):
+    def _save_rms_block_map(self, shifts_and_rms, input_path):
         out_path = create_npy_path(
-            input_path, out_dir, self.dirname, "_errorAlignmentBlockMap"
+            input_path, self.data_m.output_folder, self.dirname, "_rmsBlockMap"
+        )
+        save_npy(shifts_and_rms[:, :, 2], out_path, self.data_m.out_dir_len)
+
+    def _save_error_alignment_block_map(self, shifts_and_rms, input_path):
+        out_path = create_npy_path(
+            input_path,
+            self.data_m.output_folder,
+            self.dirname,
+            "_errorAlignmentBlockMap",
         )
         relative_shifts = compute_relative_shifts(shifts_and_rms, self.tolerance)
-        save_npy(relative_shifts, out_path, len(out_dir))
+        save_npy(relative_shifts, out_path, self.data_m.out_dir_len)
         self._save_block_alignments(
-            relative_shifts, shifts_and_rms[:, :, 2], out_dir, input_path
+            relative_shifts, shifts_and_rms[:, :, 2], input_path
         )
 
-    def _save_block_alignments(self, relative_shifts, rms_image, out_dir, input_path):
+    def _save_block_alignments(self, relative_shifts, rms_image, input_path):
         out_path = create_png_path(
-            input_path, out_dir, self.dirname, "_block_alignments"
+            input_path, self.data_m.output_folder, self.dirname, "_block_alignments"
         )
         # plotting
         fig, axes = plt.subplots(1, 2)

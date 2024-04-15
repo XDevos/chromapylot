@@ -18,10 +18,10 @@ class RegisterLocal(Module):
     def run(self, data, supplementary_data=None):
         raise NotImplementedError
 
-    def load_data(self, input_path, input_path_length: int):
+    def load_data(self, input_path):
         raise NotImplementedError
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         raise NotImplementedError
 
     def load_reference_data(self, paths: List[str]):

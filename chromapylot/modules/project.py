@@ -56,18 +56,22 @@ class ProjectModule(Module):
         self.zmin = projection_params.zmin
         self.zmax = projection_params.zmax
 
-    def load_data(self, input_path, input_path_length):
+    def load_data(self, input_path):
         print(f"[Load] {self.input_type.value}")
-        short_path = input_path[input_path_length:]
+        short_path = input_path[self.data_m.in_dir_len :]
         print(f"> $INPUT{short_path}")
         return io.imread(input_path).squeeze()
 
-    def save_data(self, data, out_dir, input_path):
+    def save_data(self, data, input_path):
         print("[Save] 2D npy | 2D png")
-        npy_path = create_npy_path(input_path, out_dir, self.dirname, "_2d")
-        save_npy(data, npy_path, len(out_dir))
-        png_path = create_png_path(input_path, out_dir, self.dirname, "_2d")
-        save_png(data, png_path, len(out_dir))
+        npy_path = create_npy_path(
+            input_path, self.data_m.output_folder, self.dirname, "_2d"
+        )
+        save_npy(data, npy_path, self.data_m.out_dir_len)
+        png_path = create_png_path(
+            input_path, self.data_m.output_folder, self.dirname, "_2d"
+        )
+        save_png(data, png_path, self.data_m.out_dir_len)
 
     def run(self, array_3d, cycle: str = None):
         print(f"[Run] {self.input_type.value} -> {self.output_type.value}")
@@ -184,7 +188,7 @@ class SplitInBlocks(ProjectModule):
     def run(self, img):
         return split_in_blocks(img, block_size_xy=self.block_size)
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, input_path):
         print("> No need to save data for SplitInBlocks module.")
         pass
 
@@ -201,15 +205,15 @@ class InterpolateFocalPlane(ProjectModule):
     def run(self, blocks):
         return calculate_focus_per_block(blocks)
 
-    def load_data(self, input_path, in_dir_length):
+    def load_data(self, input_path):
         print(f"[Load] {self.input_type.value}")
-        short_path = input_path[in_dir_length:]
+        short_path = input_path[self.data_m.in_dir_len :]
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
 
-    def save_data(self, data, out_dir, in_path):
+    def save_data(self, data, in_path):
         output_path = create_png_path(
-            in_path, out_dir, self.dirname, "_focalPlaneMatrix"
+            in_path, self.data_m.output_folder, self.dirname, "_focalPlaneMatrix"
         )
         fig, axes = plt.subplots(1, 1)
         fig.set_size_inches((2, 5))
@@ -240,7 +244,7 @@ class InterpolateFocalPlane(ProjectModule):
         fig.tight_layout()
         plt.savefig(output_path)
         plt.close(fig)
-        short_path = output_path[len(out_dir) :]
+        short_path = output_path[self.data_m.out_dir_len :]
         print(f"> $OUTPUT{short_path}")
 
 
@@ -256,9 +260,9 @@ class ProjectByBlockModule(ProjectModule):
     def run(self, focal_matrix, blocks):
         return reassemble_images(focal_matrix, blocks, window=self.zwindows)
 
-    def load_data(self, input_path, in_dir_length):
+    def load_data(self, input_path):
         print(f"[Load] {self.input_type.value}")
-        short_path = input_path[in_dir_length:]
+        short_path = input_path[self.data_m.in_dir_len :]
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
 

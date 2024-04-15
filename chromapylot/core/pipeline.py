@@ -12,12 +12,10 @@ class Pipeline:
         self,
         analysis_type: AnalysisType,
         modules: List[mod.Module],
-        input_path_length: int,
     ):
         self.analysis_type = analysis_type
         self.modules = modules
         self.supplementary_data: Dict[DataType, Any] = {}
-        self.input_path_length = input_path_length
 
     def prepare(self, data_manager: DataManager):
         first_input_type = self.modules[0].input_type
@@ -89,12 +87,11 @@ class Pipeline:
     def process(
         self,
         data_path: str,
-        output_dir: str,
         supplementary_paths: Dict[DataType, str],
         cycle: str,
     ):
         print_text_inside(cycle, ".")
-        data = self.modules[0].load_data(data_path, self.input_path_length)
+        data = self.modules[0].load_data(data_path)
         self.choose_to_keep_input_data(data)
         self.update_supplementary_data(supplementary_paths)
         for module in self.modules:
@@ -105,5 +102,5 @@ class Pipeline:
                 data = module.run(data)
             else:
                 data = module.run(data, supplementary_data)
-            module.save_data(data, output_dir, data_path)
+            module.save_data(data, data_path)
             self.choose_to_keep_data(module, data)

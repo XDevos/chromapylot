@@ -255,9 +255,8 @@ class AnalysisManager:
                 if modules:
                     self.analysis_to_process.append((analysis_type, dim))
                     print(f"> CREATED")
-                    input_path_length = self.data_manager.get_input_path_length()
                     self.pipelines[analysis_type.value][dim] = Pipeline(
-                        analysis_type, modules, input_path_length
+                        analysis_type, modules
                     )
                 else:
                     print("> IGNORED")
@@ -284,7 +283,6 @@ class AnalysisManager:
             else:
                 use_dask = False
 
-        output_dir = self.data_manager.output_folder
         for analysis_type, dim in self.analysis_to_process:
             self.data_manager.refresh_input_files()
             if use_dask:
@@ -307,13 +305,12 @@ class AnalysisManager:
                         client.submit(
                             pipe.process,
                             data_path,
-                            output_dir,
                             sup_paths.pop(cycle),
                             cycle,
                         )
                     )
                 else:
-                    pipe.process(data_path, output_dir, sup_paths.pop(cycle), cycle)
+                    pipe.process(data_path, sup_paths.pop(cycle), cycle)
             if sup_paths:
                 raise ValueError(
                     f"Supplementary data not used for analysis {analysis_type}: {sup_paths}"
