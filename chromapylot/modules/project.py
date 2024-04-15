@@ -21,7 +21,7 @@ from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import save_npy
 from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.modules.module import Module
-from chromapylot.core.data_manager import DataManager
+from chromapylot.core.data_manager import DataManager, create_npy_path, create_png_path
 
 from datetime import datetime
 from chromapylot.core.data_manager import load_json
@@ -50,15 +50,12 @@ class ProjectModule(Module):
         print(f"> $INPUT{short_path}")
         return io.imread(input_path).squeeze()
 
-    def save_data(self, data, output_dir, input_path):
+    def save_data(self, data, out_dir, input_path):
         print("[Save] 2D npy | 2D png")
-        base = os.path.basename(input_path).split(".")[0]
-        npy_filename = base + "_2d.npy"
-        npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
-        save_npy(data, npy_path, len(output_dir))
-        png_filename = base + "_2d.png"
-        png_path = os.path.join(output_dir, self.dirname, png_filename)
-        save_png(data, png_path, len(output_dir))
+        npy_path = create_npy_path(input_path, out_dir, self.dirname, "_2d")
+        save_npy(data, npy_path, len(out_dir))
+        png_path = create_png_path(input_path, out_dir, self.dirname, "_2d")
+        save_png(data, png_path, len(out_dir))
 
     def run(self, array_3d, cycle: str = None):
         print(f"[Run] {self.input_type.value} -> {self.output_type.value}")
@@ -204,9 +201,10 @@ class InterpolateFocalPlane(Module):
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
 
-    def save_data(self, data, output_dir, input_path):
-        filename = os.path.basename(input_path).split(".")[0] + "_focalPlaneMatrix.png"
-        output_path = os.path.join(output_dir, self.dirname, filename)
+    def save_data(self, data, out_dir, in_path):
+        output_path = create_png_path(
+            in_path, out_dir, self.dirname, "_focalPlaneMatrix"
+        )
         fig, axes = plt.subplots(1, 1)
         fig.set_size_inches((2, 5))
         focus_plane = get_focus_plane(data)
@@ -236,7 +234,7 @@ class InterpolateFocalPlane(Module):
         fig.tight_layout()
         plt.savefig(output_path)
         plt.close(fig)
-        short_path = output_path[len(output_dir) :]
+        short_path = output_path[len(out_dir) :]
         print(f"> $OUTPUT{short_path}")
 
 
@@ -261,12 +259,9 @@ class ProjectByBlockModule(Module):
 
     def save_data(self, data, output_dir, input_path):
         print("[Save] 2D npy | 2D png")
-        base = os.path.basename(input_path).split(".")[0]
-        npy_filename = base + "_2d.npy"
-        npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
+        npy_path = create_npy_path(input_path, output_dir, self.dirname, "_2d")
         save_npy(data, npy_path, len(output_dir))
-        png_filename = base + "_2d.png"
-        png_path = os.path.join(output_dir, self.dirname, png_filename)
+        png_path = create_png_path(input_path, output_dir, self.dirname, "_2d")
         save_png(data, png_path, len(output_dir))
 
     # =============================================================================
