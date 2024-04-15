@@ -35,12 +35,14 @@ from apifish.stack import projection
 class ProjectModule(Module):
     def __init__(
         self,
+        data_manager: DataManager,
         projection_params: ProjectionParams,
         input_type: DataType = DataType.IMAGE_3D,
         output_type: DataType = DataType.IMAGE_2D,
         supplementary_type: DataType = None,
     ):
         super().__init__(
+            data_manager=data_manager,
             input_type=input_type,
             output_type=output_type,
             supplementary_type=supplementary_type,
@@ -172,8 +174,9 @@ class ProjectModule(Module):
 
 
 class SplitInBlocks(ProjectModule):
-    def __init__(self, projection_params: ProjectionParams):
+    def __init__(self, data_manager: DataManager, projection_params: ProjectionParams):
         super().__init__(
+            data_manager=data_manager,
             projection_params=projection_params,
             output_type=DataType.IMAGE_BLOCKS,
         )
@@ -187,8 +190,9 @@ class SplitInBlocks(ProjectModule):
 
 
 class InterpolateFocalPlane(ProjectModule):
-    def __init__(self, projection_params: ProjectionParams):
+    def __init__(self, data_manager: DataManager, projection_params: ProjectionParams):
         super().__init__(
+            data_manager=data_manager,
             projection_params=projection_params,
             input_type=DataType.IMAGE_BLOCKS,
             output_type=DataType.MATRIX_2D,
@@ -241,8 +245,9 @@ class InterpolateFocalPlane(ProjectModule):
 
 
 class ProjectByBlockModule(ProjectModule):
-    def __init__(self, projection_params: ProjectionParams):
+    def __init__(self, data_manager: DataManager, projection_params: ProjectionParams):
         super().__init__(
+            data_manager=data_manager,
             projection_params=projection_params,
             input_type=DataType.MATRIX_2D,
             supplementary_type=DataType.IMAGE_BLOCKS,

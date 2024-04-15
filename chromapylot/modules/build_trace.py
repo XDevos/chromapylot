@@ -19,7 +19,7 @@ from scipy.spatial import KDTree
 from stardist import random_label_cmap
 
 from chromapylot.core.core_types import AnalysisType, DataType
-from chromapylot.core.data_manager import load_json, save_ecsv
+from chromapylot.core.data_manager import load_json, save_ecsv, DataManager
 from chromapylot.parameters.pipeline_params import PipelineParams
 from chromapylot.parameters.acquisition_params import AcquisitionParams
 from chromapylot.parameters.matrix_params import MatrixParams
@@ -145,9 +145,13 @@ def add_localization_to_trace_table(
 
 class BuildTrace3DModule(Module):
     def __init__(
-        self, acquisition_params: AcquisitionParams, matrix_params: MatrixParams
+        self,
+        data_manager: DataManager,
+        acquisition_params: AcquisitionParams,
+        matrix_params: MatrixParams,
     ):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.TABLE_3D,
             output_type=DataType.TRACES_LIST_3D,
             reference_type=[

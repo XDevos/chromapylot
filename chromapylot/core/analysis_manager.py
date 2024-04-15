@@ -225,7 +225,7 @@ class AnalysisManager:
         }
         if module_name in module_mapping:
             print(f"> Add: {module_name}")
-            return module_mapping[module_name](**module_params)
+            return module_mapping[module_name](self.data_manager, **module_params)
         else:
             raise ValueError(f"Module {module_name} does not exist.")
 

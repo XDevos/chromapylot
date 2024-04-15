@@ -9,7 +9,7 @@ from scipy.ndimage import shift
 from tifffile import imread
 from scipy.ndimage import shift as shift_image
 from chromapylot.core.core_types import DataType, first_type_accept_second
-from chromapylot.core.data_manager import get_file_path
+from chromapylot.core.data_manager import get_file_path, DataManager
 from chromapylot.parameters.acquisition_params import AcquisitionParams
 from chromapylot.parameters.matrix_params import MatrixParams
 from chromapylot.parameters.registration_params import RegistrationParams
@@ -19,11 +19,13 @@ from chromapylot.parameters.segmentation_params import SegmentationParams
 class Module:
     def __init__(
         self,
+        data_manager: DataManager,
         input_type: Union[DataType, List[DataType]],
         output_type: DataType,
         reference_type: Union[DataType, List[DataType], None] = None,
         supplementary_type: Union[DataType, List[DataType], None] = None,
     ):
+        self.data_m = data_manager
         self.input_type = input_type
         self.output_type = output_type
         self.reference_type = reference_type
@@ -104,12 +106,15 @@ class Module:
 
 
 class SkipModule(Module):
-    def __init__(self, acquisition_params: AcquisitionParams):
+    def __init__(
+        self, data_manager: DataManager, acquisition_params: AcquisitionParams
+    ):
         """
         Parameters:
         z_binning (int): The number of z-planes to skip.
         """
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.IMAGE_3D,
             output_type=DataType.IMAGE_3D,
         )
@@ -128,12 +133,13 @@ class SkipModule(Module):
 
 
 class ShiftModule(Module):
-    def __init__(self, input_type, output_type):
+    def __init__(self, data_manager: DataManager, input_type, output_type):
         """
         Parameters:
         shift_dict (dict): A dictionary with the shift values for each label.
         """
         super().__init__(
+            data_manager=data_manager,
             input_type=input_type,
             output_type=output_type,
             reference_type=DataType.SHIFT_DICT,
@@ -172,8 +178,11 @@ class ShiftModule(Module):
 
 
 class Shift3DModule(ShiftModule):
-    def __init__(self, registration_params: RegistrationParams):
+    def __init__(
+        self, data_manager: DataManager, registration_params: RegistrationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.IMAGE_3D,
             output_type=DataType.IMAGE_3D_SHIFTED,
         )
@@ -191,8 +200,11 @@ class Shift3DModule(ShiftModule):
 
 
 class Shift2DModule(ShiftModule):
-    def __init__(self, registration_params: RegistrationParams):
+    def __init__(
+        self, data_manager: DataManager, registration_params: RegistrationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.IMAGE_2D,
             output_type=DataType.IMAGE_2D_SHIFTED,
         )
@@ -218,8 +230,11 @@ class Shift2DModule(ShiftModule):
 
 
 class RegisterLocalModule(Module):
-    def __init__(self, registration_params: RegistrationParams):
+    def __init__(
+        self, data_manager: DataManager, registration_params: RegistrationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
             output_type=DataType.REGISTRATION_TABLE,
             reference_type=DataType.IMAGE_3D,
@@ -241,8 +256,11 @@ class RegisterLocalModule(Module):
 
 
 class Segment3DModule(Module):
-    def __init__(self, segmentation_params: SegmentationParams):
+    def __init__(
+        self, data_manager: DataManager, segmentation_params: SegmentationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
             output_type=DataType.IMAGE_3D_SEGMENTED,
         )
@@ -260,8 +278,11 @@ class Segment3DModule(Module):
 
 
 class Segment2DModule(Module):
-    def __init__(self, segmentation_params: SegmentationParams):
+    def __init__(
+        self, data_manager: DataManager, segmentation_params: SegmentationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=[DataType.IMAGE_2D_SHIFTED, DataType.IMAGE_2D],
             output_type=DataType.IMAGE_2D_SEGMENTED,
         )
@@ -279,8 +300,11 @@ class Segment2DModule(Module):
 
 
 class ExtractModule(Module):
-    def __init__(self, input_type, output_type, supplementary_type):
+    def __init__(
+        self, data_manager: DataManager, input_type, output_type, supplementary_type
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=input_type,
             output_type=output_type,
             supplementary_type=supplementary_type,
@@ -308,8 +332,11 @@ class ExtractModule(Module):
 
 
 class Extract3DModule(ExtractModule):
-    def __init__(self, segmentation_params: SegmentationParams):
+    def __init__(
+        self, data_manager: DataManager, segmentation_params: SegmentationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.IMAGE_3D_SEGMENTED,
             output_type=DataType.TABLE_3D,
             supplementary_type=[
@@ -331,8 +358,11 @@ class Extract3DModule(ExtractModule):
 
 
 class Extract2DModule(ExtractModule):
-    def __init__(self, segmentation_params: SegmentationParams):
+    def __init__(
+        self, data_manager: DataManager, segmentation_params: SegmentationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.IMAGE_2D_SEGMENTED,
             output_type=DataType.TABLE_2D,
             supplementary_type=[
@@ -354,8 +384,9 @@ class Extract2DModule(ExtractModule):
 
 
 class FilterTableModule(Module):
-    def __init__(self):
+    def __init__(self, data_manager: DataManager):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.TABLE,
             output_type=DataType.TABLE,
         )
@@ -380,8 +411,12 @@ class FilterTableModule(Module):
 
 
 class FilterMaskModule(FilterTableModule):
-    def __init__(self, segmentation_params: SegmentationParams):
-        super().__init__()
+    def __init__(
+        self, data_manager: DataManager, segmentation_params: SegmentationParams
+    ):
+        super().__init__(
+            data_manager=data_manager,
+        )
 
     def run(self, table):
         print("Filtering mask.")
@@ -396,8 +431,10 @@ class FilterMaskModule(FilterTableModule):
 
 
 class FilterLocalizationModule(FilterTableModule):
-    def __init__(self, matrix_params: MatrixParams):
-        super().__init__()
+    def __init__(self, data_manager: DataManager, matrix_params: MatrixParams):
+        super().__init__(
+            data_manager=data_manager,
+        )
 
     def run(self, table):
         print("Filtering ocalization.")
@@ -412,8 +449,11 @@ class FilterLocalizationModule(FilterTableModule):
 
 
 class SelectMaskModule(Module):
-    def __init__(self, input_type, output_type, supplementary_type):
+    def __init__(
+        self, data_manager: DataManager, input_type, output_type, supplementary_type
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=input_type,
             output_type=output_type,
             supplementary_type=supplementary_type,
@@ -439,8 +479,11 @@ class SelectMaskModule(Module):
 
 
 class SelectMask3DModule(SelectMaskModule):
-    def __init__(self, segmentation_params: SegmentationParams):
+    def __init__(
+        self, data_manager: DataManager, segmentation_params: SegmentationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.IMAGE_3D_SEGMENTED,
             output_type=DataType.IMAGE_3D_SEGMENTED_SELECTED,
             supplementary_type=DataType.TABLE_3D,
@@ -463,8 +506,11 @@ class SelectMask3DModule(SelectMaskModule):
 
 
 class SelectMask2DModule(SelectMaskModule):
-    def __init__(self, segmentation_params: SegmentationParams):
+    def __init__(
+        self, data_manager: DataManager, segmentation_params: SegmentationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.IMAGE_2D_SEGMENTED,
             output_type=DataType.IMAGE_2D_SEGMENTED_SELECTED,
             supplementary_type=DataType.TABLE_2D,
@@ -487,8 +533,9 @@ class SelectMask2DModule(SelectMaskModule):
 
 
 class RegisterLocalizationModule(Module):
-    def __init__(self, matrix_params: MatrixParams):
+    def __init__(self, data_manager: DataManager, matrix_params: MatrixParams):
         super().__init__(
+            data_manager=data_manager,
             input_type=DataType.TABLE_3D,
             output_type=DataType.TABLE_3D_REGISTERED,
             reference_type=DataType.REGISTRATION_TABLE,
@@ -511,8 +558,9 @@ class RegisterLocalizationModule(Module):
 
 
 class BuildMatrixModule(Module):
-    def __init__(self, matrix_params: MatrixParams):
+    def __init__(self, data_manager: DataManager, matrix_params: MatrixParams):
         super().__init__(
+            data_manager=data_manager,
             input_type=[DataType.TRACES_LIST, DataType.TRACES],
             output_type=DataType.MATRIX,
         )

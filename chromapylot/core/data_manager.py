@@ -287,6 +287,9 @@ class DataManager:
     def get_input_path_length(self):
         return len(self.input_folder)
 
+    def get_output_path_length(self):
+        return len(self.output_folder)
+
 
 def tif_path_to_projected(tif_path):
     base = os.path.basename(tif_path).split(".")[0]

@@ -25,19 +25,21 @@ from chromapylot.core.data_manager import (
     create_npy_path,
 )
 from skimage import exposure
-from chromapylot.core.data_manager import tif_path_to_projected
+from chromapylot.core.data_manager import tif_path_to_projected, DataManager
 import matplotlib.pyplot as plt
 
 
 class RegisterGlobalModule(Module):
     def __init__(
         self,
+        data_manager: DataManager,
         registration_params: RegistrationParams,
         input_type=DataType.IMAGE_2D,
         output_type=DataType.SHIFT_TUPLE,
         supplementary_type=None,
     ):
         super().__init__(
+            data_manager=data_manager,
             input_type=input_type,
             output_type=output_type,
             reference_type=DataType.IMAGE_2D,
@@ -204,9 +206,13 @@ class RegisterGlobalModule(Module):
 
 
 class RegisterByBlock(RegisterGlobalModule):
-    def __init__(self, registration_params: RegistrationParams):
+    def __init__(
+        self, data_manager: DataManager, registration_params: RegistrationParams
+    ):
         super().__init__(
-            registration_params=registration_params, output_type=DataType.MATRIX_3D
+            data_manager=data_manager,
+            registration_params=registration_params,
+            output_type=DataType.MATRIX_3D,
         )
 
     def run(self, raw_2d_img):
@@ -277,8 +283,11 @@ class RegisterByBlock(RegisterGlobalModule):
 
 
 class CompareBlockGlobal(RegisterGlobalModule):
-    def __init__(self, registration_params: RegistrationParams):
+    def __init__(
+        self, data_manager: DataManager, registration_params: RegistrationParams
+    ):
         super().__init__(
+            data_manager=data_manager,
             registration_params=registration_params,
             input_type=DataType.MATRIX_3D,
             supplementary_type=DataType.IMAGE_2D,
