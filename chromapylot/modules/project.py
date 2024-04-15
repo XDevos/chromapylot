@@ -33,10 +33,20 @@ from apifish.stack import projection
 
 
 class ProjectModule(Module):
-    def __init__(self, projection_params: ProjectionParams):
-        super().__init__(input_type=DataType.IMAGE_3D, output_type=DataType.IMAGE_2D)
-        self.mode = projection_params.mode
+    def __init__(
+        self,
+        projection_params: ProjectionParams,
+        input_type: DataType = DataType.IMAGE_3D,
+        output_type: DataType = DataType.IMAGE_2D,
+        supplementary_type: DataType = None,
+    ):
+        super().__init__(
+            input_type=input_type,
+            output_type=output_type,
+            supplementary_type=supplementary_type,
+        )
         self.dirname = "project"
+        self.mode = projection_params.mode
         self.block_size = projection_params.block_size
         self.zwindows = projection_params.zwindows
         self.window_security = projection_params.window_security
@@ -161,36 +171,28 @@ class ProjectModule(Module):
         return zmin, zmax
 
 
-class SplitInBlocks(Module):
+class SplitInBlocks(ProjectModule):
     def __init__(self, projection_params: ProjectionParams):
         super().__init__(
-            input_type=DataType.IMAGE_3D,
+            projection_params=projection_params,
             output_type=DataType.IMAGE_BLOCKS,
         )
-        self.dirname = "project"
-        self.block_size = projection_params.block_size
 
     def run(self, img):
         return split_in_blocks(img, block_size_xy=self.block_size)
 
-    def load_data(self, input_path, in_dir_length):
-        print(f"[Load] {self.input_type.value}")
-        short_path = input_path[in_dir_length:]
-        print(f"> $INPUT{short_path}")
-        return io.imread(input_path).squeeze()
-
     def save_data(self, data, output_dir, input_path):
-        print("No need to save data for this module.")
+        print("> No need to save data for SplitInBlocks module.")
         pass
 
 
-class InterpolateFocalPlane(Module):
+class InterpolateFocalPlane(ProjectModule):
     def __init__(self, projection_params: ProjectionParams):
         super().__init__(
+            projection_params=projection_params,
             input_type=DataType.IMAGE_BLOCKS,
             output_type=DataType.MATRIX_2D,
         )
-        self.dirname = "project"
 
     def run(self, blocks):
         return calculate_focus_per_block(blocks)
@@ -238,15 +240,13 @@ class InterpolateFocalPlane(Module):
         print(f"> $OUTPUT{short_path}")
 
 
-class ProjectByBlockModule(Module):
+class ProjectByBlockModule(ProjectModule):
     def __init__(self, projection_params: ProjectionParams):
         super().__init__(
+            projection_params=projection_params,
             input_type=DataType.MATRIX_2D,
             supplementary_type=DataType.IMAGE_BLOCKS,
-            output_type=DataType.IMAGE_2D,
         )
-        self.dirname = "project"
-        self.zwindows = projection_params.zwindows
 
     def run(self, focal_matrix, blocks):
         return reassemble_images(focal_matrix, blocks, window=self.zwindows)
@@ -256,13 +256,6 @@ class ProjectByBlockModule(Module):
         short_path = input_path[in_dir_length:]
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
-
-    def save_data(self, data, output_dir, input_path):
-        print("[Save] 2D npy | 2D png")
-        npy_path = create_npy_path(input_path, output_dir, self.dirname, "_2d")
-        save_npy(data, npy_path, len(output_dir))
-        png_path = create_png_path(input_path, output_dir, self.dirname, "_2d")
-        save_png(data, png_path, len(output_dir))
 
     # =============================================================================
     # FOCAL PLANE INTERPOLATION
