@@ -142,17 +142,12 @@ class RegisterGlobalModule(Module):
         with open(out_path, "w") as file:
             json.dump(existing_dict, file, ensure_ascii=False, sort_keys=True, indent=4)
 
-    def _save_registered(self, shifted_img, output_dir, input_path):
-        base = os.path.basename(input_path).split(".")[0]
-        base = base[:-3] if base[-3:] == "_2d" else base
-        npy_filename = base + "_2d_registered.npy"
-        npy_path = os.path.join(output_dir, self.dirname, "data", npy_filename)
-        save_npy(shifted_img, npy_path, len(output_dir))
+    def _save_registered(self, shifted_img, out_dir, in_path):
+        npy_path = create_npy_path(in_path, out_dir, self.dirname, "_2d_registered")
+        save_npy(shifted_img, npy_path, len(out_dir))
 
-    def _save_overlay_corrected(self, ref_img, shifted_img, out_dir, input_path):
-        png_path = create_png_path(
-            input_path, out_dir, self.dirname, "_overlay_corrected.png"
-        )
+    def _save_overlay_corrected(self, ref_img, shifted_img, out_dir, in_path):
+        png_path = create_png_path(in_path, out_dir, self.dirname, "_overlay_corrected")
         sz = ref_img.shape
         img_1, img_2 = (
             ref_img / ref_img.max(),
@@ -176,7 +171,7 @@ class RegisterGlobalModule(Module):
         Overlays two images as R and B and saves them to output file
         """
         out_path = create_png_path(
-            init_file, out_dir, self.dirname, "_referenceDifference.png"
+            init_file, out_dir, self.dirname, "_referenceDifference"
         )
         ref_norm = ref_img / ref_img.max()
         raw_norm = raw_img / raw_img.max()
@@ -238,14 +233,12 @@ class RegisterByBlock(RegisterGlobalModule):
         self._save_error_alignment_block_map(data, output_dir, input_path)
 
     def _save_rms_block_map(self, shifts_and_rms, out_dir, input_path):
-        out_path = create_npy_path(
-            input_path, out_dir, self.dirname, "_rmsBlockMap.npy"
-        )
+        out_path = create_npy_path(input_path, out_dir, self.dirname, "_rmsBlockMap")
         save_npy(shifts_and_rms[:, :, 2], out_path, len(out_dir))
 
     def _save_error_alignment_block_map(self, shifts_and_rms, out_dir, input_path):
         out_path = create_npy_path(
-            input_path, out_dir, self.dirname, "_errorAlignmentBlockMap.npy"
+            input_path, out_dir, self.dirname, "_errorAlignmentBlockMap"
         )
         relative_shifts = compute_relative_shifts(shifts_and_rms, self.tolerance)
         save_npy(relative_shifts, out_path, len(out_dir))
@@ -255,7 +248,7 @@ class RegisterByBlock(RegisterGlobalModule):
 
     def _save_block_alignments(self, relative_shifts, rms_image, out_dir, input_path):
         out_path = create_png_path(
-            input_path, out_dir, self.dirname, "_block_alignments.png"
+            input_path, out_dir, self.dirname, "_block_alignments"
         )
         # plotting
         fig, axes = plt.subplots(1, 2)

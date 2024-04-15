@@ -282,21 +282,30 @@ def tif_path_to_projected(tif_path):
     return projected_path
 
 
-def create_png_path(init_filename, out_dir, module_dir, png_postfix_name):
-    base = os.path.basename(init_filename).split(".")[0]
+def create_dirs_from_path(path):
+    if not os.path.exists(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
+
+
+def get_init_basename(filepath):
+    # Remove extension
+    base = os.path.basename(filepath).split(".")[0]
+    # Remove _2d suffix if present. TODO: generalize this to all suffixes
     base = base[:-3] if base[-3:] == "_2d" else base
-    png_filename = base + png_postfix_name
+    return base
+
+
+def create_png_path(init_filename, out_dir, module_dir, postfix):
+    base = get_init_basename(init_filename)
+    png_filename = base + postfix + ".png"
     out_path = os.path.join(out_dir, module_dir, png_filename)
-    if not os.path.exists(os.path.dirname(out_path)):
-        os.makedirs(os.path.dirname(out_path))
+    create_dirs_from_path(out_path)
     return out_path
 
 
-def create_npy_path(init_filename, out_dir, module_dir, npy_postfix_name):
-    base = os.path.basename(init_filename).split(".")[0]
-    base = base[:-3] if base[-3:] == "_2d" else base
-    npy_filename = base + npy_postfix_name
+def create_npy_path(init_filename, out_dir, module_dir, postfix):
+    base = get_init_basename(init_filename)
+    npy_filename = base + postfix + ".npy"
     out_path = os.path.join(out_dir, module_dir, "data", npy_filename)
-    if not os.path.exists(os.path.dirname(out_path)):
-        os.makedirs(os.path.dirname(out_path))
+    create_dirs_from_path(out_path)
     return out_path
