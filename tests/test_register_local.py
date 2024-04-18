@@ -29,8 +29,10 @@ shutil.copytree("pyhim-small-dataset/register_local/IN", tmp_register_local_in)
 def template_test_register_local(mode: str):
     """Check RegisterLocal feature with all possibilities"""
     inputs = os.path.join(tmp_register_local_in, mode)
-    main(["-I", inputs, "-O", inputs, "-C", "shift_3d,register_local"])
-    generated_register_local = os.path.join(inputs, "alignImages")
+    main(
+        ["-I", inputs, "-O", inputs, "-C", "skip,preprocess_3d,shift_3d,register_local"]
+    )
+    generated_register_local = os.path.join(inputs, "register_local")
     reference_outputs = f"pyhim-small-dataset/register_local/OUT/{mode}/alignImages/"
     generated_files = extract_files(generated_register_local)
     reference_files = extract_files(reference_outputs)
