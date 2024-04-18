@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json
 from typing import List
 from chromapylot.modules.module import Module
 from chromapylot.core.core_types import DataType
@@ -64,7 +63,9 @@ class RegisterGlobalModule(Module):
                 "align_by_block is running with RegisterByBlock + CompareBlockGlobal modules."
             )
         print(f"[Run] Register Global")
-        prep_2d_img = remove_inhomogeneous_background(raw_2d_img, self.background_sigma)
+        prep_2d_img = remove_inhomogeneous_background_2d(
+            raw_2d_img, self.background_sigma
+        )
         # align whole image
         print("> Align whole image")
         adjusted_img = image_adjust(
@@ -98,7 +99,7 @@ class RegisterGlobalModule(Module):
             raw_img = np.load(projected_path)
         else:
             raw_img = np.load(input_path)
-        preprocessed_img = remove_inhomogeneous_background(
+        preprocessed_img = remove_inhomogeneous_background_2d(
             raw_img, self.background_sigma
         )
         ref_img = np.float32(self.reference_data)
@@ -122,7 +123,7 @@ class RegisterGlobalModule(Module):
                 break
         if good_path and good_path[-3:] == "npy":
             ref_img = np.load(good_path)
-            self.reference_data = remove_inhomogeneous_background(
+            self.reference_data = remove_inhomogeneous_background_2d(
                 ref_img, self.background_sigma
             )
         else:
@@ -224,7 +225,7 @@ class RegisterByBlock(RegisterGlobalModule):
         if not self.align_by_block:
             raise ValueError("This module is only for block alignment.")
         print(f"[Run] Register Global (by block)")
-        preprocessed_img = remove_inhomogeneous_background(
+        preprocessed_img = remove_inhomogeneous_background_2d(
             raw_2d_img, self.background_sigma
         )
         ref_img = np.float32(self.reference_data)
@@ -304,7 +305,7 @@ class CompareBlockGlobal(RegisterGlobalModule):
         if shifts_and_rms is None:
             print("> No need to align reference image.")
             return None
-        preprocessed_img = remove_inhomogeneous_background(
+        preprocessed_img = remove_inhomogeneous_background_2d(
             img_to_align, self.background_sigma
         )
         ref_img = np.float32(self.reference_data)
@@ -317,7 +318,7 @@ class CompareBlockGlobal(RegisterGlobalModule):
         raise NotImplementedError("This method is not implemented yet.")
 
 
-def remove_inhomogeneous_background(img, background_sigma):
+def remove_inhomogeneous_background_2d(img, background_sigma):
     # Normalises images
     norm_img = img / img.max()
     # removes inhomogeneous background

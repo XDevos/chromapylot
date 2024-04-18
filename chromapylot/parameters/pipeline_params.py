@@ -81,7 +81,15 @@ class PipelineParams:
             "split_in_blocks",
         ]:
             return {"projection_params": self.projection}
-        if module_name in ["register_global", "register_by_block", "compare_block_global", "register_local", "shift_2d", "shift_3d"]:
+        if module_name in [
+            "register_global",
+            "register_by_block",
+            "compare_block_global",
+            "register_local",
+            "shift_2d",
+            "shift_3d",
+            "preprocess_3d",
+        ]:
             return {"registration_params": self.registration}
         if module_name in [
             "segment_2d",

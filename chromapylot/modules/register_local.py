@@ -14,11 +14,40 @@ from skimage.metrics import normalized_root_mse
 from astropy.table import Table, vstack
 from dask.distributed import Lock
 
+from astropy.stats import SigmaClip
+from photutils import Background2D, MedianBackground
 from chromapylot.modules.module import Module
 from chromapylot.core.data_manager import DataManager, get_roi_number_from_image_path
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.core.core_types import DataType
 from chromapylot.modules.register_global import image_adjust
+
+
+class Preprocess3D(Module):
+    def __init__(
+        self, data_manager: DataManager, registration_params: RegistrationParams
+    ):
+        super().__init__(
+            data_manager=data_manager,
+            input_type=DataType.IMAGE_3D,
+            output_type=DataType.IMAGE_3D,
+        )
+        self._3D_lower_threshold = registration_params._3D_lower_threshold
+        self._3D_higher_threshold = registration_params._3D_higher_threshold
+
+    def load_data(self, input_path):
+        return self.data_m.load_image_3d(input_path)
+
+    def run(self, data):
+        data = exposure.rescale_intensity(data, out_range=(0, 1))
+        img = remove_inhomogeneous_background_3d(data)
+        adjust_img = image_adjust(
+            img, self._3D_lower_threshold, self._3D_higher_threshold
+        )
+        return adjust_img
+
+    def save_data(self, data, input_path):
+        pass
 
 
 class RegisterLocal(Module):
@@ -36,6 +65,8 @@ class RegisterLocal(Module):
         self.block_size_xy = registration_params.blockSizeXY
         self.upsample_factor = registration_params.upsample_factor
         self.ref_fiducial = registration_params.referenceFiducial
+        self._3D_lower_threshold = registration_params._3D_lower_threshold
+        self._3D_higher_threshold = registration_params._3D_higher_threshold
 
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
@@ -49,12 +80,14 @@ class RegisterLocal(Module):
         if good_path and good_path[-3:] == "tif":
             ref_3d = self.data_m.load_image_3d(good_path)
             # TODO: it's a (may be long) tempo fix to apply SkipModule at the ref 3d fiducial
-            self.reference_data = ref_3d[::2, :, :]
-
+            skipped_ref = ref_3d[::2, :, :]
+            preproc_ref = self._preprocess_data(skipped_ref)
+            self.reference_data = preproc_ref
         else:
             raise NotImplementedError("Reference data must be a 3D tif file")
 
     def run(self, data):
+        # data = self._preprocess_data(data)
         # - break in blocks
         num_planes = data.shape[0]
         block_size = (num_planes, self.block_size_xy, self.block_size_xy)
@@ -124,9 +157,17 @@ class RegisterLocal(Module):
         if not os.path.exists(os.path.dirname(out_path)):
             os.makedirs(os.path.dirname(out_path))
         else:
-            existing_table = Table.read(out_path, format="ascii")
+            existing_table = Table.read(out_path, format="ascii.ecsv")
             data = vstack([existing_table, data])
-        data.write(out_path, format="ascii", overwrite=True)
+        data.write(out_path, format="ascii.ecsv", overwrite=True)
+
+    def _preprocess_data(self, data):
+        data = exposure.rescale_intensity(data, out_range=(0, 1))
+        img = remove_inhomogeneous_background_3d(data)
+        adjust_img = image_adjust(
+            img, self._3D_lower_threshold, self._3D_higher_threshold
+        )
+        return adjust_img
 
     def create_registration_table(self, shift_matrices, nrmse_matrices):
         alignment_results_table = create_output_table()
@@ -196,7 +237,7 @@ class RegisterLocal(Module):
                         exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs
                     ]  # rescales intensity values
                     imgs = [
-                        image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0]
+                        image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)
                         for x in imgs
                     ]  # adjusts pixel intensities
 
@@ -241,3 +282,44 @@ def create_output_table():
             "f4",
         ),
     )
+
+
+def remove_inhomogeneous_background_3d(image_3d, box_size=(32, 32), filter_size=(3, 3)):
+    """
+    Wrapper to remove inhomogeneous background in a 3D image by recursively calling _remove_inhomogeneous_background_2d():
+        - addresses output
+        - iterates over planes and calls _remove_inhomogeneous_background_2d in each plane
+        - reassembles results into a 3D image
+
+    Parameters
+    ----------
+    image_3d : numpy array
+        input 3D image.
+    box_size : tuple of ints, optional
+        size of box_size used for block decomposition. The default is (32, 32).
+    filter_size : tuple of ints, optional
+        Size of gaussian filter used for smoothing results. The default is (3, 3).
+
+    Returns
+    -------
+    output : numpy array
+        processed 3D image.
+
+    """
+    # TODO : refactor this with 2d version
+    number_planes = image_3d.shape[0]
+    output = np.zeros(image_3d.shape)
+    sigma_clip = SigmaClip(sigma=3)
+    bkg_estimator = MedianBackground()
+    z_range = trange(number_planes)
+    for z in z_range:
+        image_2d = image_3d[z, :, :]
+        bkg = Background2D(
+            image_2d,
+            box_size,
+            filter_size=filter_size,
+            sigma_clip=sigma_clip,
+            bkg_estimator=bkg_estimator,
+        )
+        output[z, :, :] = image_2d - bkg.background
+    return output

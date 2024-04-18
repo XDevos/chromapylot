@@ -84,9 +84,6 @@ class Module:
         Returns:
             bool: True if the module is compatible, False otherwise.
         """
-        print(
-            f"Checking compatibility of {self.__class__.__name__} (type:{self.input_type}) with {data_type}."
-        )
         if isinstance(self.input_type, list):
             for input in self.input_type:
                 if first_type_accept_second(input, data_type):

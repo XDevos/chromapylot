@@ -15,7 +15,7 @@ from modules.register_global import (
     RegisterByBlock,
     CompareBlockGlobal,
 )
-from modules.register_local import RegisterLocal
+from modules.register_local import RegisterLocal, Preprocess3D
 from chromapylot.core.core_types import AnalysisType, CommandName
 from chromapylot.core.data_manager import DataManager
 from chromapylot.parameters.matrix_params import MatrixParams
@@ -88,6 +88,7 @@ class AnalysisManager:
                     "register_global",
                     "shift_3d",
                     "skip",
+                    "preprocess_3d",
                     "register_local",
                 ]
         elif pipeline_type == AnalysisType.BARCODE:
@@ -206,6 +207,7 @@ class AnalysisManager:
             "interpolate_focal_plane": InterpolateFocalPlane,
             "split_in_blocks": SplitInBlocks,
             "skip": mod.SkipModule,
+            "preprocess_3d": Preprocess3D,
             "shift_2d": mod.Shift2DModule,
             "shift_3d": mod.Shift3DModule,
             "register_global": RegisterGlobalModule,
