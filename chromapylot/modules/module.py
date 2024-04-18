@@ -14,6 +14,7 @@ from chromapylot.parameters.acquisition_params import AcquisitionParams
 from chromapylot.parameters.matrix_params import MatrixParams
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
+from chromapylot.core.core_logging import print_module
 
 
 class Module:
@@ -58,6 +59,10 @@ class Module:
     def save_data(self, data, input_path):
         raise NotImplementedError
 
+    def print_module_name(self):
+        print()
+        print_module(self.__class__.__name__)
+
     def switch_input_supplementary(self):
         """
         Switch the input type with the supplementary type.
@@ -79,6 +84,9 @@ class Module:
         Returns:
             bool: True if the module is compatible, False otherwise.
         """
+        print(
+            f"Checking compatibility of {self.__class__.__name__} (type:{self.input_type}) with {data_type}."
+        )
         if isinstance(self.input_type, list):
             for input in self.input_type:
                 if first_type_accept_second(input, data_type):
@@ -88,6 +96,8 @@ class Module:
         elif first_type_accept_second(self.input_type, data_type):
             return True
         # Input type(s) aren't compatible, now check if the supplementary type(s) is compatible.
+        if self.supplementary_type is None:
+            return False
         if isinstance(self.supplementary_type, list):
             for sup_type in self.supplementary_type:
                 if first_type_accept_second(sup_type, data_type):

@@ -95,6 +95,7 @@ class Pipeline:
         self.choose_to_keep_input_data(data)
         self.update_supplementary_data(supplementary_paths)
         for module in self.modules:
+            module.print_module_name()
             supplementary_data = self.load_supplementary_data(module, cycle)
             if module.switched:
                 data, supplementary_data = supplementary_data, data

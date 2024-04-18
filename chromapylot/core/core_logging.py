@@ -20,7 +20,12 @@ def print_text_centered(text: str):
 
 
 def print_text_inside(text: str, car: str):
-    print()
+    print("\n")
     print(
         f"{car * ((80 - len(text)) // 2 - 1)} {text} {car * ((80 - len(text)) // 2 - 1)}"
     )
+
+
+def print_module(name):
+    print("_" * (len(name) + 2))
+    print(f" {name} \n")
