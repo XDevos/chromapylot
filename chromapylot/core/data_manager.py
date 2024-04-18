@@ -162,7 +162,7 @@ class DataManager:
         return self._get_paths_from_analysis_and_data_type(analysis_type, data_type)
 
     def get_analysis_type(self, filename, extension):
-        if extension in ["png", "log", "md", "table", None] or filename in [
+        if extension in ["png", "log", "md", "table", "py", None] or filename in [
             "parameters",
             "parameters_loaded",
             "infoList",
@@ -288,10 +288,15 @@ class DataManager:
         return sup_paths_by_cycle
 
     def load_image_3d(self, path):
-        print(f"[Load] {self.input_type.value}")
+        print(f"[Load] IMAGE_3D")
         short_path = path[self.in_dir_len :]
         print(f"> $INPUT{short_path}")
         return io.imread(path).squeeze()
+
+    def get_3d_ref_filename(self):
+        for data_type, filepath in self.analysis_files[at.REFERENCE]:
+            if data_type == DataType.IMAGE_3D:
+                return os.path.basename(filepath)
 
 
 def tif_path_to_projected(tif_path):

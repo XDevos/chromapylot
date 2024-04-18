@@ -102,7 +102,7 @@ ExampleType = Literal[
 
 
 def get_data_type(filename, extension):
-    if extension in ["png", "log", "md", "table", None]:
+    if extension in ["png", "log", "md", "table", "py", None]:
         return None
     elif extension == "tif":
         if "_shifted" in filename:
