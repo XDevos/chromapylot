@@ -59,6 +59,7 @@ class AnalysisType(Enum):
 class CommandName(Enum):
     PROJECT = "project"
     SKIP = "skip"
+    PREPROCESS_3D = "preprocess_3d"
     SHIFT_3D = "shift_3d"
     SHIFT_2D = "shift_2d"
     REGISTER_GLOBAL = "register_global"

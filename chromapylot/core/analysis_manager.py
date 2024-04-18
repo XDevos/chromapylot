@@ -84,11 +84,11 @@ class AnalysisManager:
                     chain = []
             elif dim == 3:
                 chain = [
+                    "skip",
+                    "preprocess_3d",
                     "project",
                     "register_global",
                     "shift_3d",
-                    "skip",
-                    "preprocess_3d",
                     "register_local",
                 ]
         elif pipeline_type == AnalysisType.BARCODE:
