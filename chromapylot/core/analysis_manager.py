@@ -15,7 +15,7 @@ from modules.register_global import (
     RegisterByBlock,
     CompareBlockGlobal,
 )
-
+from modules.register_local import RegisterLocal
 from chromapylot.core.core_types import AnalysisType, CommandName
 from chromapylot.core.data_manager import DataManager
 from chromapylot.parameters.matrix_params import MatrixParams
@@ -23,6 +23,7 @@ from chromapylot.parameters.pipeline_params import PipelineParams
 from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
+
 
 from chromapylot.core.pipeline import Pipeline
 
@@ -83,9 +84,9 @@ class AnalysisManager:
                     chain = []
             elif dim == 3:
                 chain = [
-                    "skip",
                     "project",
                     "register_global",
+                    "skip",
                     "shift_3d",
                     "register_local",
                 ]
@@ -210,7 +211,7 @@ class AnalysisManager:
             "register_global": RegisterGlobalModule,
             "register_by_block": RegisterByBlock,
             "compare_block_global": CompareBlockGlobal,
-            "register_local": mod.RegisterLocalModule,
+            "register_local": RegisterLocal,
             "segment_2d": mod.Segment2DModule,
             "segment_3d": mod.Segment3DModule,
             "extract_2d": mod.Extract2DModule,

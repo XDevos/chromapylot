@@ -126,10 +126,10 @@ class SkipModule(Module):
 
     def load_data(self, input_path):
         print("Loading 3D image.")
-        return np.ones((10, 10, 10))
+        return self.data_m.load_image_3d(input_path)
 
     def save_data(self, data, input_path):
-        print("Saving 3D image.")
+        print("NO Saving 3D image.")
 
 
 class ShiftModule(Module):
@@ -172,9 +172,13 @@ class ShiftModule(Module):
 
     def load_reference_data(self, paths: List[str]):
         path = paths[0] if len(paths) == 1 else None
-        print("> Loading shift dictionary from: ", path)
-        shift_dict = json.load(open(path, "r"))
-        self.reference_data = list(shift_dict.values())[0]
+        if path is None:
+            print("No shift dictionary provided.")
+            self.reference_data = None
+        else:
+            print("> Loading shift dictionary from: ", path)
+            shift_dict = json.load(open(path, "r"))
+            self.reference_data = list(shift_dict.values())[0]
 
 
 class Shift3DModule(ShiftModule):
@@ -187,16 +191,16 @@ class Shift3DModule(ShiftModule):
             output_type=DataType.IMAGE_3D_SHIFTED,
         )
 
-    def run(self, array_2d_or_3d, shift_tuple):
-        print(f"Shifting 3D image with {shift_tuple}.")
-        return array_2d_or_3d
+    def run(self, array_3d, shift_tuple):
+        shift_3d = (0, shift_tuple[0], shift_tuple[1])
+        print(f"[Shift] 3D image with {shift_3d}.")
+        return shift_image(array_3d, shift_3d)
 
     def load_data(self, input_path):
-        print("Loading 3D image.")
-        return np.ones((10, 10, 10))
+        return self.data_m.load_image_3d(input_path)
 
     def save_data(self, data, input_path):
-        print("Saving 3D image.")
+        print("NO saving 3D image.")
 
 
 class Shift2DModule(ShiftModule):
@@ -229,32 +233,6 @@ class Shift2DModule(ShiftModule):
             self.data_m.output_folder, self.dirname, "data", npy_filename
         )
         save_npy(data, npy_path, self.data_m.out_dir_len)
-
-
-class RegisterLocalModule(Module):
-    def __init__(
-        self, data_manager: DataManager, registration_params: RegistrationParams
-    ):
-        super().__init__(
-            data_manager=data_manager,
-            input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
-            output_type=DataType.REGISTRATION_TABLE,
-            reference_type=DataType.IMAGE_3D,
-        )
-
-    def run(self, shifted_image):
-        return Table()
-
-    def load_data(self, input_path):
-        print("Loading 3D image.")
-        return np.ones((10, 10, 10))
-
-    def save_data(self, data, input_path):
-        print("Saving registration table.")
-
-    def load_reference_data(self, paths: List[str]):
-        print("Loading 3D image.")
-        self.reference_data = np.ones((10, 10, 10))
 
 
 class Segment3DModule(Module):
