@@ -86,8 +86,8 @@ class AnalysisManager:
                 chain = [
                     "project",
                     "register_global",
-                    "skip",
                     "shift_3d",
+                    "skip",
                     "register_local",
                 ]
         elif pipeline_type == AnalysisType.BARCODE:

@@ -27,7 +27,7 @@ class RegisterLocal(Module):
     ):
         super().__init__(
             data_manager=data_manager,
-            input_type=DataType.IMAGE_3D_SHIFTED,
+            input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
             output_type=DataType.REGISTRATION_TABLE,
             reference_type=DataType.IMAGE_3D,
             supplementary_type=None,
