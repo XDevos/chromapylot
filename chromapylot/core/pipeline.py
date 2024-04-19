@@ -91,18 +91,18 @@ class Pipeline:
         cycle: str,
     ):
         print_text_inside(cycle, ".")
-        data = self.modules[0].load_data(data_path)
-        self.choose_to_keep_input_data(data)
+        input_data = self.modules[0].load_data(data_path)
+        self.choose_to_keep_input_data(input_data)
         self.update_supplementary_data(supplementary_paths)
         for module in self.modules:
             module.print_module_name()
             supplementary_data = self.load_supplementary_data(module, cycle)
             if module.switched:
-                data, supplementary_data = supplementary_data, data
+                input_data, supplementary_data = supplementary_data, input_data
             if supplementary_data is None:
-                output = module.run(data)
+                output = module.run(input_data)
             else:
-                output = module.run(data, supplementary_data)
-            module.save_data(output, data_path)
-            data = output
-            self.choose_to_keep_data(module, data)
+                output = module.run(input_data, supplementary_data)
+            module.save_data(output, data_path, input_data)
+            self.choose_to_keep_data(module, output)
+            input_data = output

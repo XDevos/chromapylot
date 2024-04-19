@@ -46,7 +46,7 @@ class Preprocess3D(Module):
         )
         return adjust_img
 
-    def save_data(self, data, input_path):
+    def save_data(self, data, input_path, input_data):
         pass
 
 
@@ -120,10 +120,10 @@ class RegisterLocal(Module):
         )
         return registration_table
 
-    def save_data(self, data, input_path):
-        if data is None:
+    def save_data(self, output, input_path, input_data):
+        if output is None:
             return
-        self._save_registration_table(data, input_path)
+        self._save_registration_table(output, input_path)
         # raw_img = np.load(input_path)
         # shifted_3d_img = shift_image(raw_img, data)
         # self._save_3d_alignments(block_ref, block_shifted)  # fig3 outputs
@@ -160,6 +160,33 @@ class RegisterLocal(Module):
             existing_table = Table.read(out_path, format="ascii.ecsv")
             data = vstack([existing_table, data])
         data.write(out_path, format="ascii.ecsv", overwrite=True)
+
+    # def _save_3d_alignments(self, block_ref, block_shifted):
+
+    #     # combines blocks into a single matrix for display instead of plotting a matrix of subplots each with a block
+    #     outputs = []
+    #     for axis in range(3):
+    #         outputs.append(
+    #             combine_blocks_image_by_reprojection(
+    #                 block_ref, block_target, shift_matrices=shift_matrices, axis1=axis
+    #             )
+    #         )
+    #     fig = plt.figure(constrained_layout=False)
+    #     fig.set_size_inches((20 * 2, 20))
+    #     grid_spec = fig.add_gridspec(2, 2)
+    #     ax = [
+    #         fig.add_subplot(grid_spec[:, 0]),
+    #         fig.add_subplot(grid_spec[0, 1]),
+    #         fig.add_subplot(grid_spec[1, 1]),
+    #     ]
+    #     titles = ["Z-projection", "X-projection", "Y-projection"]
+    #     for axis, output, i in zip(ax, outputs, range(3)):
+    #         axis.imshow(output[0])
+    #         axis.set_title(titles[i])
+    #     fig.tight_layout()
+    #     file = "_3Dalignments.png"
+    #     fig.savefig(file)
+    #     plt.close(fig)
 
     def _preprocess_data(self, data):
         data = exposure.rescale_intensity(data, out_range=(0, 1))

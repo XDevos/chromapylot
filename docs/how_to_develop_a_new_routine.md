@@ -80,7 +80,7 @@
        def run(self, data, supplementary_data=None):
            raise NotImplementedError
    
-       def save_data(self, data, input_path):
+       def save_data(self, data, input_path, input_data):
            raise NotImplementedError
    
    ```

@@ -59,7 +59,7 @@ class ProjectModule(Module):
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
 
-    def save_data(self, data, input_path):
+    def save_data(self, data, input_path, input_data):
         print("[Save] 2D npy | 2D png")
         npy_path = create_npy_path(
             input_path, self.data_m.output_folder, self.dirname, "_2d"
@@ -185,7 +185,7 @@ class SplitInBlocks(ProjectModule):
     def run(self, img):
         return split_in_blocks(img, block_size_xy=self.block_size)
 
-    def save_data(self, data, input_path):
+    def save_data(self, data, input_path, input_data):
         print("> No need to save data for SplitInBlocks module.")
         pass
 
@@ -208,7 +208,7 @@ class InterpolateFocalPlane(ProjectModule):
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
 
-    def save_data(self, data, in_path):
+    def save_data(self, data, in_path, input_data):
         output_path = create_png_path(
             in_path, self.data_m.output_folder, self.dirname, "_focalPlaneMatrix"
         )
