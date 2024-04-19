@@ -134,7 +134,6 @@ class RegisterLocal(Module):
             input_path, self.data_m.output_folder, self.dirname, ".tif_3Dalignments"
         )
         self._save_3d_alignments(shift_matrices, shifted_3d_img, png_path)
-        # self._save_bkg_substracted()  # fig1 plot_4_images(...)
         # self._save_mse_blocks()  # fig5 plot_3d_shift_matrices(...)
         # self._save_shift_matrices(data)  # fig2 plot_3d_shift_matrices(...)
 
