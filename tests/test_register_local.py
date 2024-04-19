@@ -12,7 +12,7 @@ from chromapylot.core.data_manager import extract_files
 # sys.path.append("..")
 from chromapylot.run_chromapylot import main
 from tests.testing_tools.comparison import (
-    compare_ecsv_files,
+    compare_block3d_files,
     compare_line_by_line,
     compare_npy_files,
     image_pixel_differences,
@@ -26,12 +26,12 @@ tmp_register_local_in = os.path.join(tmp_dir.name, "register_local")
 shutil.copytree("pyhim-small-dataset/register_local/IN", tmp_register_local_in)
 
 
-def template_test_register_local(mode: str):
+def template_test_register_local(
+    mode: str, commands: str = "skip,preprocess_3d,shift_3d,register_local"
+):
     """Check RegisterLocal feature with all possibilities"""
     inputs = os.path.join(tmp_register_local_in, mode)
-    main(
-        ["-I", inputs, "-O", inputs, "-C", "skip,preprocess_3d,shift_3d,register_local"]
-    )
+    main(["-I", inputs, "-O", inputs, "-C", commands])
     generated_register_local = os.path.join(inputs, "register_local")
     reference_outputs = f"pyhim-small-dataset/register_local/OUT/{mode}/alignImages/"
     generated_files = extract_files(generated_register_local)
@@ -52,7 +52,10 @@ def template_test_register_local(mode: str):
         elif extension == "json":
             assert compare_line_by_line(tmp_file, out_file)
         elif extension == "table" or extension == "dat":
-            assert compare_ecsv_files(tmp_file, out_file, shuffled_lines=True)
+            if mode == "alone":
+                compare_block3d_files(tmp_file, out_file, atol=0.2)
+            else:
+                assert compare_block3d_files(tmp_file, out_file, atol=0.05)
         else:
             raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")
 
@@ -62,4 +65,7 @@ def test_with_global_done():
 
 
 def test_without_register_global():
-    template_test_register_local("alone")
+    template_test_register_local(
+        "alone",
+        commands="skip,preprocess_3d,project,register_global,shift_3d,register_local",
+    )

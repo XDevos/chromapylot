@@ -87,12 +87,12 @@ def test_align_images_3d():
             "-O",
             tmp_small_inputs,
             "-C",
-            "shift_3d,register_local",
+            "skip,preprocess_3d,shift_3d,register_local",
             "-A",
             "fiducial",
         ]
     )
-    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
+    tmp_align_images = os.path.join(tmp_small_inputs, "register_local/data")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages3D/data"
     )

@@ -80,6 +80,63 @@ def compare_ecsv_files(
     return is_same
 
 
+def compare_block3d_files(first_file, second_file, atol=0.05):
+    first_ecsv = Table.read(first_file, format="ascii.ecsv")
+    second_ecsv = Table.read(second_file, format="ascii.ecsv")
+
+    # the column with "aligned file" can be shifted in the table
+    # so we need to compare the line one by one
+    # We start to find the index of the column "aligned file" in the second_ecsv
+
+    is_same = True
+    for f_raw in first_ecsv:
+        idx = find_index(f_raw, second_ecsv)
+        if idx == -1:
+            return False
+        is_same = (
+            is_same and f_raw["reference file"] == second_ecsv["reference file"][idx]
+        )
+        is_same = is_same and f_raw["blockXY"] == second_ecsv["blockXY"][idx]
+        is_same = is_same and f_raw["ROI #"] == second_ecsv["ROI #"][idx]
+        is_same = is_same and f_raw["label"] == second_ecsv["label"][idx]
+        is_same = is_same and f_raw["block_i"] == second_ecsv["block_i"][idx]
+        is_same = is_same and f_raw["block_j"] == second_ecsv["block_j"][idx]
+        is_same = is_same and np.isclose(
+            f_raw["shift_z"], second_ecsv["shift_z"][idx], atol=atol
+        )
+        is_same = is_same and np.isclose(
+            f_raw["shift_x"], second_ecsv["shift_x"][idx], atol=atol
+        )
+        is_same = is_same and np.isclose(
+            f_raw["shift_y"], second_ecsv["shift_y"][idx], atol=atol
+        )
+        is_same = is_same and np.isclose(
+            f_raw["quality_xy"], second_ecsv["quality_xy"][idx], atol=atol
+        )
+        is_same = is_same and np.isclose(
+            f_raw["quality_zy"], second_ecsv["quality_zy"][idx], atol=atol
+        )
+        is_same = is_same and np.isclose(
+            f_raw["quality_zx"], second_ecsv["quality_zx"][idx], atol=atol
+        )
+        if not is_same:
+            print(f"Block3D: At line\n {f_raw}\n diff with \n{second_ecsv[idx]}\n\n")
+            return False
+    return is_same
+
+
+def find_index(row, table):
+    for i, line in enumerate(table):
+        if (
+            row["aligned file"] == line["aligned file"]
+            and row["block_i"] == line["block_i"]
+            and row["block_j"] == line["block_j"]
+        ):
+            return i
+    print(f"Row not found in the array:\n{row} ")
+    return -1
+
+
 def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_start=0):
     with open(first_file, encoding="utf-8") as f_1:
         with open(second_file, encoding="utf-8") as f_2:
