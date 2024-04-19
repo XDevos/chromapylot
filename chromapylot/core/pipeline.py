@@ -100,8 +100,9 @@ class Pipeline:
             if module.switched:
                 data, supplementary_data = supplementary_data, data
             if supplementary_data is None:
-                data = module.run(data)
+                output = module.run(data)
             else:
-                data = module.run(data, supplementary_data)
-            module.save_data(data, data_path)
+                output = module.run(data, supplementary_data)
+            module.save_data(output, data_path)
+            data = output
             self.choose_to_keep_data(module, data)

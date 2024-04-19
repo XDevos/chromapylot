@@ -36,7 +36,6 @@ def template_test_register_local(
     reference_outputs = f"pyhim-small-dataset/register_local/OUT/{mode}/alignImages/"
     generated_files = extract_files(generated_register_local)
     reference_files = extract_files(reference_outputs)
-    assert len(generated_files) == len(reference_files)
     for filepath, short_filename, extension in generated_files:
         if "data" in filepath.split(os.sep):
             filename = f"data{os.sep}{short_filename}.{extension}"
@@ -58,6 +57,8 @@ def template_test_register_local(
                 assert compare_block3d_files(tmp_file, out_file, atol=0.05)
         else:
             raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")
+    # check this after to have feedback if the test failed
+    assert len(generated_files) == len(reference_files)
 
 
 def test_with_global_done():
