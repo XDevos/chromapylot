@@ -13,11 +13,16 @@ from skimage import exposure
 from skimage.metrics import normalized_root_mse
 from astropy.table import Table, vstack
 from dask.distributed import Lock
+import matplotlib.pyplot as plt
 
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
 from chromapylot.modules.module import Module
-from chromapylot.core.data_manager import DataManager, get_roi_number_from_image_path
+from chromapylot.core.data_manager import (
+    DataManager,
+    get_roi_number_from_image_path,
+    create_png_path,
+)
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.core.core_types import DataType
 from chromapylot.modules.register_global import image_adjust
@@ -120,13 +125,19 @@ class RegisterLocal(Module):
         )
         return registration_table
 
-    def save_data(self, output, input_path, input_data):
-        if output is None:
+    def save_data(self, registration_table, input_path, shifted_3d_img):
+        if registration_table is None:
             return
-        self._save_registration_table(output, input_path)
+        self._save_registration_table(registration_table, input_path)
         # raw_img = np.load(input_path)
         # shifted_3d_img = shift_image(raw_img, data)
-        # self._save_3d_alignments(block_ref, block_shifted)  # fig3 outputs
+        # shift_matrices = self.table_to_shift_matrices(registration_table)
+        # # TODO: decomment after refacotring
+        # # png_path = create_png_path(
+        # #     input_path, self.data_m.output_folder, self.dirname, "_3Dalignments"
+        # # )
+        # png_path = input_path + "_3Dalignments.png"
+        # self._save_3d_alignments(shift_matrices, shifted_3d_img, png_path)
         # self._save_bkg_substracted()  # fig1 plot_4_images(...)
         # self._save_mse_blocks()  # fig5 plot_3d_shift_matrices(...)
         # self._save_shift_matrices(data)  # fig2 plot_3d_shift_matrices(...)
@@ -161,14 +172,20 @@ class RegisterLocal(Module):
             data = vstack([existing_table, data])
         data.write(out_path, format="ascii.ecsv", overwrite=True)
 
-    # def _save_3d_alignments(self, block_ref, block_shifted):
-
+    # def _save_3d_alignments(self, shift_matrices, shifted_3d_img, png_path):
+    #     num_planes = shifted_3d_img.shape[0]
+    #     block_size = (num_planes, self.block_size_xy, self.block_size_xy)
+    #     print("$ Breaking images into blocks")
+    #     ref_blocks = view_as_blocks(
+    #         self.reference_data, block_shape=block_size
+    #     ).squeeze()
+    #     img_blocks = view_as_blocks(shifted_3d_img, block_shape=block_size).squeeze()
     #     # combines blocks into a single matrix for display instead of plotting a matrix of subplots each with a block
     #     outputs = []
     #     for axis in range(3):
     #         outputs.append(
     #             combine_blocks_image_by_reprojection(
-    #                 block_ref, block_target, shift_matrices=shift_matrices, axis1=axis
+    #                 ref_blocks, img_blocks, shift_matrices=shift_matrices, axis1=axis
     #             )
     #         )
     #     fig = plt.figure(constrained_layout=False)
@@ -181,11 +198,10 @@ class RegisterLocal(Module):
     #     ]
     #     titles = ["Z-projection", "X-projection", "Y-projection"]
     #     for axis, output, i in zip(ax, outputs, range(3)):
-    #         axis.imshow(output[0])
+    #         axis.imshow(output)
     #         axis.set_title(titles[i])
     #     fig.tight_layout()
-    #     file = "_3Dalignments.png"
-    #     fig.savefig(file)
+    #     fig.savefig(png_path)
     #     plt.close(fig)
 
     def _preprocess_data(self, data):
@@ -218,6 +234,16 @@ class RegisterLocal(Module):
                 ]
                 alignment_results_table.add_row(table_entry)
         return alignment_results_table
+
+    # def table_to_shift_matrices(self, table):
+    #     shift_matrices = [
+    #         np.zeros((table["block_i"].max() + 1, table["block_j"].max() + 1))
+    #         for _ in range(3)
+    #     ]
+    #     for i, row in enumerate(table):
+    #         for j, axis in enumerate(["shift_z", "shift_x", "shift_y"]):
+    #             shift_matrices[j][row["block_i"], row["block_j"]] = row[axis]
+    #     return shift_matrices
 
     def calculate_nrmse_matrices(self, shift_matrices, block_ref, block_target):
         nrmse_matrices = []
@@ -350,3 +376,89 @@ def remove_inhomogeneous_background_3d(image_3d, box_size=(32, 32), filter_size=
         )
         output[z, :, :] = image_2d - bkg.background
     return output
+
+
+# def combine_blocks_image_by_reprojection(
+#     block_ref, block_target, shift_matrices=None, axis1=0
+# ):
+#     """
+#     This routine will overlap block_ref and block_target images block by block.
+#     block_ref will be used as a template.
+#     - block_target will be first translated in ZXY using the corresponding values in shift_matrices
+#     to realign each block
+#     - then an rgb image will be created with block_ref in the red channel, and the reinterpolated
+#     block_target block in the green channel.
+#     - the Blue channel is used for the grid to improve visualization of blocks.
+
+
+#     Parameters
+#     ----------
+#     block_ref : npy array
+#         return of view_as_blocks()
+#     block_target : npy array
+#         return of view_as_blocks()
+#     shift_matrices : list of npy arrays
+#         index 0 contains Z, index 1 X and index 2 Y
+#     axis1 : int
+#         axis used for the reprojection: The default is 0.
+#         - 0 means an XY projection
+#         - 1 an ZX projection
+#         - 2 an ZY projection
+
+#     Returns
+#     -------
+#     output : NPY array of size im_size x im_size x 3
+#         rgb image.
+#     ssim_as_blocks = NPY array of size number_blocks x number_blocks
+#         Structural similarity index between ref and target blocks
+#     """
+#     number_blocks = block_ref.shape[0]
+#     block_sizes = list(block_ref.shape[2:])
+#     block_sizes.pop(axis1)
+#     img_sizes = [x * number_blocks for x in block_sizes]
+
+#     # gets ranges for slicing
+#     slice_coordinates = [
+#         [range(x * block_size, (x + 1) * block_size) for x in range(number_blocks)]
+#         for block_size in block_sizes
+#     ]
+
+#     # creates output images
+#     output = np.zeros((img_sizes[0], img_sizes[1], 3))
+
+#     # blank image for blue channel to show borders between blocks
+#     blue = np.zeros(block_sizes)
+#     blue[0, :], blue[:, 0], blue[:, -1], blue[-1, :] = [0.5] * 4
+
+#     # reassembles image
+#     # takes one plane block
+#     for i, i_slice in enumerate(tqdm(slice_coordinates[0])):
+#         for j, j_slice in enumerate(slice_coordinates[1]):
+#             imgs = [block_ref[i, j]]
+#             if shift_matrices is not None:
+#                 shift_3d = np.array(
+#                     [x[i, j] for x in shift_matrices]
+#                 )  # gets 3D shift from block decomposition
+#                 imgs.append(
+#                     shift_image(block_target[i, j], shift_3d)
+#                 )  # realigns and appends to image list
+#             else:
+#                 # appends original target with no re-alignment
+#                 imgs.append(block_target[i, j])
+#             # projects along axis1
+#             imgs = [np.sum(x, axis=axis1) for x in imgs]
+#             # rescales intensity values
+#             imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs]
+#             # adjusts pixel intensities
+#             imgs = [
+#                 image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)
+#                 for x in imgs
+#             ]
+#             # appends last channel with grid
+#             imgs.append(blue)
+#             # makes block rgb image
+#             rgb = np.dstack(imgs)
+#             # inserts block into final rgb stack
+#             output[i_slice[0] : i_slice[-1] + 1, j_slice[0] : j_slice[-1] + 1, :] = rgb
+
+#     return output
