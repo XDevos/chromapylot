@@ -14,6 +14,7 @@ from skimage.metrics import normalized_root_mse
 from astropy.table import Table, vstack
 from dask.distributed import Lock
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
@@ -134,8 +135,9 @@ class RegisterLocal(Module):
             input_path, self.data_m.output_folder, self.dirname, ".tif_3Dalignments"
         )
         self._save_3d_alignments(shift_matrices, shifted_3d_img, png_path)
-        # self._save_mse_blocks()  # fig5 plot_3d_shift_matrices(...)
-        # self._save_shift_matrices(data)  # fig2 plot_3d_shift_matrices(...)
+        mse_matrices = self.calculate_mse_matrices()
+        self._save_mse_blocks(mse_matrices)
+        self._save_shift_matrices()  # fig2 plot_3d_shift_matrices(...)
 
     def _save_registration_table(self, data, input_path):
         data = self.__add_cycle_roi_and_filename(data, input_path)
@@ -195,6 +197,50 @@ class RegisterLocal(Module):
         fig.tight_layout()
         fig.savefig(png_path)
         plt.close(fig)
+
+    def _save_mse_blocks(self, mse_matrices):
+        outputs = []
+        for axis in range(3):
+            outputs.append(
+                combine_blocks_image_by_reprojection(
+                    ref_blocks, img_blocks, shift_matrices=shift_matrices, axis1=axis
+                )
+            )
+        fontsize = 6
+        valfmt = "{x:.2f}"
+        cbar_kw = {"fraction": 0.046, "pad": 0.04}
+        fig, axes = plt.subplots(1, len(mse_matrices))
+        fig.set_size_inches((len(mse_matrices) * 10, 10))
+        ax = axes.ravel()
+        titles = ["z shift matrix", "x shift matrix", "y shift matrix"]
+
+        for axis, title, matrix in zip(ax, titles, mse_matrices):
+            row = [str(x) for x in range(matrix.shape[0])]
+            im, _ = heatmap(
+                matrix,
+                row,
+                row,
+                ax=axis,
+                cmap="YlGn",
+                cbarlabel=title,
+                fontsize=fontsize,
+                cbar_kw=cbar_kw,
+            )
+            annotate_heatmap(
+                im,
+                valfmt=valfmt,
+                size=fontsize,
+                threshold=None,
+                textcolors=("black", "white"),
+            )
+            axis.set_title(title)
+
+        fig.suptitle("mean square root block matrices")
+        fig.savefig("_MSEblocks.png")
+        plt.close(fig)
+
+    def _save_shift_matrices(self):
+        pass
 
     def _preprocess_data(self, data):
         data = exposure.rescale_intensity(data, out_range=(0, 1))
@@ -454,3 +500,206 @@ def combine_blocks_image_by_reprojection(
             output[i_slice[0] : i_slice[-1] + 1, j_slice[0] : j_slice[-1] + 1, :] = rgb
 
     return output
+
+
+def heatmap(
+    data,
+    row_labels,
+    col_labels,
+    ax=None,
+    cbar_kw=None,
+    cbarlabel="",
+    fontsize=12,
+    **kwargs,
+):
+    """
+    Create a heatmap from a numpy array and two lists of labels.
+
+    Parameters
+    ----------
+    data
+        A 2D numpy array of shape (N, M).
+    row_labels
+        A list or array of length N with the labels for the rows.
+    col_labels
+        A list or array of length M with the labels for the columns.
+    ax
+        A `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If
+        not provided, use current axes or create a new one.  Optional.
+    cbar_kw
+        A dictionary with arguments to `matplotlib.Figure.colorbar`.  Optional.
+    cbarlabel
+        The label for the colorbar.  Optional.
+    **kwargs
+        All other arguments are forwarded to `imshow`.
+    """
+
+    if not ax:
+        ax = plt.gca()
+
+    # Plot the heatmap
+    im = ax.imshow(data, **kwargs)
+    # Create colorbar
+    cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
+    cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom", size=fontsize)
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(data.shape[1]))
+    ax.set_yticks(np.arange(data.shape[0]))
+    # ... and label them with the respective list entries.
+    ax.set_xticklabels(col_labels, size=fontsize)
+    ax.set_yticklabels(row_labels, size=fontsize)
+    ax.tick_params(top=False, bottom=True, labeltop=False, labelbottom=True)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=30, ha="right", rotation_mode="anchor")
+
+    # Turn spines off and create white grid.
+    for _, spine in ax.spines.items():
+        spine.set_visible(False)
+
+    ax.set_xticks(np.arange(data.shape[1] + 1) - 0.5, minor=True)
+    ax.set_yticks(np.arange(data.shape[0] + 1) - 0.5, minor=True)
+    ax.grid(which="minor", color="w", linestyle="-", linewidth=3)
+    ax.tick_params(which="minor", bottom=False, left=False)
+
+    return im, cbar
+
+
+def annotate_heatmap(
+    im,
+    data=None,
+    valfmt="{x:.1f}",
+    textcolors=("black", "white"),
+    threshold=None,
+    **textkw,
+):  # sourcery skip: dict-assign-update-to-union
+    """
+    A function to annotate a heatmap.
+
+    Parameters
+    ----------
+    im
+        The AxesImage to be labeled.
+    data
+        Data used to annotate.  If None, the image's data is used.  Optional.
+    valfmt
+        The format of the annotations inside the heatmap.  This should either
+        use the string format method, e.g. "$ {x:.2f}", or be a
+        `matplotlib.ticker.Formatter`.  Optional.
+    textcolors
+        A pair of colors.  The first is used for values below a threshold,
+        the second for those above.  Optional.
+    threshold
+        Value in data units according to which the colors from textcolors are
+        applied.  If None (the default) uses the middle of the colormap as
+        separation.  Optional.
+    **kwargs
+        All other arguments are forwarded to each call to `text` used to create
+        the text labels.
+    """
+
+    if not isinstance(data, (list, np.ndarray)):
+        data = im.get_array()
+
+    # Normalize the threshold to the images color range.
+    if threshold is not None:
+        threshold = im.norm(threshold)
+    else:
+        threshold = im.norm(data.max()) / 2.0
+
+    # Set default alignment to center, but allow it to be
+    # overwritten by textkw.
+    new_kwargs = dict(horizontalalignment="center", verticalalignment="center")
+    new_kwargs.update(textkw)
+
+    # Get the formatter in case a string is supplied
+    if isinstance(valfmt, str):
+        valfmt = ticker.StrMethodFormatter(valfmt)
+
+    # Loop over the data and create a `Text` for each "pixel".
+    # Change the text's color depending on the data.
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            new_kwargs.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
+            im.axes.text(j, i, valfmt(data[i, j], None), **new_kwargs)
+
+
+def compute_mse_matrices(block_ref, block_target, shift_matrices=None, axis1=0):
+    """
+    This routine will overlap block_ref and block_target images block by block.
+    block_ref will be used as a template.
+    - block_target will be first translated in ZXY using the corresponding values in shift_matrices
+    to realign each block
+    - then an rgb image will be created with block_ref in the red channel, and the reinterpolated
+    block_target block in the green channel.
+    - the Blue channel is used for the grid to improve visualization of blocks.
+
+
+    Parameters
+    ----------
+    block_ref : npy array
+        return of view_as_blocks()
+    block_target : npy array
+        return of view_as_blocks()
+    shift_matrices : list of npy arrays
+        index 0 contains Z, index 1 X and index 2 Y
+    axis1 : int
+        axis used for the reprojection: The default is 0.
+        - 0 means an XY projection
+        - 1 an ZX projection
+        - 2 an ZY projection
+
+    Returns
+    -------
+    output : NPY array of size im_size x im_size x 3
+        rgb image.
+    ssim_as_blocks = NPY array of size number_blocks x number_blocks
+        Structural similarity index between ref and target blocks
+    """
+    number_blocks = block_ref.shape[0]
+    block_sizes = list(block_ref.shape[2:])
+    block_sizes.pop(axis1)
+    img_sizes = [x * number_blocks for x in block_sizes]
+
+    # gets ranges for slicing
+    slice_coordinates = [
+        [range(x * block_size, (x + 1) * block_size) for x in range(number_blocks)]
+        for block_size in block_sizes
+    ]
+    mse_as_blocks = np.zeros((number_blocks, number_blocks))
+
+    # blank image for blue channel to show borders between blocks
+    blue = np.zeros(block_sizes)
+    blue[0, :], blue[:, 0], blue[:, -1], blue[-1, :] = [0.5] * 4
+
+    # reassembles image
+    # takes one plane block
+    for i, i_slice in enumerate(tqdm(slice_coordinates[0])):
+        for j, j_slice in enumerate(slice_coordinates[1]):
+            imgs = [block_ref[i, j]]
+            if shift_matrices is not None:
+                shift_3d = np.array(
+                    [x[i, j] for x in shift_matrices]
+                )  # gets 3D shift from block decomposition
+                imgs.append(
+                    shift_image(block_target[i, j], shift_3d)
+                )  # realigns and appends to image list
+            else:
+                imgs.append(
+                    block_target[i, j]
+                )  # appends original target with no re-alignment
+
+            imgs = [np.sum(x, axis=axis1) for x in imgs]  # projects along axis1
+            imgs = [
+                exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs
+            ]  # rescales intensity values
+            imgs = [
+                image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0]
+                for x in imgs
+            ]  # adjusts pixel intensities
+            mse_as_blocks[i, j] = mean_squared_error(imgs[0], imgs[1])
+
+            imgs.append(blue)  # appends last channel with grid
+
+    return mse_as_blocks
