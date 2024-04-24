@@ -121,23 +121,17 @@ class RegisterLocal(Module):
                 )
                 for matrix, _shift in zip(shift_matrices, shifts_xyz):
                     matrix[i, j] = _shift
-
-        nrmse_matrices = self.calculate_nrmse_matrices(
-            shift_matrices, ref_blocks, img_blocks
-        )
-        registration_table = self.create_registration_table(
-            shift_matrices, nrmse_matrices
-        )
+        registration_table = self.create_registration_table(shift_matrices)
         return registration_table
 
     def save_data(self, registration_table, input_path, shifted_3d_img):
         if registration_table is None:
             return
-        self._save_registration_table(registration_table, input_path)
         shift_matrices = self.table_to_shift_matrices(registration_table)
-        shifted_blocks_by_axis, mse_matrices = self.shift_and_project_blocks(
-            shift_matrices, shifted_3d_img
+        shifted_blocks_by_axis, mse_matrices, nrmse_matrices = (
+            self.shift_and_project_blocks(shift_matrices, shifted_3d_img)
         )
+        self._save_registration_table(registration_table, input_path, nrmse_matrices)
         png_path = create_png_path(
             input_path, self.data_m.output_folder, self.dirname, ".tif_3Dalignments"
         )
@@ -163,16 +157,18 @@ class RegisterLocal(Module):
         # combines blocks into a single matrix for display instead of plotting a matrix of subplots each with a block
         blocks_by_axis = []
         mse_blocks = []
+        nrmse_matrices = []
         for axis in range(3):
             output = combine_blocks_image_by_reprojection(
                 ref_blocks, img_blocks, shift_matrices=shift_matrices, axis1=axis
             )
             blocks_by_axis.append(output[0])
             mse_blocks.append(output[1])
-        return blocks_by_axis, mse_blocks
+            nrmse_matrices.append(output[2])
+        return blocks_by_axis, mse_blocks, nrmse_matrices
 
-    def _save_registration_table(self, data, input_path):
-        data = self.__add_cycle_roi_and_filename(data, input_path)
+    def _save_registration_table(self, data, input_path, nrmse_matrices):
+        data = self.__update_registration_table(data, input_path, nrmse_matrices)
         out_path = os.path.join(
             self.data_m.output_folder, self.dirname, "data", "shifts_block3D.dat"
         )
@@ -182,12 +178,22 @@ class RegisterLocal(Module):
         except RuntimeError:
             self.__save_registration_table(data, out_path)
 
-    def __add_cycle_roi_and_filename(self, data, input_path):
-        cycle = self.data_m.get_cycle_from_path(input_path)
+    def __update_registration_table(self, data, input_path, nrmse_matrices):
         filename = os.path.basename(input_path)
+        # update with aligned file
         data["aligned file"] = [filename] * len(data)
+        # update with ROI number
         data["ROI #"] = get_roi_number_from_image_path(input_path)
+        # update with cycle number
+        cycle = self.data_m.get_cycle_from_path(input_path)
         data["label"] = [cycle] * len(data)
+        # update with NRMSE matrices
+        num_blocks = nrmse_matrices[0].shape[0]
+        for i in range(num_blocks):
+            for j in range(num_blocks):
+                data["quality_xy"][i * num_blocks + j] = nrmse_matrices[0][i, j]
+                data["quality_zy"][i * num_blocks + j] = nrmse_matrices[1][i, j]
+                data["quality_zx"][i * num_blocks + j] = nrmse_matrices[2][i, j]
         return data
 
     def __save_registration_table(self, data, out_path):
@@ -281,7 +287,7 @@ class RegisterLocal(Module):
         )
         return adjust_img
 
-    def create_registration_table(self, shift_matrices, nrmse_matrices):
+    def create_registration_table(self, shift_matrices):
         alignment_results_table = create_output_table()
         num_blocks = shift_matrices[0].shape[0]
         for i in range(num_blocks):
@@ -297,9 +303,9 @@ class RegisterLocal(Module):
                     shift_matrices[0][i, j],
                     shift_matrices[1][i, j],
                     shift_matrices[2][i, j],
-                    nrmse_matrices[0][i, j],
-                    nrmse_matrices[1][i, j],
-                    nrmse_matrices[2][i, j],
+                    0.0,
+                    0.0,
+                    0.0,
                 ]
                 alignment_results_table.add_row(table_entry)
         return alignment_results_table
@@ -313,62 +319,6 @@ class RegisterLocal(Module):
             for j, axis in enumerate(["shift_z", "shift_x", "shift_y"]):
                 shift_matrices[j][row["block_i"], row["block_j"]] = row[axis]
         return shift_matrices
-
-    def calculate_nrmse_matrices(self, shift_matrices, block_ref, block_target):
-        print("$ Calculating NRMSE matrices")
-        nrmse_matrices = []
-        for axis1 in range(3):
-            number_blocks = block_ref.shape[0]
-            block_sizes = list(block_ref.shape[2:])
-            block_sizes.pop(axis1)
-
-            # gets ranges for slicing
-            slice_coordinates = [
-                [
-                    range(x * block_size, (x + 1) * block_size)
-                    for x in range(number_blocks)
-                ]
-                for block_size in block_sizes
-            ]
-
-            nrmse_as_blocks = np.zeros((number_blocks, number_blocks))
-
-            # blank image for blue channel to show borders between blocks
-            blue = np.zeros(block_sizes)
-            blue[0, :], blue[:, 0], blue[:, -1], blue[-1, :] = [0.5] * 4
-
-            # reassembles image
-            # takes one plane block
-            for i, i_slice in enumerate(tqdm(slice_coordinates[0])):
-                for j, j_slice in enumerate(slice_coordinates[1]):
-                    imgs = [block_ref[i, j]]
-                    if shift_matrices is not None:
-                        shift_3d = np.array(
-                            [x[i, j] for x in shift_matrices]
-                        )  # gets 3D shift from block decomposition
-                        imgs.append(
-                            shift_image(block_target[i, j], shift_3d)
-                        )  # realigns and appends to image list
-                    else:
-                        imgs.append(
-                            block_target[i, j]
-                        )  # appends original target with no re-alignment
-
-                    imgs = [np.sum(x, axis=axis1) for x in imgs]  # projects along axis1
-                    imgs = [
-                        exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs
-                    ]  # rescales intensity values
-                    imgs = [
-                        image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)
-                        for x in imgs
-                    ]  # adjusts pixel intensities
-
-                    nrmse_as_blocks[i, j] = normalized_root_mse(
-                        imgs[0], imgs[1], normalization="euclidean"
-                    )
-            nrmse_matrices.append(nrmse_as_blocks)
-
-        return nrmse_matrices
 
 
 def create_output_table():
@@ -465,6 +415,7 @@ def combine_blocks_image_by_reprojection(
     # creates output images
     shifted_blocks_by_axis = np.zeros((img_sizes[0], img_sizes[1], 3))
     mse_as_blocks = np.zeros((number_blocks, number_blocks))
+    nrmse_as_blocks = np.zeros((number_blocks, number_blocks))
 
     # blank image for blue channel to show borders between blocks
     blue = np.zeros(block_sizes)
@@ -495,6 +446,9 @@ def combine_blocks_image_by_reprojection(
                 for x in imgs
             ]
             mse_as_blocks[i, j] = mean_squared_error(imgs[0], imgs[1])
+            nrmse_as_blocks[i, j] = normalized_root_mse(
+                imgs[0], imgs[1], normalization="euclidean"
+            )
             # appends last channel with grid
             imgs.append(blue)
             # makes block rgb image
@@ -504,7 +458,7 @@ def combine_blocks_image_by_reprojection(
                 i_slice[0] : i_slice[-1] + 1, j_slice[0] : j_slice[-1] + 1, :
             ] = rgb
 
-    return shifted_blocks_by_axis, mse_as_blocks
+    return shifted_blocks_by_axis, mse_as_blocks, nrmse_as_blocks
 
 
 def heatmap(
