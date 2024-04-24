@@ -4,7 +4,7 @@
 import os
 from argparse import ArgumentParser
 
-from chromapylot.core.core_types import CommandName
+from chromapylot.core.core_types import CommandName, AnalysisType
 
 
 def _parse_run_args(command_line_args):
@@ -89,7 +89,7 @@ class RunArgs:
         self.input = parsed_args.input
         self.output = parsed_args.output
         self.dimension = self.parse_dimension(parsed_args.dimension)
-        self.analysis_types = parsed_args.analysis
+        self.analysis_types = self.parse_analysis_types(parsed_args.analysis)
         self.threads = parsed_args.threads
         self.ref_file = parsed_args.ref_file
         self.in_file = parsed_args.in_file
@@ -139,6 +139,29 @@ class RunArgs:
                 f"Dimension {dimension} is not available, choose between (2, 3, 23)."
             )
 
+    @staticmethod
+    def parse_analysis_types(analysis_types):
+        """Parse analysis argument
+
+        Parameters
+        ----------
+        analysis_types : str
+            Comma-separated list of analysis type to run (all, fiducial, barcode, trace, DAPI, primer, RNA).
+
+        Returns
+        -------
+        List[str]
+            List of analysis type to run.
+        """
+        if not analysis_types or analysis_types == "all":
+            return [analysis_type for analysis_type in AnalysisType]
+        list_of_analysis_types = analysis_types.split(",")
+        return [
+            analysis_type
+            for analysis_type in AnalysisType
+            if analysis_type.value in list_of_analysis_types
+        ]
+
     def _check_args(self):
         """Check run arguments"""
         if not os.path.exists(self.input):
@@ -149,15 +172,3 @@ class RunArgs:
         for command in self.commands:
             if command.lower() not in available_commands:
                 raise ValueError(f"Command {command} is not available.")
-        available_analysis_types = [
-            "all",
-            "fiducial",
-            "barcode",
-            "trace",
-            "dapi",
-            "primer",
-            "rna",
-        ]
-        for analysis_type in self.analysis_types.split(","):
-            if analysis_type.lower() not in available_analysis_types:
-                raise ValueError(f"Analysis type {analysis_type} is not available.")

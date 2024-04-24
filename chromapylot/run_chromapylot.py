@@ -13,7 +13,7 @@ def main(command_line_args=None):
     run_args = RunArgs(command_line_args)
     data_manager = DataManager(run_args)
     analysis_manager = AnalysisManager(
-        data_manager, run_args.dimension, run_args.threads
+        data_manager, run_args.dimension, run_args.threads, run_args.analysis_types
     )
     analysis_manager.parse_commands(run_args.commands)
     analysis_manager.create_pipelines()

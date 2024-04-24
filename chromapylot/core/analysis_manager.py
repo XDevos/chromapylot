@@ -39,11 +39,17 @@ from dask.distributed import Client, LocalCluster
 
 class AnalysisManager:
     def __init__(
-        self, data_manager: DataManager, dims: List[int] = [2, 3], n_threads: int = 1
+        self,
+        data_manager: DataManager,
+        dims: List[int] = [2, 3],
+        n_threads: int = 1,
+        analysis_types: List[AnalysisType] = [],
     ):
         self.data_manager = data_manager
         self.dims = dims
         self.n_threads = n_threads
+        self.user_analysis_types = analysis_types
+        print(f"Analysis types: {self.user_analysis_types}")
         self.found_analysis_types = self.data_manager.get_analysis_types()
         self.analysis_to_process = []
         self.module_names = []
@@ -253,6 +259,10 @@ class AnalysisManager:
     def create_pipelines(self):
         print_text_inside("Creating pipelines", "=")
         for analysis_type in self.found_analysis_types:
+            print(f"\n[{analysis_type}]")
+            if analysis_type not in self.user_analysis_types:
+                continue
+
             for dim in self.dims:
                 modules = self.create_pipeline_modules(analysis_type, dim)
                 if modules:
