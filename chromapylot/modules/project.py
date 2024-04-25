@@ -26,7 +26,7 @@ from chromapylot.core.data_manager import DataManager, create_npy_path, create_p
 from datetime import datetime
 from chromapylot.core.data_manager import load_json
 from chromapylot.core.run_args import RunArgs
-from chromapylot.parameters.pipeline_params import PipelineParams
+from chromapylot.parameters.params_manager import PipelineParams
 from chromapylot.core.core_types import AnalysisType
 
 from apifish.stack import projection
