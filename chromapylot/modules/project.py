@@ -26,7 +26,7 @@ from chromapylot.core.data_manager import DataManager, create_npy_path, create_p
 from datetime import datetime
 from chromapylot.core.data_manager import load_json
 from chromapylot.core.run_args import RunArgs
-from chromapylot.parameters.params_manager import PipelineParams
+from chromapylot.parameters.params_manager import ParamsManager
 from chromapylot.core.core_types import AnalysisType
 
 from apifish.stack import projection
@@ -632,7 +632,7 @@ def main(command_line_args=None):
     # INITIALIZATION
     run_args = RunArgs(command_line_args)
     raw_params = load_json(os.path.join(run_args.input, "infoList.json"))
-    pipe_params = PipelineParams(raw_params, AnalysisType.TRACE)
+    pipe_params = ParamsManager(raw_params, AnalysisType.TRACE)
     mod = ProjectModule(pipe_params.projection)
 
     # MODULE EXECUTION

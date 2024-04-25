@@ -20,7 +20,7 @@ from stardist import random_label_cmap
 
 from chromapylot.core.core_types import AnalysisType, DataType
 from chromapylot.core.data_manager import load_json, save_ecsv, DataManager
-from chromapylot.parameters.params_manager import PipelineParams
+from chromapylot.parameters.params_manager import ParamsManager
 from chromapylot.parameters.acquisition_params import AcquisitionParams
 from chromapylot.parameters.matrix_params import MatrixParams
 from chromapylot.core.run_args import RunArgs
@@ -470,7 +470,7 @@ def main(command_line_args=None):
     # INITIALIZATION
     run_args = RunArgs(command_line_args)
     raw_params = load_json(os.path.join(run_args.input, "parameters.json"))
-    pipe_params = PipelineParams(raw_params, AnalysisType.TRACE)
+    pipe_params = ParamsManager(raw_params, AnalysisType.TRACE)
     mod = BuildTrace3DModule(pipe_params.acquisition, pipe_params.matrix)
     ref_files = run_args.ref_file.split(",") if run_args.ref_file else []
 

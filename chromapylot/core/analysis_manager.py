@@ -19,7 +19,7 @@ from modules.register_local import RegisterLocal, Preprocess3D
 from chromapylot.core.core_types import AnalysisType, CommandName
 from chromapylot.core.data_manager import DataManager
 from chromapylot.parameters.matrix_params import MatrixParams
-from chromapylot.parameters.params_manager import PipelineParams
+from chromapylot.parameters.params_manager import ParamsManager
 from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
@@ -152,7 +152,7 @@ class AnalysisManager:
         # Projection Laplacian
         try:
             index_chain = chain.index("project")
-            pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+            pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
             if pipe_params.projection.mode == "laplacian":
                 chain.pop(index_chain)
                 chain.insert(index_chain, "project_by_block")
@@ -162,7 +162,7 @@ class AnalysisManager:
             pass
         try:
             index_user = self.module_names.index("project")
-            pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+            pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
             if pipe_params.projection.mode == "laplacian":
                 self.module_names.pop(index_user)
                 self.module_names.insert(index_user, "project_by_block")
@@ -173,7 +173,7 @@ class AnalysisManager:
         # Global Registration by block
         try:
             index_chain = chain.index("register_global")
-            pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+            pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
             if pipe_params.registration.alignByBlock:
                 chain.pop(index_chain)
                 chain.insert(index_chain, "compare_block_global")  # CompareBlockGlobal
@@ -184,7 +184,7 @@ class AnalysisManager:
             pass
         try:
             index_user = self.module_names.index("register_global")
-            pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+            pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
             if pipe_params.registration.alignByBlock:
                 self.module_names.pop(index_user)
                 self.module_names.insert(index_user, "compare_block_global")
@@ -241,7 +241,7 @@ class AnalysisManager:
         print(f"\n[{pipeline_type.name} {dim}D]")
         module_chain = self.get_module_chain(pipeline_type, dim)
         modules: List[mod.Module] = []
-        pipe_params = PipelineParams(self.data_manager.parameters, pipeline_type)
+        pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
         for i in range(len(module_chain)):
             if module_chain[i] in self.module_names:
                 module_params = pipe_params.get_module_params(module_chain[i])

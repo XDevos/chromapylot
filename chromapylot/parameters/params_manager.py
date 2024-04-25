@@ -17,7 +17,7 @@ from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
 
 
-class PipelineParams:
+class ParamsManager:
     def __init__(self, raw_params: Dict[str, Dict[str, dict]], label: AnalysisType):
         labelled_params = merge_common_and_labels(raw_params, label)
         acq_p = labelled_params.get("acquisition", {})
