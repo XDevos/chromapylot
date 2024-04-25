@@ -1,20 +1,4 @@
 from enum import Enum
-from typing import Literal
-
-DataType = Literal[
-    "_3d",
-    "_2d",
-    "shift_tuple",
-    "shift_dict",
-    "shift_table",
-    "_skipped",
-    "_shifted",
-    "_segmented",
-    "_selected",
-    "_table",
-    "_filtered",
-    "_registered",
-]
 
 
 class DataType(Enum):
@@ -77,29 +61,6 @@ class CommandName(Enum):
     BUILD_TRACE_3D = "build_trace_3d"
     BUILD_TRACE_2D = "build_trace_2d"
     BUILD_MATRIX = "build_matrix"
-
-
-ExampleType = Literal[
-    "fiducial_3d",
-    "fiducial_2d",
-    "shift_tuple",
-    "shift_dict",
-    "shift_table",
-    "fiducial_3d_shifted",
-    "barcode_3d",
-    "barcode_3d_shifted",
-    "barcode_3d_segmented",
-    "barcode_3d_table",
-    "barcode_3d_table_filtered",
-    "barcode_3d_table_registered",
-    "barcode_3d_table_filtered_registered",
-    "barcode_3d_table_registered_filtered",
-    "mask_3d",
-    "mask_3d_shifted",
-    "mask_3d_segmented",
-    "mask_3d_table",
-    "mask_3d_table_filtered",
-]
 
 
 def get_data_type(filename, extension):

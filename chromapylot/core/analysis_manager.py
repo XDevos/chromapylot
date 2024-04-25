@@ -49,7 +49,6 @@ class AnalysisManager:
         self.dims = dims
         self.n_threads = n_threads
         self.user_analysis_types = analysis_types
-        print(f"Analysis types: {self.user_analysis_types}")
         self.found_analysis_types = self.data_manager.get_analysis_types()
         self.analysis_to_process = []
         self.module_names = []
