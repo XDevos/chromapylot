@@ -52,7 +52,7 @@ class AnalysisManager:
         self.found_analysis_types = self.data_manager.get_analysis_types()
         self.analysis_to_process = []
         self.module_names = []
-        self.pipelines: Dict[AnalysisType, Pipeline] = {
+        self.pipelines: Dict[AnalysisType, Dict[int, Pipeline]] = {
             "reference": {2: None, 3: None},
             "fiducial": {2: None, 3: None},
             "barcode": {2: None, 3: None},

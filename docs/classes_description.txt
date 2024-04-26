@@ -1,0 +1,51 @@
+UserArgs (RunArgs):
+Interface avec l'utilisateur, parse les arguments d'entrée, vérifie la validité, formatte les demandes de l'utilisateur (qui est sous forme de texte) en des éléments comprehensible pour le programme.
+- à quel moment il faut traduire un nom de routine généraliste vers differents ModuleName ? Comment afficher pour le user ?
+>>> RunArgs donne accès au reste du programme seulement une list de ModuleName valide. Donc lors de la génération de cette list il faut faire la traduction.
+>>> comma-separeted commands: str --> split en List[str] --> [to_cmd_name(x) for x in cmd_list]
+>>> to_cmd_name(x) = x_CmdName if x_CmdName.value == x else x_CmdName_List if x in available_abstract_cmds
+
+DataManager:
+Interface entre le système et l'application, il est responsable de la lecture et écriture de chaque fichier et dossier. Fournis des méthodes unifiées pour gérer chaque DataType et est en dialogue direct avec les Routine.
+
+AnalysisManager:
+Chef d'orchestre de l'application, il décide quelle analysis lancer avec quel donnée et de quel manière.
+Il est en interaction avec le UserArgs pour connaitre les demandes de l'utilisateur (commandes, dimension, type d'analysis, parallelisation).
+Il peut demander au DataManager les paramèters brutes pour instancier un ParamsManager. 
+Grâce aux commandes et aux params, il pourra construire un Pipeline par analyse en instantiant des Routine dédiés. 
+Il peut demander au DataManager les fichiers lier à un DataType et une AnalysisType précis pour lancer des Pipeline.
+
+Routine:
+Class abstraite pour encadrer le développement de transformation de données. Une Routine prendra toujours un DataType en entrée, appliquera une transformation dessus puis fournira un DataType en sortie. Le chargement de son DataType d'entrée devrait être unifié dans le DataManager mais peut être personnalisable. De même pour la sauvegarde du DataType de sortie, qui sera cependant souvent personnalisé afin de sauvegarder la donnée de façon visuel pour l'utilisateur (un NPY sera souvent sauvé en PNG également).
+De plus, les Routine acceptent en entrée une liste de DataType de référence commune à toute une Pipeline, et non-modifiable. 
+Les Routine acceptent également en entrée une liste de DataType supplémentaire ("supplementary_data") spécifique à un cycle dans une Pipeline(, et potentiellement modifiable?).
+
+ParamsManager:
+Il interprète le dictionnaire brute de paramètres et donne accès à une section de paramètres en fonction d'un AnalysisType.
+
+AcquistionParams, ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams:
+Chaque classe est une section de paramètres et est une "data_class". C'est à dire qu'il n'existe pas de méthode publique pour ces classes, leur rôle est de stocker des attributs.
+
+DataType:
+Collection de catégorie de données utilisable par le logiciel, à la capacité d'appartenir à une catégorie plus large. par exemple, "IMAGE_2D" est aussi un DataType "IMAGE".
+
+RoutineName:
+Collection des noms des classes héritantes directement de Routine.
+
+SubRoutineName:
+Collection des noms des classes héritantes d'une classe héritante de Routine. elle correspond à un niveau avancé de l'utilisation du logiciel et ne devrait pas être appelé directement par l'utilisateur. Ces SubRoutineName sont surtout utilisé par l'AnalysisManager au moment de la construction d'une Pipeline pour répondre à une configuration particulière dans les paramètres. Exemple: Pour la projection, l'utilisateur demande le "mode: laplacian" ==> le RoutineName "Project" se transforme en la liste de RoutineName "[SplitInBlocks, InterpolateFocalPlane, ProjectByBlockModule]".
+Une Routine est divisée en plusieurs sub-routines dans deux cas : Si il faut sauvegarder des données intermédiaires à la transformation fourni par la Routine, ou si l'algorithme de la transformation devient complexe.
+
+AbstractRoutineName:
+Collection des noms des grandes étapes de l'analyses dans le but de simplifier l'écriture et la compréhension des commandes pour l'utilisateur. Un AbstractRoutineName correspond soit à un ensemble cohérent de RoutineName ou à un surnom d'un RoutineName qui sera interprété en fonction du type d'analyse et de la dimension demandé par l'utilisateur.
+L'AbstractRoutineName est traduit en un ou plusieurs RoutineName par le UserArgs.
+
+Pipeline:
+Ensemble ordonné et connecté de Routine. Sa méthode "process" permet d'associer la donnée de sortie d'une Routine à la donnée d'entrée d'une autre Routine. 
+Le rôle de Pipeline est également d'informer les Routine quand il faut charger les données de références ("reference_data") et de garder en mémoire des données de sortie qui serviront de "supplementary_data" à d'autres Routine.
+
+AnalysisType:
+Collection des types de données biologiquement différentes à analyser qui suivent des étapes de Pipeline différents ou auront des paramètres différents. Chaque AnalysisType peut avoir deux Pipeline différentes associées, une pour la 2D et l'autre pour la 3D.
+
+ 
+

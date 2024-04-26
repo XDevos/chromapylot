@@ -1,0 +1,77 @@
+acutellement les classes s'occupent de :
+
+UserArgs (RunArgs):
+	_parse_run_args()
+	parse_commands(str) -> List[str]
+	parse_dimension(int) -> List[int]
+	parse_analysis_types(str) -> List[AnalysisType]
+	check path.exists(input_folder)
+	check path.exists(output_folder)
+	check commands in available_commands
+
+DataManager:
+	extract_files(input_folder) -> List[Tuple(filepath:str, filename:str, extension:str)]
+	get_parameters_file() -> path:str
+	load_json(parameters_file) -> Dict
+	get_analysis_files() -> Dict[AnalysisType, List[Tuple(DataType,filepath:str)]]
+	
+	
+AnalysisManager:
+	data_manager.get_analysis_types{_from_files}() -> List[AnalysisType]
+	pipelines: Dict[AnalysisType, Dict[dimension:int, Pipeline]]
+	parse_commands(run_args.commands: List[str]) -> list(set(commands))
+	create_pipeline_modules(AnalysisType, dim) -> List[Routine]
+	create_pipelines() -> file pipelines with Pipeline(AnalysisType, List[Routine])
+	start_dask(n_threads: int) -> Client | None
+	Loop on: AnalysisType and dimension
+		data_manager.refresh_input_files()
+		Pipeline.prepare(DataManager) -> input_type: DataType, sup_types_to_find: List[DataType]
+		data_manager.get_paths_from_type(DataType,AnalysisType) -> List[input_paths: str]
+		data_manager.get_sup_paths_by_cycle(List[DataType],AnalysisType) -> Dict[cycle: str, Dict[DataType, List[path: str]]]
+		Loop on: cycle to process
+			Pipeline.process(data_path: str, Dict[DataType, List[path: str]], cycle: str)
+	
+Pipeline:
+	process(data_path: str, Dict[DataType, List[path: str]], cycle: str)
+		load_data(data_path) -> input_data
+		choose_to_keep_input_data(input_data) -> supplementary_data
+		update_supplementary_data(supplementary_paths)
+		for Routine in routines:
+			load_supplementary_data(module, cycle)
+			module.run(input_data)
+			module.save_data(output, data_path, input_data)
+			choose_to_keep_data(module, output)
+			input_data = output
+	
+Routine (Module):
+	run(data, supplementary_data = None)
+	load_data(str)
+	load_reference_data(List[str])
+	load_supplementary_data(str, cycle)
+	save_data(output_data, input_path, input_data)
+	is_compatible(DataType) -> boolean
+
+ParamsManager:
+    self.acquisition : AcquisitionParams
+    self.projection : ProjectionParams
+    self.registration : RegistrationParams
+    self.segmentation : SegmentationParams
+    self.matrix : MatrixParams
+    self.highlight_deprecated_params(dict) -> Warnings
+
+AcquistionParams, ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams:
+	__post_init__() -> Warning
+
+DataType:
+	get_data_type(filename, extension) -> DataType
+	first_type_accept_second(DataType, DataType) -> boolean
+
+RoutineName:
+
+SubRoutineName:
+
+AbstractRoutineName:
+
+
+AnalysisType:
+
