@@ -75,3 +75,38 @@ AbstractRoutineName:
 
 AnalysisType:
 
+
+
+::::::::::::::::
+
+acutellement les classes s'occupent de :
+
+UserArgs (RunArgs):
+	_parse_run_args()
+	csv_commands_to_routine_names(str) -> List[RoutineName | AbstractRoutineName] | ValueError
+	explicite_abstract_routine_names(List[RoutineName | AbstractRoutineName]) -> List[RoutineName]
+	check_in_out_paths() -> None
+	dim_arg_to_int_list(str) -> List[int] | ValueError
+
+DataManager:
+	extract_files(input_folder) -> List[Tuple(filepath:str, filename:str, extension:str)]
+	get_raw_parameters() -> dict
+	get_analysis_files() -> Dict[AnalysisType, List[Tuple(DataType,filepath:str)]]
+	refresh_input_files() -> analysis_files
+	load_data_type(path, DataType) -> Any
+	
+AnalysisManager:
+	data_manager.get_analysis_types{_from_files}() -> List[AnalysisType]
+	pipelines: Dict[AnalysisType, Dict[dimension:int, Pipeline]]
+	parse_commands(run_args.commands: List[str]) -> list(set(commands))
+	create_pipeline_modules(AnalysisType, dim) -> List[Routine]
+	create_pipelines() -> file pipelines with Pipeline(AnalysisType, List[Routine])
+	start_dask(n_threads: int) -> Client | None
+	Loop on: AnalysisType and dimension
+		data_manager.refresh_input_files()
+		Pipeline.prepare(DataManager) -> input_type: DataType, sup_types_to_find: List[DataType]
+		data_manager.get_paths_from_type(DataType,AnalysisType) -> List[input_paths: str]
+		data_manager.get_sup_paths_by_cycle(List[DataType],AnalysisType) -> Dict[cycle: str, Dict[DataType, List[path: str]]]
+		Loop on: cycle to process
+			Pipeline.process(data_path: str, Dict[DataType, List[path: str]], cycle: str)
+	
