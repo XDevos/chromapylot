@@ -22,7 +22,7 @@
         <mxCell id="QAZ8KyiYfv3LoN_8WGbh-6" value="RunArgs" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="-560" y="-1080" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="QAZ8KyiYfv3LoN_8WGbh-7" value="CommandName" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+        <mxCell id="QAZ8KyiYfv3LoN_8WGbh-7" value="RoutineName" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="-360" y="-1080" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="QAZ8KyiYfv3LoN_8WGbh-8" value="ParamsManager" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">

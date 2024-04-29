@@ -1,4 +1,4 @@
-UserArgs (RunArgs):
+RunArgs:
 Interface avec l'utilisateur, parse les arguments d'entrée, vérifie la validité, formatte les demandes de l'utilisateur (qui est sous forme de texte) en des éléments comprehensible pour le programme.
 - à quel moment il faut traduire un nom de routine généraliste vers differents ModuleName ? Comment afficher pour le user ?
 >>> RunArgs donne accès au reste du programme seulement une list de ModuleName valide. Donc lors de la génération de cette list il faut faire la traduction.
@@ -6,11 +6,12 @@ Interface avec l'utilisateur, parse les arguments d'entrée, vérifie la validit
 >>> to_cmd_name(x) = x_CmdName if x_CmdName.value == x else x_CmdName_List if x in available_abstract_cmds
 
 DataManager:
-Interface entre le système et l'application, il est responsable de la lecture et écriture de chaque fichier et dossier. Fournis des méthodes unifiées pour gérer chaque DataType et est en dialogue direct avec les Routine.
+Interface entre le système et l'application, il est responsable de la lecture et écriture de chaque fichier et dossier. 
+Fournis des méthodes unifiées pour gérer chaque DataType et est en dialogue direct avec les Routine.
 
 AnalysisManager:
 Chef d'orchestre de l'application, il décide quelle analysis lancer avec quel donnée et de quel manière.
-Il est en interaction avec le UserArgs pour connaitre les demandes de l'utilisateur (commandes, dimension, type d'analysis, parallelisation).
+Il est en interaction avec le RunArgs pour connaitre les demandes de l'utilisateur (commandes, dimension, type d'analysis, parallelisation).
 Il peut demander au DataManager les paramèters brutes pour instancier un ParamsManager. 
 Grâce aux commandes et aux params, il pourra construire un Pipeline par analyse en instantiant des Routine dédiés. 
 Il peut demander au DataManager les fichiers lier à un DataType et une AnalysisType précis pour lancer des Pipeline.
@@ -38,7 +39,7 @@ Une Routine est divisée en plusieurs sub-routines dans deux cas : Si il faut sa
 
 AbstractRoutineName:
 Collection des noms des grandes étapes de l'analyses dans le but de simplifier l'écriture et la compréhension des commandes pour l'utilisateur. Un AbstractRoutineName correspond soit à un ensemble cohérent de RoutineName ou à un surnom d'un RoutineName qui sera interprété en fonction du type d'analyse et de la dimension demandé par l'utilisateur.
-L'AbstractRoutineName est traduit en un ou plusieurs RoutineName par le UserArgs.
+L'AbstractRoutineName est traduit en un ou plusieurs RoutineName par le RunArgs.
 
 Pipeline:
 Ensemble ordonné et connecté de Routine. Sa méthode "process" permet d'associer la donnée de sortie d'une Routine à la donnée d'entrée d'une autre Routine. 

@@ -40,7 +40,7 @@ class AnalysisType(Enum):
     TRACE = "trace"
 
 
-class CommandName(Enum):
+class RoutineName(Enum):
     PROJECT = "project"
     SKIP = "skip"
     PREPROCESS_3D = "preprocess_3d"

@@ -1,6 +1,6 @@
 acutellement les classes s'occupent de :
 
-UserArgs (RunArgs):
+RunArgs:
 	_parse_run_args()
 	parse_commands(str) -> List[str]
 	parse_dimension(int) -> List[int]
@@ -81,7 +81,7 @@ AnalysisType:
 
 acutellement les classes s'occupent de :
 
-UserArgs (RunArgs):
+RunArgs:
 	_parse_run_args()
 	csv_commands_to_routine_names(str) -> List[RoutineName | AbstractRoutineName] | ValueError
 	explicite_abstract_routine_names(List[RoutineName | AbstractRoutineName]) -> List[RoutineName]

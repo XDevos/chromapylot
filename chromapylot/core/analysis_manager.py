@@ -16,7 +16,7 @@ from modules.register_global import (
     CompareBlockGlobal,
 )
 from modules.register_local import RegisterLocal, Preprocess3D
-from chromapylot.core.core_types import AnalysisType, CommandName
+from chromapylot.core.core_types import AnalysisType, RoutineName
 from chromapylot.core.data_manager import DataManager
 from chromapylot.parameters.matrix_params import MatrixParams
 from chromapylot.parameters.params_manager import ParamsManager
@@ -67,7 +67,7 @@ class AnalysisManager:
 
     def get_module_chain(
         self, pipeline_type: AnalysisType, dim: int
-    ) -> List[CommandName]:
+    ) -> List[RoutineName]:
         if pipeline_type == AnalysisType.REFERENCE:
             if dim == 2:
                 chain = ["project"]
@@ -147,8 +147,8 @@ class AnalysisManager:
         return chain
 
     def explicite_intern_module(
-        self, chain: List[CommandName], pipeline_type
-    ) -> List[CommandName]:
+        self, chain: List[RoutineName], pipeline_type
+    ) -> List[RoutineName]:
         # Projection Laplacian
         try:
             index_chain = chain.index("project")
@@ -198,7 +198,7 @@ class AnalysisManager:
 
     def create_module(
         self,
-        module_name: CommandName,
+        module_name: RoutineName,
         module_params: Dict[
             str,
             Union[
