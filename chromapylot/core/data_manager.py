@@ -293,6 +293,12 @@ class DataManager:
         print(f"> $INPUT{short_path}")
         return io.imread(path).squeeze()
 
+    def load_image_2d(self, path):
+        print(f"[Load] IMAGE_2D")
+        short_path = path[self.in_dir_len :]
+        print(f"> $INPUT{short_path}")
+        return np.load(path)
+
     def get_3d_ref_filename(self):
         for data_type, filepath in self.analysis_files[at.REFERENCE]:
             if data_type == DataType.IMAGE_3D:

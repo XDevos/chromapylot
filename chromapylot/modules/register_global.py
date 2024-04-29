@@ -82,10 +82,7 @@ class RegisterGlobalModule(Module):
     def load_data(self, input_path):
         if self.ref_fiducial in os.path.basename(input_path):
             return None
-        print(f"[Load] {self.input_type.value}")
-        short_path = input_path[self.data_m.in_dir_len :]
-        print(f"> $INPUT{short_path}")
-        return np.load(input_path)
+        return self.data_m.load_image_2d(input_path)
 
     def save_data(self, data, input_path, input_data):
         if data is None:
