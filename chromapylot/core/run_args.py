@@ -3,8 +3,9 @@
 
 import os
 from argparse import ArgumentParser
+from typing import List
 
-from chromapylot.core.core_types import CommandName, AnalysisType
+from chromapylot.core.core_types import RoutineName, AnalysisType
 
 
 def _parse_run_args(command_line_args):
@@ -85,7 +86,7 @@ class RunArgs:
 
     def __init__(self, command_line_args):
         parsed_args = _parse_run_args(command_line_args)
-        self.commands = self.parse_commands(parsed_args.command)
+        self.routine_names = self.csv_commands_to_routine_names(parsed_args.command)
         self.input = parsed_args.input
         self.output = parsed_args.output
         self.dimension = self.parse_dimension(parsed_args.dimension)
@@ -96,25 +97,47 @@ class RunArgs:
         self.sup_file = parsed_args.sup_file
         self._check_args()
 
-    @classmethod
-    def parse_commands(cls, command):
-        """Parse command argument
+    def csv_commands_to_routine_names(self, csv_commands: str) -> List[RoutineName]:
+        """Convert comma-separated commands to RoutineName list
 
         Parameters
         ----------
-        command : str
+        csv_commands : str
             Comma-separated list of module names to run.
 
         Returns
         -------
-        list
-            List of module names to run.
+        List[RoutineName]
+            List of routine names to run.
         """
-        return command.split(",") if command else cls._get_default_commands()
+        routine_names = []
+        if not csv_commands:
+            return self._get_default_commands()
+        for command in csv_commands.split(","):
+            try:
+                routine_names += list(self.command_to_routine_name(command))
+            except ValueError:
+                raise ValueError(f"Command {command} is not available.")
+        return routine_names
+
+    def command_to_routine_name(self, command: str) -> RoutineName:
+        """Convert command to RoutineName
+
+        Parameters
+        ----------
+        command : str
+            Module name to run.
+
+        Returns
+        -------
+        RoutineName
+            Routine name to run.
+        """
+        return RoutineName(command)
 
     @staticmethod
     def _get_default_commands():
-        return [command.value for command in CommandName]
+        return [command.value for command in RoutineName]
 
     @classmethod
     def parse_dimension(cls, dimension):
@@ -168,7 +191,7 @@ class RunArgs:
             raise FileNotFoundError(f"Input folder {self.input} does not exist.")
         if not os.path.exists(self.output):
             raise FileNotFoundError(f"Output folder {self.output} does not exist.")
-        available_commands = self._get_default_commands()
-        for command in self.commands:
-            if command.lower() not in available_commands:
-                raise ValueError(f"Command {command} is not available.")
+        if not isinstance(self.threads, int) or self.threads < 1:
+            raise ValueError(
+                f"Thread number {self.threads} is not available, choose a positive integer."
+            )

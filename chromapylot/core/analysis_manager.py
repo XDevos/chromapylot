@@ -62,8 +62,8 @@ class AnalysisManager:
             "trace": {2: None, 3: None},
         }
 
-    def parse_commands(self, commands: List[str]):
-        self.module_names = list(set(commands))
+    def parse_commands(self, commands: List[RoutineName]):
+        self.routine_names = list(set(commands))
 
     def get_module_chain(
         self, pipeline_type: AnalysisType, dim: int

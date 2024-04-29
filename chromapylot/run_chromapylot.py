@@ -15,7 +15,7 @@ def main(command_line_args=None):
     analysis_manager = AnalysisManager(
         data_manager, run_args.dimension, run_args.threads, run_args.analysis_types
     )
-    analysis_manager.parse_commands(run_args.commands)
+    analysis_manager.parse_commands(run_args.routine_names)
     analysis_manager.create_pipelines()
     analysis_manager.launch_analysis()
     print("\n==================== Normal termination ====================\n")
