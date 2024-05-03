@@ -15,6 +15,7 @@ from tests.testing_tools.comparison import (
     compare_line_by_line,
     compare_npy_files,
     compare_trace_table,
+    compare_block3d_files,
 )
 
 # build a temporary directory
@@ -104,7 +105,9 @@ def test_align_images_3d():
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_align_images, filename)
         out_file = os.path.join(out_align_images, filename)
-        assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
+        assert os.path.exists(out_file)
+        assert os.path.exists(tmp_file)
+        assert compare_block3d_files(tmp_file, out_file, atol=1e-6)
 
 
 def test_segment_masks_3d():
