@@ -8,7 +8,7 @@ from dataclasses import asdict
 from os import path
 from typing import Dict
 
-from chromapylot.core.core_types import AnalysisType
+from chromapylot.core.core_types import AnalysisType, RoutineName
 from chromapylot.parameters.utils import merge_common_and_labels
 from chromapylot.parameters.acquisition_params import AcquisitionParams
 from chromapylot.parameters.projection_params import ProjectionParams
@@ -71,7 +71,8 @@ class ParamsManager:
                 result[key].pop("unknown_params", None)
         return result
 
-    def get_module_params(self, module_name: str):
+    def get_module_params(self, routine_name: RoutineName):
+        module_name = routine_name.value
         if module_name in ["acquisition", "skip"]:
             return {"acquisition_params": self.acquisition}
         if module_name in [
@@ -92,6 +93,7 @@ class ParamsManager:
         ]:
             return {"registration_params": self.registration}
         if module_name in [
+            "localize_2d",
             "segment_2d",
             "segment_3d",
             "extract_2d",

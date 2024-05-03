@@ -30,8 +30,8 @@ def template_test_localize_2d(mode: str):
     """Check Localize2D feature with all possibilities"""
     inputs = os.path.join(tmp_localize_2d_in, mode)
     print(f"inputs: {inputs}")
-    main(["-I", inputs, "-O", inputs, "-C", "segment_2d,extract_2d", "-A", "barcode"])
-    generated_align_images = os.path.join(inputs, "segmentedObjects")
+    main(["-I", inputs, "-O", inputs, "-C", "localize_2d", "-A", "barcode"])
+    generated_align_images = os.path.join(inputs, "localize_2d")
     reference_outputs = f"pyhim-small-dataset/localize_2d/OUT/{mode}/segmentedObjects/"
     generated_files = extract_files(generated_align_images)
     reference_files = extract_files(reference_outputs)

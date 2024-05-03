@@ -48,6 +48,7 @@ class RoutineName(Enum):
     SHIFT_2D = "shift_2d"
     REGISTER_GLOBAL = "register_global"
     REGISTER_LOCAL = "register_local"
+    LOCALIZE_2D = "localize_2d"
     SEGMENT_3D = "segment_3d"
     SEGMENT_2D = "segment_2d"
     EXTRACT_3D = "extract_3d"
@@ -75,7 +76,7 @@ def get_data_type(filename, extension):
         if "_2d" in filename:
             if "_Matrix" in filename:
                 return DataType.MATRIX_2D
-            elif "_shifted" in filename:
+            elif "_registered" in filename:
                 return DataType.IMAGE_2D_SHIFTED
             else:
                 return DataType.IMAGE_2D

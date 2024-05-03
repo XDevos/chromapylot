@@ -71,17 +71,17 @@
    	def load_data(self, input_path):
            raise NotImplementedError
            
-       def load_reference_data(self, paths: List[str]):
-           raise NotImplementedError
-   
-       def load_supplementary_data(self, input_path, cycle):
-           raise NotImplementedError
-           
-       def run(self, data, supplementary_data=None):
-           raise NotImplementedError
-   
-       def save_data(self, data, input_path, input_data):
-           raise NotImplementedError
+    def load_reference_data(self, paths: List[str]):
+        raise NotImplementedError
+
+    def load_supplementary_data(self, input_path, cycle):
+        raise NotImplementedError
+        
+    def run(self, data, supplementary_data=None):
+        raise NotImplementedError
+
+    def save_data(self, data, input_path, input_data):
+        raise NotImplementedError
    
    ```
 

@@ -115,7 +115,8 @@ class RunArgs:
             return self._get_default_commands()
         for command in csv_commands.split(","):
             try:
-                routine_names += list(self.command_to_routine_name(command))
+                cmd = self.command_to_routine_name(command)
+                routine_names += cmd if isinstance(cmd, list) else [cmd]
             except ValueError:
                 raise ValueError(f"Command {command} is not available.")
         return routine_names

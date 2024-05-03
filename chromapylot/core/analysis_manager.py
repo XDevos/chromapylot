@@ -23,6 +23,7 @@ from chromapylot.parameters.params_manager import ParamsManager
 from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
+from chromapylot.modules.localize import Localize2D
 
 
 from chromapylot.core.pipeline import Pipeline
@@ -51,7 +52,7 @@ class AnalysisManager:
         self.user_analysis_types = analysis_types
         self.found_analysis_types = self.data_manager.get_analysis_types()
         self.analysis_to_process = []
-        self.module_names = []
+        self.routine_names = []
         self.pipelines: Dict[AnalysisType, Dict[int, Pipeline]] = {
             "reference": {2: None, 3: None},
             "fiducial": {2: None, 3: None},
@@ -98,7 +99,7 @@ class AnalysisManager:
                 ]
         elif pipeline_type == AnalysisType.BARCODE:
             if dim == 2:
-                chain = ["skip", "project", "shift_2d", "segment_2d", "extract_2d"]
+                chain = ["skip", "project", "shift_2d", "localize_2d"]
             elif dim == 3:
                 chain = ["skip", "shift_3d", "segment_3d", "extract_3d"]
         elif (
@@ -144,7 +145,11 @@ class AnalysisManager:
                 f"Analysis type '{pipeline_type}' with dimension '{dim}' not found."
             )
         chain = self.explicite_intern_module(chain, pipeline_type)
+        chain = self.convert_string_to_routine_name(chain)
         return chain
+
+    def convert_string_to_routine_name(self, chain: List[str]) -> List[RoutineName]:
+        return [RoutineName(module) for module in chain]
 
     def explicite_intern_module(
         self, chain: List[RoutineName], pipeline_type
@@ -158,17 +163,17 @@ class AnalysisManager:
                 chain.insert(index_chain, "project_by_block")
                 chain.insert(index_chain, "interpolate_focal_plane")
                 chain.insert(index_chain, "split_in_blocks")
-        except ValueError:
+        except (ValueError, AttributeError):
             pass
         try:
-            index_user = self.module_names.index("project")
+            index_user = self.routine_names.index("project")
             pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
             if pipe_params.projection.mode == "laplacian":
-                self.module_names.pop(index_user)
-                self.module_names.insert(index_user, "project_by_block")
-                self.module_names.insert(index_user, "interpolate_focal_plane")
-                self.module_names.insert(index_user, "split_in_blocks")
-        except ValueError:
+                self.routine_names.pop(index_user)
+                self.routine_names.insert(index_user, "project_by_block")
+                self.routine_names.insert(index_user, "interpolate_focal_plane")
+                self.routine_names.insert(index_user, "split_in_blocks")
+        except (ValueError, AttributeError):
             pass
         # Global Registration by block
         try:
@@ -183,12 +188,12 @@ class AnalysisManager:
         except AttributeError:
             pass
         try:
-            index_user = self.module_names.index("register_global")
+            index_user = self.routine_names.index("register_global")
             pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
             if pipe_params.registration.alignByBlock:
-                self.module_names.pop(index_user)
-                self.module_names.insert(index_user, "compare_block_global")
-                self.module_names.insert(index_user, "register_by_block")
+                self.routine_names.pop(index_user)
+                self.routine_names.insert(index_user, "compare_block_global")
+                self.routine_names.insert(index_user, "register_by_block")
         except ValueError:
             pass
         except AttributeError:
@@ -198,7 +203,7 @@ class AnalysisManager:
 
     def create_module(
         self,
-        module_name: RoutineName,
+        routine_name: RoutineName,
         module_params: Dict[
             str,
             Union[
@@ -206,6 +211,7 @@ class AnalysisManager:
             ],
         ],
     ):
+        module_name = routine_name.value
         module_mapping = {
             "project": ProjectModule,
             "project_by_block": ProjectByBlockModule,
@@ -219,6 +225,7 @@ class AnalysisManager:
             "register_by_block": RegisterByBlock,
             "compare_block_global": CompareBlockGlobal,
             "register_local": RegisterLocal,
+            "localize_2d": Localize2D,
             "segment_2d": mod.Segment2DModule,
             "segment_3d": mod.Segment3DModule,
             "extract_2d": mod.Extract2DModule,
@@ -243,7 +250,7 @@ class AnalysisManager:
         modules: List[mod.Module] = []
         pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
         for i in range(len(module_chain)):
-            if module_chain[i] in self.module_names:
+            if module_chain[i] in self.routine_names:
                 module_params = pipe_params.get_module_params(module_chain[i])
                 modules.append(self.create_module(module_chain[i], module_params))
                 # check if we don't break the chain
@@ -257,8 +264,11 @@ class AnalysisManager:
 
     def create_pipelines(self):
         print_text_inside("Creating pipelines", "=")
+        print(f"Analysis types found: {self.found_analysis_types}")
+        print(f"Analysis types to process: {self.user_analysis_types}")
         for analysis_type in self.found_analysis_types:
             print(f"\n[{analysis_type}]")
+
             if analysis_type not in self.user_analysis_types:
                 continue
 

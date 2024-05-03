@@ -304,6 +304,11 @@ class DataManager:
             if data_type == DataType.IMAGE_3D:
                 return os.path.basename(filepath)
 
+    def get_barcode_id(self, barcode_path):
+        return os.path.basename(barcode_path).split("_")[2].split("RT")[1]
+    
+    
+
 
 def tif_path_to_projected(tif_path):
     base = os.path.basename(tif_path).split(".")[0]
