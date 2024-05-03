@@ -306,8 +306,6 @@ class DataManager:
 
     def get_barcode_id(self, barcode_path):
         return os.path.basename(barcode_path).split("_")[2].split("RT")[1]
-    
-    
 
 
 def tif_path_to_projected(tif_path):
@@ -325,9 +323,16 @@ def create_dirs_from_path(path):
 def get_init_basename(filepath):
     # Remove extension
     base = os.path.basename(filepath).split(".")[0]
-    # Remove _2d suffix if present. TODO: generalize this to all suffixes
-    base = base[:-3] if base[-3:] == "_2d" else base
+    base = pop_postfix(base)
     return base
+
+
+def pop_postfix(base):
+    split_base = base.split("_")
+    if split_base[-1][0:2] == "ch":
+        return base
+    else:
+        return pop_postfix("_".join(split_base[:-1]))
 
 
 def create_png_path(init_filename, out_dir, module_dir, postfix):
