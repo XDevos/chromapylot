@@ -6,12 +6,18 @@ import os
 import uuid
 from typing import Dict, List
 import numpy as np
+import matplotlib.pyplot as plt
 
 from modules.module import Module
 from chromapylot.core.core_types import DataType
-from chromapylot.core.data_manager import DataManager, get_roi_number_from_image_path
+from chromapylot.core.data_manager import (
+    DataManager,
+    get_roi_number_from_image_path,
+    create_png_path,
+)
 from chromapylot.parameters.segmentation_params import SegmentationParams
 
+from astropy.visualization import simple_norm
 from astropy.stats import SigmaClip, sigma_clipped_stats
 from astropy.table import Column, Table, vstack
 from photutils import Background2D, DAOStarFinder, MedianBackground
@@ -73,6 +79,14 @@ class Localize2D(Module):
 
     def save_data(self, data, input_path, input_data):
         self._save_localization_table(data, input_path)
+        png_path = create_png_path(
+            input_path, self.data_m.output_folder, self.dirname, "_segmentedSources"
+        )
+        self.show_image_sources(
+            input_data,
+            data,
+            png_path,
+        )
 
     def _save_localization_table(self, data, input_path):
         barcode_id = self.data_m.get_barcode_id(input_path)
@@ -120,3 +134,42 @@ class Localize2D(Module):
             existing_table = Table.read(out_path, format="ascii.ecsv")
             data = vstack([existing_table, data])
         data.write(out_path, format="ascii.ecsv", overwrite=True)
+
+    def show_image_sources(self, im, sources, output_filename):
+        # estimates and removes inhomogeneous background
+        bkg_estimator = MedianBackground()
+        bkg = Background2D(
+            im,
+            (64, 64),
+            filter_size=(3, 3),
+            sigma_clip=SigmaClip(sigma=self.background_sigma),
+            bkg_estimator=bkg_estimator,
+        )
+        im1_bkg_substracted = im - bkg.background
+
+        percent = 99.5
+        flux = sources["flux"]
+        x = sources["xcentroid"] + 0.5
+        y = sources["ycentroid"] + 0.5
+
+        fig, ax = plt.subplots()
+        fig.set_size_inches((50, 50))
+
+        norm = simple_norm(im, "sqrt", percent=percent)
+        ax.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)
+        p_1 = ax.scatter(
+            x,
+            y,
+            c=flux,
+            s=50,
+            facecolors="none",
+            cmap="jet",
+            marker="x",
+            vmin=0,
+            vmax=2000,
+        )
+        fig.colorbar(p_1, ax=ax, fraction=0.046, pad=0.04)
+        ax.set_xlim(0, im.shape[1] - 1)
+        ax.set_ylim(0, im.shape[0] - 1)
+        fig.savefig(output_filename)
+        plt.close(fig)
