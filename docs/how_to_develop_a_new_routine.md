@@ -87,5 +87,49 @@
 
    
 
-7. 
+7. There is a final template to start:
 
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from typing import List
+
+from chromapylot.core.core_types import DataType
+from chromapylot.core.data_manager import DataManager
+from chromapylot.modules.module import Module
+from chromapylot.parameters.registration_params import RegistrationParams
+
+
+class RegisterLocal(Module):
+    def __init__(
+        self,
+        data_manager: DataManager,
+        registration_params: RegistrationParams,
+    ):
+        super().__init__(
+            data_manager=data_manager,
+            input_type=DataType.IMAGE_3D_SHIFTED,
+            output_type=DataType.REGISTRATION_TABLE,
+            reference_type=DataType.IMAGE_3D,
+            supplementary_type=None,
+        )
+        self.dirname = "register_local"
+        self.example_name = registration_params.example_name
+
+    def load_data(self, input_path):
+        raise NotImplementedError
+
+    def load_reference_data(self, paths: List[str]):
+        raise NotImplementedError
+
+    def load_supplementary_data(self, input_path, cycle):
+        raise NotImplementedError
+
+    def run(self, data, supplementary_data=None):
+        raise NotImplementedError
+
+    def save_data(self, data, input_path, input_data):
+        raise NotImplementedError
+
+```
