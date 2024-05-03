@@ -264,28 +264,6 @@ class Segment3DModule(Module):
         print("Saving 3D image.")
 
 
-class Segment2DModule(Module):
-    def __init__(
-        self, data_manager: DataManager, segmentation_params: SegmentationParams
-    ):
-        super().__init__(
-            data_manager=data_manager,
-            input_type=[DataType.IMAGE_2D_SHIFTED, DataType.IMAGE_2D],
-            output_type=DataType.IMAGE_2D_SEGMENTED,
-        )
-
-    def run(self, image):
-        print("Segmenting 2D image.")
-        return np.ones_like(image)
-
-    def load_data(self, input_path):
-        print("Loading 2D image.")
-        return np.ones((10, 10))
-
-    def save_data(self, data, input_path, input_data):
-        print("Saving 2D image.")
-
-
 class ExtractModule(Module):
     def __init__(
         self, data_manager: DataManager, input_type, output_type, supplementary_type
