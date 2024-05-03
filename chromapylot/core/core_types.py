@@ -62,6 +62,12 @@ class RoutineName(Enum):
     BUILD_TRACE_3D = "build_trace_3d"
     BUILD_TRACE_2D = "build_trace_2d"
     BUILD_MATRIX = "build_matrix"
+    # SubRoutineName
+    REGISTER_BY_BLOCK = "register_by_block"
+    COMPARE_BLOCK_GLOBAL = "compare_block_global"
+    PROJECT_BY_BLOCK = "project_by_block"
+    INTERPOLATE_FOCAL_PLANE = "interpolate_focal_plane"
+    SPLIT_IN_BLOCKS = "split_in_blocks"
 
 
 def get_data_type(filename, extension):

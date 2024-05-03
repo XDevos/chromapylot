@@ -199,7 +199,7 @@ class RegisterLocal(Module):
     def __save_registration_table(self, data, out_path):
         if not os.path.exists(os.path.dirname(out_path)):
             os.makedirs(os.path.dirname(out_path))
-        else:
+        elif os.path.exists(out_path):
             existing_table = Table.read(out_path, format="ascii.ecsv")
             data = vstack([existing_table, data])
         data.write(out_path, format="ascii.ecsv", overwrite=True)

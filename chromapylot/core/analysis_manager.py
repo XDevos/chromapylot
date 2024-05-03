@@ -131,14 +131,14 @@ class AnalysisManager:
                 chain = [
                     "filter_localization",
                     "build_trace_2d",
-                    "build_matrix_2d",
+                    "build_matrix",
                 ]
             elif dim == 3:
                 chain = [
                     "filter_localization",
                     "register_localization",
                     "build_trace_3d",
-                    "build_matrix_3d",
+                    "build_matrix",
                 ]
         else:
             raise ValueError(
@@ -166,13 +166,15 @@ class AnalysisManager:
         except (ValueError, AttributeError):
             pass
         try:
-            index_user = self.routine_names.index("project")
+            index_user = self.routine_names.index(RoutineName("project"))
             pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
             if pipe_params.projection.mode == "laplacian":
                 self.routine_names.pop(index_user)
-                self.routine_names.insert(index_user, "project_by_block")
-                self.routine_names.insert(index_user, "interpolate_focal_plane")
-                self.routine_names.insert(index_user, "split_in_blocks")
+                self.routine_names.insert(index_user, RoutineName("project_by_block"))
+                self.routine_names.insert(
+                    index_user, RoutineName("interpolate_focal_plane")
+                )
+                self.routine_names.insert(index_user, RoutineName("split_in_blocks"))
         except (ValueError, AttributeError):
             pass
         # Global Registration by block
@@ -188,12 +190,14 @@ class AnalysisManager:
         except AttributeError:
             pass
         try:
-            index_user = self.routine_names.index("register_global")
+            index_user = self.routine_names.index(RoutineName("register_global"))
             pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
             if pipe_params.registration.alignByBlock:
                 self.routine_names.pop(index_user)
-                self.routine_names.insert(index_user, "compare_block_global")
-                self.routine_names.insert(index_user, "register_by_block")
+                self.routine_names.insert(
+                    index_user, RoutineName("compare_block_global")
+                )
+                self.routine_names.insert(index_user, RoutineName("register_by_block"))
         except ValueError:
             pass
         except AttributeError:
