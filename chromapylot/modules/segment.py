@@ -5,6 +5,8 @@ from typing import List
 import time
 import os
 
+from stardist.models import StarDist3D
+from csbdeep.data import PadAndCropResizer
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization.stretch import SqrtStretch
 import matplotlib.pyplot as plt
@@ -18,6 +20,7 @@ from photutils import (
     detect_sources,
     detect_threshold,
 )
+from csbdeep.utils.tf import limit_gpu_memory
 from astropy.convolution import Gaussian2DKernel, convolve
 from skimage.measure import regionprops
 from scipy.spatial import Voronoi
@@ -46,7 +49,7 @@ class Segment2D(Module):
         super().__init__(
             data_manager=data_manager,
             input_type=DataType.IMAGE_2D_SHIFTED,
-            output_type=DataType.IMAGE_2D_SEGMENTED,
+            output_type=DataType.SEGMENTED_2D,
             reference_type=None,
             supplementary_type=None,
         )
@@ -214,6 +217,102 @@ class Segment2D(Module):
         labeled, _ = model.predict_instances(img)
 
         return labeled
+
+
+class Segment3D(Module):
+    def __init__(
+        self,
+        data_manager: DataManager,
+        segmentation_params: SegmentationParams,
+    ):
+        super().__init__(
+            data_manager=data_manager,
+            input_type=DataType.IMAGE_3D_SHIFTED,
+            output_type=DataType.SEGMENTED_3D,
+            reference_type=None,
+            supplementary_type=None,
+        )
+        self.dirname = "mask_3d"
+        self.stardist_basename = segmentation_params.stardist_basename
+        self.stardist_network3D = segmentation_params.stardist_network3D
+
+    def load_data(self, input_path):
+        return self.data_m.load_image_3d(input_path)
+
+    def load_reference_data(self, paths: List[str]):
+        raise NotImplementedError
+
+    def load_supplementary_data(self, input_path, cycle):
+        raise NotImplementedError
+
+    def run(self, data, supplementary_data=None):
+        base_dir = self.find_base_dir()
+        model_name = self.find_model_name(base_dir)
+        np.random.seed(6)  # ?
+        print(f"> Loading model {model_name} from {base_dir}...")
+        os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
+
+        model = StarDist3D(None, name=model_name, basedir=base_dir)
+        limit_gpu_memory(None, allow_growth=True)
+
+        im = normalize(data, pmin=1, pmax=99.8, axis=(0, 1, 2))
+        l_x = im.shape[1]
+        if l_x < 351:  # what is this value? should it be a k-arg?
+            labels, _ = model.predict_instances(im)
+        else:
+            resizer = PadAndCropResizer()
+            axes = "ZYX"
+            im = resizer.before(im, axes, model._axes_div_by(axes))
+            labels, _ = model.predict_instances(im, n_tiles=(1, 8, 8))
+            labels = resizer.after(labels, axes)
+
+        return labels
+
+    def save_data(self, segmented_image_3d, input_path, input_data):
+        number_masks = np.max(segmented_image_3d)
+        print(f"$ Number of masks detected: {number_masks}")
+
+        npy_2d_path = create_npy_path(
+            input_path, self.data_m.output_folder, self.dirname, "_Masks"
+        )
+        npy_3d_path = create_npy_path(
+            input_path, self.data_m.output_folder, self.dirname, "_3Dmasks"
+        )
+
+        # saves 3D image
+
+        save_npy(segmented_image_3d, npy_3d_path, self.data_m.out_dir_len)
+
+        # saves 2D image
+        segmented_image_2d = np.max(segmented_image_3d, axis=0)
+        save_npy(segmented_image_2d, npy_2d_path, self.data_m.out_dir_len)
+
+        png_path = create_png_path(
+            input_path, self.data_m.output_folder, self.dirname, ".tif_3Dmasks"
+        )
+        plot_raw_images_and_labels(input_data, segmented_image_3d, png_path)
+
+    def find_base_dir(self):
+        if self.stardist_basename is not None and os.path.exists(
+            self.stardist_basename
+        ):
+            base_dir = self.stardist_basename
+        else:
+            base_dir = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                os.pardir,
+                "stardist_models",
+            )
+        return base_dir
+
+    def find_model_name(self, base_dir):
+        if self.stardist_network3D is not None and os.path.exists(
+            os.path.join(base_dir, self.stardist_network3D)
+        ):
+            model_name = self.stardist_network3D
+        else:
+            model_name = "DAPI_3D_stardist_17032021_deconvolved"
+        return model_name
 
 
 def tessellate_masks(segm_deblend):
@@ -388,3 +487,36 @@ def show_image_masks(im, segm_deblend, output_filename):
     plt.imshow(segm_deblend, origin="lower", cmap=cmap, alpha=0.5)
     plt.savefig(output_filename)
     plt.close()
+
+
+def plot_raw_images_and_labels(image, label, png_path):
+    """
+    Parameters
+    ----------
+    image : List of numpy ndarray (N-dimensional array)
+        3D raw image of format .tif
+
+    label : List of numpy ndarray (N-dimensional array)
+        3D labeled image of format .tif
+    """
+
+    cmap = random_label_cmap()
+
+    moy = np.mean(image, axis=0)
+    lbl_moy = np.max(label, axis=0)
+
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches((50, 50))
+    ax = axes.ravel()
+    titles = ["raw image", "projected labeled image"]
+
+    ax[0].imshow(moy, cmap="Greys_r", origin="lower")
+
+    ax[1].imshow(lbl_moy, cmap=cmap, origin="lower")
+
+    for axis, title in zip(ax, titles):
+        axis.set_xticks([])
+        axis.set_yticks([])
+        axis.set_title(title)
+
+    fig.savefig(png_path)

@@ -155,8 +155,8 @@ class BuildTrace3DModule(Module):
             input_type=DataType.TABLE_3D,
             output_type=DataType.TRACES_LIST_3D,
             reference_type=[
-                DataType.IMAGE_3D_SEGMENTED_SELECTED,
-                DataType.IMAGE_3D_SEGMENTED,
+                DataType.SEGMENTED_3D_SELECTED,
+                DataType.SEGMENTED_3D,
             ],
         )
         self.reference_data: Dict[str, np.ndarray] = {}

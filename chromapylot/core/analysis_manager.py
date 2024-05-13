@@ -24,7 +24,7 @@ from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
 from chromapylot.modules.localize import Localize2D
-from chromapylot.modules.segment import Segment2D
+from chromapylot.modules.segment import Segment2D, Segment3D
 
 
 from chromapylot.core.pipeline import Pipeline
@@ -232,7 +232,7 @@ class AnalysisManager:
             "register_local": RegisterLocal,
             "localize_2d": Localize2D,
             "segment_2d": Segment2D,
-            "segment_3d": mod.Segment3DModule,
+            "segment_3d": Segment3D,
             "extract_2d": mod.Extract2DModule,
             "extract_3d": mod.Extract3DModule,
             "filter_mask": mod.FilterMaskModule,

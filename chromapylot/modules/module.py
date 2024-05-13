@@ -242,28 +242,6 @@ class Shift2DModule(ShiftModule):
         save_npy(data, npy_path, self.data_m.out_dir_len)
 
 
-class Segment3DModule(Module):
-    def __init__(
-        self, data_manager: DataManager, segmentation_params: SegmentationParams
-    ):
-        super().__init__(
-            data_manager=data_manager,
-            input_type=[DataType.IMAGE_3D_SHIFTED, DataType.IMAGE_3D],
-            output_type=DataType.IMAGE_3D_SEGMENTED,
-        )
-
-    def run(self, image):
-        print("Segmenting 3D image.")
-        return np.ones_like(image)
-
-    def load_data(self, input_path):
-        print("Loading 3D image.")
-        return np.ones((10, 10, 10))
-
-    def save_data(self, data, input_path, input_data):
-        print("Saving 3D image.")
-
-
 class ExtractModule(Module):
     def __init__(
         self, data_manager: DataManager, input_type, output_type, supplementary_type
@@ -302,7 +280,7 @@ class Extract3DModule(ExtractModule):
     ):
         super().__init__(
             data_manager=data_manager,
-            input_type=DataType.IMAGE_3D_SEGMENTED,
+            input_type=DataType.SEGMENTED_3D,
             output_type=DataType.TABLE_3D,
             supplementary_type=[
                 DataType.IMAGE_3D_SHIFTED,
@@ -328,7 +306,7 @@ class Extract2DModule(ExtractModule):
     ):
         super().__init__(
             data_manager=data_manager,
-            input_type=DataType.IMAGE_2D_SEGMENTED,
+            input_type=DataType.SEGMENTED_2D,
             output_type=DataType.TABLE_2D,
             supplementary_type=[
                 DataType.IMAGE_2D_SHIFTED,
@@ -449,8 +427,8 @@ class SelectMask3DModule(SelectMaskModule):
     ):
         super().__init__(
             data_manager=data_manager,
-            input_type=DataType.IMAGE_3D_SEGMENTED,
-            output_type=DataType.IMAGE_3D_SEGMENTED_SELECTED,
+            input_type=DataType.SEGMENTED_3D,
+            output_type=DataType.SEGMENTED_3D_SELECTED,
             supplementary_type=DataType.TABLE_3D,
         )
 
@@ -476,8 +454,8 @@ class SelectMask2DModule(SelectMaskModule):
     ):
         super().__init__(
             data_manager=data_manager,
-            input_type=DataType.IMAGE_2D_SEGMENTED,
-            output_type=DataType.IMAGE_2D_SEGMENTED_SELECTED,
+            input_type=DataType.SEGMENTED_2D,
+            output_type=DataType.SEGMENTED_2D_SELECTED,
             supplementary_type=DataType.TABLE_2D,
         )
 

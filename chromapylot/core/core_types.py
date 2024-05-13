@@ -9,11 +9,11 @@ class DataType(Enum):
     SHIFT_DICT = "SHIFT_DICT"
     REGISTRATION_TABLE = "REGISTRATION_TABLE"
     IMAGE_3D_SHIFTED = "IMAGE_3D_SHIFTED"
-    IMAGE_3D_SEGMENTED = "IMAGE_3D_SEGMENTED"
+    SEGMENTED_3D = "SEGMENTED_3D"
     IMAGE_2D_SHIFTED = "IMAGE_2D_SHIFTED"
-    IMAGE_2D_SEGMENTED = "IMAGES_2D_SEGMENTED"
-    IMAGE_2D_SEGMENTED_SELECTED = "IMAGE_2D_SEGMENTED_SELECTED"
-    IMAGE_3D_SEGMENTED_SELECTED = "IMAGE_3D_SEGMENTED_SELECTED"
+    SEGMENTED_2D = "IMAGES_2D_SEGMENTED"
+    SEGMENTED_2D_SELECTED = "SEGMENTED_2D_SELECTED"
+    SEGMENTED_3D_SELECTED = "SEGMENTED_3D_SELECTED"
     SEGMENTED = "SEGMENTED"
     TABLE_3D = "TABLE_3D"
     TABLE_2D = "TABLE_2D"
@@ -89,9 +89,9 @@ def get_data_type(filename, extension):
         elif "_Matrix" in filename:
             return DataType.MATRIX_3D
         elif "_3Dmasks" in filename:
-            return DataType.IMAGE_3D_SEGMENTED
+            return DataType.SEGMENTED_3D
         elif "_Masks" in filename:
-            return DataType.IMAGE_2D_SEGMENTED
+            return DataType.SEGMENTED_2D
     elif extension == "json":
         if filename in ["shifts", "register_global"]:
             return DataType.SHIFT_DICT
