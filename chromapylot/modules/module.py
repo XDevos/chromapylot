@@ -129,7 +129,7 @@ class SkipModule(Module):
 
     def run(self, array_3d):
         print(f"Skipping every {self.z_binning} z-planes.")
-        return array_3d[:: self.z_binning, :, :]
+        return array_3d[:: self.z_binning, :, :].astype(np.float64)
 
     def load_data(self, input_path):
         print("Loading 3D image.")
