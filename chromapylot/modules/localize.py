@@ -16,6 +16,13 @@ from chromapylot.core.data_manager import (
     create_png_path,
 )
 from chromapylot.parameters.segmentation_params import SegmentationParams
+from chromapylot.parameters.projection_params import ProjectionParams
+from chromapylot.parameters.acquisition_params import AcquisitionParams
+from chromapylot.modules.project import (
+    get_focus_plane,
+    split_in_blocks,
+    calculate_focus_per_block,
+)
 
 from astropy.visualization import simple_norm
 from astropy.stats import SigmaClip, sigma_clipped_stats
@@ -173,3 +180,63 @@ class Localize2D(Module):
         ax.set_ylim(0, im.shape[0] - 1)
         fig.savefig(output_filename)
         plt.close(fig)
+
+
+class ReducePlanes(Module):
+    def __init__(
+        self,
+        data_manager: DataManager,
+        projection_params: ProjectionParams,
+        acquisition_params: AcquisitionParams,
+    ):
+        super().__init__(
+            data_manager=data_manager,
+            input_type=DataType.IMAGE_3D,
+            output_type=DataType.IMAGE_3D,
+            reference_type=None,
+            supplementary_type=None,
+        )
+        self.dirname = "reduce_planes"
+        self.block_size_xy = projection_params.block_size
+        self.z_window = int(projection_params.zwindows / acquisition_params.zBinning)
+
+    def load_data(self, input_path):
+        return self.data_m.load_image_3d(input_path)
+
+    def run(self, data, supplementary_data=None):
+        blocks = split_in_blocks(data, block_size_xy=self.block_size)
+        focal_plane_matrix = calculate_focus_per_block(blocks)
+        focus_plane = get_focus_plane(focal_plane_matrix)
+        zmin = np.max([focus_plane - self.z_window, 0])
+        zmax = np.min([focus_plane + self.z_window, data.shape[0]])
+        z_range = range(zmin, zmax)
+        reduce_img = np.empty(data.shape)
+        reduce_img.fill(np.nan)
+        reduce_img[z_range, :, :] = data[z_range, :, :]  # keep only the focus planes
+        return reduce_img
+
+    def save_data(self, data, input_path, input_data):
+        pass
+
+
+class Localize3D(Module):
+    def __init__(
+        self,
+        data_manager: DataManager,
+        segmentation_params: SegmentationParams,
+    ):
+        super().__init__(
+            data_manager=data_manager,
+            input_type=DataType.IMAGE_3D_SHIFTED,
+            output_type=DataType.TABLE_3D,
+            reference_type=None,
+            supplementary_type=None,
+        )
+        self.dirname = "localize_3d"
+
+    def load_data(self, input_path):
+        return self.data_m.load_image_3d(input_path)
+
+    def run(self, data, supplementary_data=None):
+        # segments 3D volumes
+        _, segmented_image_3d = self._segment_3d_volumes(image_3d_aligned)

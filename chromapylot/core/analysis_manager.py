@@ -102,7 +102,15 @@ class AnalysisManager:
             if dim == 2:
                 chain = ["skip", "project", "shift_2d", "localize_2d"]
             elif dim == 3:
-                chain = ["skip", "shift_3d", "segment_3d", "extract_3d"]
+                chain = [
+                    "skip",
+                    "reduce_planes",
+                    "preprocess_3d",
+                    "shift_3d",
+                    "segment_3d",
+                    "extract_3d",
+                    "fit_subpixel",
+                ]
         elif (
             pipeline_type == AnalysisType.DAPI
             or pipeline_type == AnalysisType.RNA

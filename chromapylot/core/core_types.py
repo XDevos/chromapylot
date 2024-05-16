@@ -68,6 +68,8 @@ class RoutineName(Enum):
     PROJECT_BY_BLOCK = "project_by_block"
     INTERPOLATE_FOCAL_PLANE = "interpolate_focal_plane"
     SPLIT_IN_BLOCKS = "split_in_blocks"
+    REDUCE_PLANES = "reduce_planes"
+    FIT_SUBPIXEL = "fit_subpixel"
 
 
 def get_data_type(filename, extension):

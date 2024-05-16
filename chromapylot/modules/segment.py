@@ -248,7 +248,6 @@ class Segment3D(Module):
     def run(self, data, supplementary_data=None):
         base_dir = self.find_base_dir()
         model_name = self.find_model_name(base_dir)
-        np.random.seed(6)  # ?
         print(f"> Loading model {model_name} from {base_dir}...")
         os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
 
