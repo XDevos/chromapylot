@@ -28,6 +28,12 @@ from matplotlib.path import Path
 from stardist.models import StarDist2D
 from csbdeep.utils import normalize
 from stardist import random_label_cmap
+from skimage.util.apply_parallel import apply_parallel
+from skimage.segmentation import watershed
+from scipy import ndimage as ndi
+from skimage.feature import peak_local_max
+from tqdm import trange
+from skimage import measure
 
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import (
@@ -235,6 +241,8 @@ class Segment3D(Module):
         self.dirname = "mask_3d"
         self.stardist_basename = segmentation_params.stardist_basename
         self.stardist_network3D = segmentation_params.stardist_network3D
+        self.method_3d = segmentation_params._3Dmethod
+        self.limit_x = segmentation_params.limit_x
 
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
@@ -246,25 +254,15 @@ class Segment3D(Module):
         raise NotImplementedError
 
     def run(self, data, supplementary_data=None):
-        base_dir = self.find_base_dir()
-        model_name = self.find_model_name(base_dir)
-        print(f"> Loading model {model_name} from {base_dir}...")
-        os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
-
-        model = StarDist3D(None, name=model_name, basedir=base_dir)
-        limit_gpu_memory(None, allow_growth=True)
-
-        im = normalize(data, pmin=1, pmax=99.8, axis=(0, 1, 2))
-        l_x = im.shape[1]
-        if l_x < 351:  # what is this value? should it be a k-arg?
-            labels, _ = model.predict_instances(im)
-        else:
-            resizer = PadAndCropResizer()
-            axes = "ZYX"
-            im = resizer.before(im, axes, model._axes_div_by(axes))
-            labels, _ = model.predict_instances(im, n_tiles=(1, 8, 8))
-            labels = resizer.after(labels, axes)
-
+        if self.method_3d == "stardist":
+            base_dir = self.find_base_dir()
+            model_name = self.find_model_name(base_dir)
+            print(f"> Loading model {model_name} from {base_dir}...")
+            labels = segment_3d_by_stardist(
+                model_name, base_dir, data, limit_x=self.limit_x
+            )
+        elif self.method_3d == "thresholding":
+            labels = segment_3d_by_thresholding(data)
         return labels
 
     def save_data(self, segmented_image_3d, input_path, input_data):
@@ -312,6 +310,35 @@ class Segment3D(Module):
         else:
             model_name = "DAPI_3D_stardist_17032021_deconvolved"
         return model_name
+
+
+class Deblend3D(Module):
+    def __init__(
+        self,
+        data_manager: DataManager,
+        segmentation_params: SegmentationParams,
+    ):
+        super().__init__(
+            data_manager=data_manager,
+            input_type=DataType.SEGMENTED_3D,
+            output_type=DataType.SEGMENTED_3D,
+            reference_type=None,
+            supplementary_type=None,
+        )
+        self.dirname = "mask_3d"
+
+    def run(self, labels):
+        binary = np.array(labels > 0, dtype=int)
+        distance = apply_parallel(ndi.distance_transform_edt, binary)
+        print(" > Deblending sources in 3D by watersheding...")
+        coords = peak_local_max(
+            distance, footprint=np.ones((10, 10, 25)), labels=binary
+        )
+        mask = np.zeros(distance.shape, dtype=bool)
+        mask[tuple(coords.T)] = True
+        markers, _ = ndi.label(mask)
+        labels = watershed(-distance, markers, mask=binary)
+        return labels
 
 
 def tessellate_masks(segm_deblend):
@@ -519,3 +546,104 @@ def plot_raw_images_and_labels(image, label, png_path):
         axis.set_title(title)
 
     fig.savefig(png_path)
+
+
+def segment_3d_by_stardist(model_name, base_dir, img_3d, limit_x=351):
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
+
+    model = StarDist3D(None, name=model_name, basedir=base_dir)
+    limit_gpu_memory(None, allow_growth=True)
+
+    im = normalize(img_3d, pmin=1, pmax=99.8, axis=(0, 1, 2))
+    l_x = im.shape[1]
+    if l_x < limit_x:  # what is this value? should it be a k-arg?
+        labels, _ = model.predict_instances(im)
+    else:
+        resizer = PadAndCropResizer()
+        axes = "ZYX"
+        im = resizer.before(im, axes, model._axes_div_by(axes))
+        labels, _ = model.predict_instances(im, n_tiles=(1, 8, 8))
+        labels = resizer.after(labels, axes)
+
+    return labels
+
+
+def segment_3d_by_thresholding(
+    image_3d, sigma, threshold_over_std, area_min, area_max, nlevels, contrast
+):
+    kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
+    kernel.normalize()
+    output = np.zeros(image_3d.shape)
+    number_planes = image_3d.shape[0]
+    for z in trange(number_planes):
+        image_2d = image_3d[z, :, :]
+        image_2d_segmented = segment_2d_by_thresholding(
+            image_2d,
+            threshold_over_std=threshold_over_std,
+            area_min=area_min,
+            area_max=area_max,
+            nlevels=nlevels,
+            contrast=contrast,
+            kernel=kernel,
+        )
+        output[z, :, :] = image_2d_segmented
+    labels = measure.label(output)
+    return labels
+
+
+def segment_2d_by_thresholding(
+    image_2d,
+    threshold_over_std=10,
+    area_min=3,
+    area_max=1000,
+    nlevels=64,
+    contrast=0.001,
+    kernel=None,
+):
+    # makes threshold matrix
+    threshold = np.zeros(image_2d.shape)
+    threshold[:] = threshold_over_std * image_2d.max() / 100
+    if kernel is not None:
+        data = convolve(image_2d, kernel, mask=None, normalize_kernel=True)
+    # segments objects
+    segm = detect_sources(
+        data,
+        threshold,
+        npixels=area_min,
+    )
+
+    if segm.nlabels <= 0:
+        # returns empty image as no objects were detected
+        return segm.data
+    # removes masks too close to border
+    segm.remove_border_labels(border_width=10)
+    if segm.nlabels <= 0:
+        # returns empty image as no objects were detected
+        return segm.data
+
+    segm_deblend = deblend_sources(
+        data,
+        segm,
+        npixels=area_min,  # watch out, this is per plane!
+        nlevels=nlevels,
+        contrast=contrast,
+        relabel=True,
+        mode="exponential",
+    )
+    if segm_deblend.nlabels > 0:
+        # removes Masks too big or too small
+        for label in segm_deblend.labels:
+            # take regions with large enough areas
+            area = segm_deblend.get_area(label)
+            if area < area_min or area > area_max:
+                segm_deblend.remove_label(label=label)
+
+        # relabel so masks numbers are consecutive
+        # segm_deblend.relabel_consecutive()
+
+    # image_2d_segmented = segm.data % changed during recoding function
+    image_2d_segmented = segm_deblend.data
+
+    image_2d_segmented[image_2d_segmented > 0] = 1
+    return image_2d_segmented

@@ -99,6 +99,7 @@ class SegmentationParams:
     _3D_higher_threshold: Union[float, str] = set_default(
         "_3D_higher_threshold", "None"
     )
+    limit_x: int = set_default("limit_x", 351)
     unknown_params: CatchAll = field(
         default_factory=lambda: {}
     )  # Catch-all field for unknown parameters

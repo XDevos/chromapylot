@@ -24,7 +24,7 @@ from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
 from chromapylot.modules.localize import Localize2D
-from chromapylot.modules.segment import Segment2D, Segment3D
+from chromapylot.modules.segment import Segment2D, Segment3D, Deblend3D
 
 
 from chromapylot.core.pipeline import Pipeline
@@ -108,6 +108,7 @@ class AnalysisManager:
                     "preprocess_3d",
                     "shift_3d",
                     "segment_3d",
+                    "deblend_3d",
                     "extract_3d",
                     "fit_subpixel",
                 ]
@@ -241,8 +242,8 @@ class AnalysisManager:
             "localize_2d": Localize2D,
             "segment_2d": Segment2D,
             "segment_3d": Segment3D,
-            "extract_2d": mod.Extract2DModule,
-            "extract_3d": mod.Extract3DModule,
+            "extract": mod.Extract,
+            "deblend_3d": Deblend3D,
             "filter_mask": mod.FilterMaskModule,
             "select_mask_2d": mod.SelectMask2DModule,
             "select_mask_3d": mod.SelectMask3DModule,

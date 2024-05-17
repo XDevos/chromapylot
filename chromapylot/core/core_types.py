@@ -51,6 +51,7 @@ class RoutineName(Enum):
     LOCALIZE_2D = "localize_2d"
     SEGMENT_3D = "segment_3d"
     SEGMENT_2D = "segment_2d"
+    DEBLEND_3D = "deblend_3d"
     EXTRACT_3D = "extract_3d"
     EXTRACT_2D = "extract_2d"
     FILTER_MASK = "filter_mask"

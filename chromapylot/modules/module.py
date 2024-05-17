@@ -4,9 +4,7 @@ import os
 from chromapylot.core.data_manager import save_npy
 import numpy as np
 from astropy.table import Table
-from extract_module import extract_properties
 from scipy.ndimage import shift
-from tifffile import imread
 from scipy.ndimage import shift as shift_image
 from chromapylot.core.core_types import DataType, first_type_accept_second
 from chromapylot.core.data_manager import get_file_path, DataManager
@@ -240,90 +238,6 @@ class Shift2DModule(ShiftModule):
             self.data_m.output_folder, self.dirname, "data", npy_filename
         )
         save_npy(data, npy_path, self.data_m.out_dir_len)
-
-
-class ExtractModule(Module):
-    def __init__(
-        self, data_manager: DataManager, input_type, output_type, supplementary_type
-    ):
-        super().__init__(
-            data_manager=data_manager,
-            input_type=input_type,
-            output_type=output_type,
-            supplementary_type=supplementary_type,
-        )
-
-    def run(self, image, mask):
-        properties = extract_properties(image, mask)
-        return Table(properties)
-
-    def load_supplementary_data(self, input_path):
-        shifted_img_path = get_file_path(input_path, "_shifted", "tif")
-        self.supplementary_data["_shifted"] = imread(shifted_img_path)
-
-    def load_data(self, input_path):
-        mask_path = get_file_path(input_path, "_3Dmasks", "npy")
-        masks = np.load(mask_path)
-        return masks
-
-    def save_data(self, data, input_path, input_data):
-        data.write(
-            get_file_path(self.data_m.output_folder, "_props", "ecsv"),
-            format="ascii.ecsv",
-            overwrite=True,
-        )
-
-
-class Extract3DModule(ExtractModule):
-    def __init__(
-        self, data_manager: DataManager, segmentation_params: SegmentationParams
-    ):
-        super().__init__(
-            data_manager=data_manager,
-            input_type=DataType.SEGMENTED_3D,
-            output_type=DataType.TABLE_3D,
-            supplementary_type=[
-                DataType.IMAGE_3D_SHIFTED,
-                DataType.IMAGE_3D,
-            ],
-        )
-
-    def run(self, image, mask):
-        print("Extracting properties from 3D image.")
-        return Table()
-
-    def load_data(self, input_path):
-        print("Loading 3D mask.")
-        return np.ones((10, 10, 10))
-
-    def save_data(self, data, input_path, input_data):
-        print("Saving properties.")
-
-
-class Extract2DModule(ExtractModule):
-    def __init__(
-        self, data_manager: DataManager, segmentation_params: SegmentationParams
-    ):
-        super().__init__(
-            data_manager=data_manager,
-            input_type=DataType.SEGMENTED_2D,
-            output_type=DataType.TABLE_2D,
-            supplementary_type=[
-                DataType.IMAGE_2D_SHIFTED,
-                DataType.IMAGE_2D,
-            ],
-        )
-
-    def run(self, image, mask):
-        print("Extracting properties from 2D image.")
-        return Table()
-
-    def load_data(self, input_path):
-        print("Loading 2D mask.")
-        return np.ones((10, 10))
-
-    def save_data(self, data, input_path, input_data):
-        print("Saving properties.")
 
 
 class FilterTableModule(Module):
