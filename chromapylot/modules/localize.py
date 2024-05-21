@@ -8,6 +8,7 @@ from typing import Dict, List
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.measure import regionprops
+
 from modules.module import Module
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import (
@@ -195,12 +196,12 @@ class ReducePlanes(Module):
         super().__init__(
             data_manager=data_manager,
             input_type=DataType.IMAGE_3D,
-            output_type=DataType.IMAGE_3D,
+            output_type=DataType.REDUCE_TUPLE,
             reference_type=None,
             supplementary_type=None,
         )
         self.dirname = "reduce_planes"
-        self.block_size_xy = projection_params.block_size
+        self.block_size = projection_params.block_size
         self.z_window = int(projection_params.zwindows / acquisition_params.zBinning)
 
     def load_data(self, input_path):
@@ -212,11 +213,10 @@ class ReducePlanes(Module):
         focus_plane = get_focus_plane(focal_plane_matrix)
         zmin = np.max([focus_plane - self.z_window, 0])
         zmax = np.min([focus_plane + self.z_window, data.shape[0]])
-        z_range = range(zmin, zmax)
-        reduce_img = np.empty(data.shape)
-        reduce_img.fill(np.nan)
-        reduce_img[z_range, :, :] = data[z_range, :, :]  # keep only the focus planes
-        return reduce_img
+        # reduce_img = np.empty(data.shape)
+        # reduce_img.fill(np.nan)
+        # reduce_img[z_range, :, :] = data[z_range, :, :]  # keep only the focus planes
+        return (zmin, zmax)
 
     def save_data(self, data, input_path, input_data):
         pass

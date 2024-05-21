@@ -26,11 +26,11 @@ class ParamsManager:
         sgm_p = labelled_params.get("segmentedObjects", {})
         mtx_p = labelled_params.get("buildsPWDmatrix", {})
 
-        self.acquisition = AcquisitionParams.from_dict(acq_p) if acq_p else None
-        self.projection = ProjectionParams.from_dict(prj_p) if prj_p else None
-        self.registration = RegistrationParams.from_dict(rgt_p) if rgt_p else None
-        self.segmentation = SegmentationParams.from_dict(sgm_p) if sgm_p else None
-        self.matrix = MatrixParams.from_dict(mtx_p) if mtx_p else None
+        self.acquisition = AcquisitionParams.from_dict(acq_p)
+        self.projection = ProjectionParams.from_dict(prj_p)
+        self.registration = RegistrationParams.from_dict(rgt_p)
+        self.segmentation = SegmentationParams.from_dict(sgm_p)
+        self.matrix = MatrixParams.from_dict(mtx_p)
 
         self.highlight_deprecated_params(labelled_params)
 
@@ -96,11 +96,13 @@ class ParamsManager:
             "localize_2d",
             "segment_2d",
             "segment_3d",
+            "deblend_3d",
             "extract_2d",
-            "extract_3d",
+            "extract_properties",
             "filter_mask",
             "select_mask_2d",
             "select_mask_3d",
+            "fit_subpixel",
         ]:
             return {"segmentation_params": self.segmentation}
         if module_name in [
@@ -113,5 +115,10 @@ class ParamsManager:
             return {
                 "acquisition_params": self.acquisition,
                 "matrix_params": self.matrix,
+            }
+        if module_name in ["reduce_planes"]:
+            return {
+                "acquisition_params": self.acquisition,
+                "projection_params": self.projection,
             }
         raise ValueError(f"Unknown module name: {module_name}")

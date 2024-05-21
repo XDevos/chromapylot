@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import List
+from typing import List, Union
 import matplotlib
 
 from tqdm import tqdm, trange
@@ -41,6 +41,8 @@ class Preprocess3D(Module):
             data_manager=data_manager,
             input_type=DataType.IMAGE_3D,
             output_type=DataType.IMAGE_3D,
+            reference_type=None,
+            supplementary_type=[DataType.REDUCE_TUPLE, None],
         )
         self._3D_lower_threshold = registration_params._3D_lower_threshold
         self._3D_higher_threshold = registration_params._3D_higher_threshold
@@ -48,7 +50,10 @@ class Preprocess3D(Module):
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
 
-    def run(self, data):
+    def run(self, data, supplementary_type=None):
+        if supplementary_type:
+            zmin, zmax = supplementary_type
+            data = data[zmin:zmax, :, :]
         data = exposure.rescale_intensity(data, out_range=(0, 1))
         img = remove_inhomogeneous_background_3d(data)
         adjust_img = image_adjust(
