@@ -74,7 +74,7 @@ class SegmentationParams:
     intensity_max: int = set_default("intensity_max", 59)
     area_min: int = set_default("area_min", 50)
     area_max: int = set_default("area_max", 500)
-    reducePlanes: bool = set_default("reducePlanes", True)
+    reducePlanes: bool = set_default("reducePlanes", False)
     residual_max: float = set_default("residual_max", 2.5)
     sigma_max: int = set_default("sigma_max", 5)
     centroidDifference_max: int = set_default("centroidDifference_max", 5)

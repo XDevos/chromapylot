@@ -26,6 +26,7 @@ from chromapylot.core.data_manager import (
     create_png_path,
 )
 from chromapylot.parameters.registration_params import RegistrationParams
+from chromapylot.parameters.segmentation_params import SegmentationParams
 from chromapylot.core.core_types import DataType
 from chromapylot.modules.register_global import image_adjust
 
@@ -35,17 +36,21 @@ matplotlib.rc("font", **font)
 
 class Preprocess3D(Module):
     def __init__(
-        self, data_manager: DataManager, registration_params: RegistrationParams
+        self,
+        data_manager: DataManager,
+        registration_params: RegistrationParams,
+        segmentation_params: SegmentationParams,
     ):
         super().__init__(
             data_manager=data_manager,
             input_type=DataType.IMAGE_3D,
             output_type=DataType.IMAGE_3D,
             reference_type=None,
-            supplementary_type=[DataType.REDUCE_TUPLE, None],
+            supplementary_type=DataType.REDUCE_TUPLE,
         )
         self._3D_lower_threshold = registration_params._3D_lower_threshold
         self._3D_higher_threshold = registration_params._3D_higher_threshold
+        self.reduce_planes = segmentation_params.reducePlanes
 
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
@@ -63,6 +68,12 @@ class Preprocess3D(Module):
 
     def save_data(self, data, input_path, input_data):
         pass
+
+    def load_supplementary_data(self, input_path, cycle):
+        if not self.reduce_planes:
+            return None
+        else:
+            raise NotImplementedError("Reduce planes loading not implemented yet")
 
 
 class RegisterLocal(Module):

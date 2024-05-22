@@ -33,6 +33,7 @@ from dask.distributed import Lock
 from astropy.table import Table
 from skimage import exposure
 from apifish.detection.spot_modeling import fit_subpixel
+from chromapylot.core.data_manager import load_json, save_json
 
 
 class Localize2D(Module):
@@ -200,7 +201,7 @@ class ReducePlanes(Module):
             reference_type=None,
             supplementary_type=None,
         )
-        self.dirname = "reduce_planes"
+        self.dirname = "localize_3d"
         self.block_size = projection_params.block_size
         self.z_window = int(projection_params.zwindows / acquisition_params.zBinning)
 
@@ -213,13 +214,22 @@ class ReducePlanes(Module):
         focus_plane = get_focus_plane(focal_plane_matrix)
         zmin = np.max([focus_plane - self.z_window, 0])
         zmax = np.min([focus_plane + self.z_window, data.shape[0]])
-        # reduce_img = np.empty(data.shape)
-        # reduce_img.fill(np.nan)
-        # reduce_img[z_range, :, :] = data[z_range, :, :]  # keep only the focus planes
         return (zmin, zmax)
 
     def save_data(self, data, input_path, input_data):
-        pass
+        out_path = os.path.join(
+            self.data_m.output_folder, self.dirname, "data", "reduce_planes.json"
+        )
+        cycle = DataManager.get_cycle_from_path(input_path)
+        roi = get_roi_number_from_image_path(input_path)
+        if not os.path.exists(os.path.dirname(out_path)):
+            os.makedirs(os.path.dirname(out_path))
+        if not os.path.exists(out_path):
+            existing_dict = {f"ROI:{roi}": {}}
+        else:
+            existing_dict = load_json(out_path)
+        existing_dict[f"ROI:{roi}"][cycle] = {"zmin": data[0], "zmax": data[1]}
+        save_json(existing_dict, out_path)
 
 
 class ExtractProperties(Module):

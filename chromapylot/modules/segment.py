@@ -243,6 +243,12 @@ class Segment3D(Module):
         self.stardist_network3D = segmentation_params.stardist_network3D
         self.method_3d = segmentation_params._3Dmethod
         self.limit_x = segmentation_params.limit_x
+        self._3D_sigma = segmentation_params._3D_sigma
+        self._3D_threshold_over_std = segmentation_params._3D_threshold_over_std
+        self._3D_area_min = segmentation_params._3D_area_min
+        self._3D_area_max = segmentation_params._3D_area_max
+        self._3D_nlevels = segmentation_params._3D_nlevels
+        self._3D_contrast = segmentation_params._3D_contrast
 
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
@@ -262,7 +268,15 @@ class Segment3D(Module):
                 model_name, base_dir, data, limit_x=self.limit_x
             )
         elif self.method_3d == "thresholding":
-            labels = segment_3d_by_thresholding(data)
+            labels = segment_3d_by_thresholding(
+                data,
+                self._3D_sigma,
+                self._3D_threshold_over_std,
+                self._3D_area_min,
+                self._3D_area_max,
+                self._3D_nlevels,
+                self._3D_contrast,
+            )
         return labels
 
     def save_data(self, segmented_image_3d, input_path, input_data):

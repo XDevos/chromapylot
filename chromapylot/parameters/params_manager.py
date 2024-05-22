@@ -89,7 +89,6 @@ class ParamsManager:
             "register_local",
             "shift_2d",
             "shift_3d",
-            "preprocess_3d",
         ]:
             return {"registration_params": self.registration}
         if module_name in [
@@ -120,5 +119,10 @@ class ParamsManager:
             return {
                 "acquisition_params": self.acquisition,
                 "projection_params": self.projection,
+            }
+        if module_name in ["preprocess_3d"]:
+            return {
+                "registration_params": self.registration,
+                "segmentation_params": self.segmentation,
             }
         raise ValueError(f"Unknown module name: {module_name}")
