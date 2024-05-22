@@ -228,7 +228,10 @@ class ReducePlanes(Module):
             existing_dict = {f"ROI:{roi}": {}}
         else:
             existing_dict = load_json(out_path)
-        existing_dict[f"ROI:{roi}"][cycle] = {"zmin": data[0], "zmax": data[1]}
+        existing_dict[f"ROI:{roi}"][cycle] = {
+            "zmin": int(data[0]),
+            "zmax": int(data[1]),
+        }
         save_json(existing_dict, out_path)
 
 
@@ -240,10 +243,7 @@ class ExtractProperties(Module):
             data_manager=data_manager,
             input_type=DataType.SEGMENTED_3D,
             output_type=DataType.TABLE_3D,
-            supplementary_type=[
-                DataType.IMAGE_3D_SHIFTED,
-                DataType.IMAGE_3D,
-            ],
+            supplementary_type=DataType.IMAGE_3D_SHIFTED,
         )
         self.dirname = "localize_3d"
         self.brightest = segmentation_params.brightest

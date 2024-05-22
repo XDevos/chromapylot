@@ -354,6 +354,9 @@ class Deblend3D(Module):
         labels = watershed(-distance, markers, mask=binary)
         return labels
 
+    def save_data(self, data, input_path, input_data):
+        pass
+
 
 def tessellate_masks(segm_deblend):
     """
