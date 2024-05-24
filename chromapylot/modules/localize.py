@@ -250,67 +250,16 @@ class ExtractProperties(Module):
         self.threshold = segmentation_params._3D_threshold_over_std
 
     def run(self, image, mask):
+        trace_table = init_spot_table()
         # gets object properties
         properties = regionprops(mask, intensity_image=image)
-        # selects n_tolerance brightest spots and keeps only these for further processing
-        try:
-            # compatibility with scikit_image versions <= 0.18
-            peak0 = [x.max_intensity for x in properties]
-        except AttributeError:
-            # compatibility with scikit_image versions >=0.19
-            peak0 = [x.intensity_max for x in properties]
-        peak_list = peak0.copy()
-        peak_list.sort()
-        if self.brightest == "None":
-            last2keep = len(peak_list)
-        else:
-            last2keep = np.min([self.brightest, len(peak_list)])
-        highest_peak_value = peak_list[-last2keep]
-        selection = list(np.nonzero(peak0 > highest_peak_value)[0])
-        # attributes properties using the brightests spots selected
-        try:
-            # compatibility with scikit_image versions <= 0.18
-            peak = [properties[x].max_intensity for x in selection]
-            centroids = [properties[x].weighted_centroid for x in selection]
-            sharpness = [
-                float(properties[x].filled_area / properties[x].bbox_area)
-                for x in selection
-            ]
-            roundness1 = [properties[x].equivalent_diameter for x in selection]
-        except AttributeError:
-            # compatibility with scikit_image versions >=0.19
-            peak = [properties[x].intensity_max for x in selection]
-            centroids = [properties[x].centroid_weighted for x in selection]
-            sharpness = [
-                float(properties[x].area_filled / properties[x].area_bbox)
-                for x in selection
-            ]
-            roundness1 = [properties[x].equivalent_diameter_area for x in selection]
-        roundness2 = [properties[x].extent for x in selection]
-        npix = [properties[x].area for x in selection]
-        sky = [0.0 for x in selection]
-        try:
-            # compatibility with scikit_image versions <= 0.18
-            peak = [properties[x].max_intensity for x in selection]
-            flux = [
-                100 * properties[x].max_intensity / self.threshold for x in selection
-            ]  # peak intensity over t$
-        except AttributeError:
-            # compatibility with scikit_image versions >=0.19
-            peak = [properties[x].intensity_max for x in selection]
-            flux = [
-                100 * properties[x].intensity_max / self.threshold for x in selection
-            ]  # peak intensity$
-        mag = [-2.5 * np.log10(x) for x in flux]  # -2.5 log10(flux)
-        # converts centroids to spot coordinates for bigfish to run 3D gaussian fits
-        z = [x[0] for x in centroids]
-        y = [x[1] for x in centroids]
-        x = [x[2] for x in centroids]
-        spots = np.zeros((len(z), 3))
-        spots[:, 0] = z
-        spots[:, 1] = y
-        spots[:, 2] = x
-        spots = spots.astype("int64")
+        selection = select_brightest_spots(properties, self.brightest)
+
+        centroids, sharpness, roundness1, roundness2, npix, sky, peak, flux, mag = (
+            calculate_spot_attributes(properties, selection, self.threshold)
+        )
+
+        spots = convert_centroids_to_spots(centroids)
         return (
             spots,
             sharpness,
@@ -406,3 +355,117 @@ class FitSubpixel(Module):
             format="ascii.ecsv",
             overwrite=True,
         )
+
+
+def init_spot_table():
+    output = Table(
+        names=(
+            "Buid",
+            "ROI #",
+            "CellID #",
+            "Barcode #",
+            "id",
+            "zcentroid",
+            "xcentroid",
+            "ycentroid",
+            "sharpness",
+            "roundness1",
+            "roundness2",
+            "npix",
+            "sky",
+            "peak",
+            "flux",
+            "mag",
+        ),
+        dtype=(
+            "S2",
+            "int",
+            "int",
+            "int",
+            "int",
+            "f4",
+            "f4",
+            "f4",
+            "f4",
+            "f4",
+            "f4",
+            "int",
+            "f4",
+            "f4",
+            "f4",
+            "f4",
+        ),
+    )
+    return output
+
+
+def select_brightest_spots(properties, brightest):
+    # selects n_tolerance brightest spots and keeps only these for further processing
+    try:
+        # compatibility with scikit_image versions <= 0.18
+        peak0 = [x.max_intensity for x in properties]
+    except AttributeError:
+        # compatibility with scikit_image versions >=0.19
+        peak0 = [x.intensity_max for x in properties]
+    peak_list = peak0.copy()
+    peak_list.sort()
+    if brightest == "None":
+        last2keep = len(peak_list)
+    else:
+        last2keep = np.min([brightest, len(peak_list)])
+    highest_peak_value = peak_list[-last2keep]
+    selection = list(np.nonzero(peak0 > highest_peak_value)[0])
+    return selection
+
+
+def calculate_spot_attributes(properties, selection, threshold):
+    try:
+        # compatibility with scikit_image versions <= 0.18
+        centroids = [properties[x].weighted_centroid for x in selection]
+        sharpness = [
+            float(properties[x].filled_area / properties[x].bbox_area)
+            for x in selection
+        ]
+        roundness1 = [properties[x].equivalent_diameter for x in selection]
+        peak = [properties[x].max_intensity for x in selection]
+        # peak intensity over threshold
+        flux = [100 * properties[x].max_intensity / threshold for x in selection]
+    except AttributeError:
+        # compatibility with scikit_image versions >=0.19
+        centroids = [properties[x].centroid_weighted for x in selection]
+        sharpness = [
+            float(properties[x].area_filled / properties[x].area_bbox)
+            for x in selection
+        ]
+        roundness1 = [properties[x].equivalent_diameter_area for x in selection]
+        peak = [properties[x].intensity_max for x in selection]
+        # peak intensity over threshold
+        flux = [100 * properties[x].intensity_max / threshold for x in selection]
+
+    roundness2 = [properties[x].extent for x in selection]
+    npix = [properties[x].area for x in selection]
+    sky = [0.0 for x in selection]
+    mag = [-2.5 * np.log10(x) for x in flux]  # -2.5 log10(flux)
+
+    return (
+        centroids,
+        sharpness,
+        roundness1,
+        roundness2,
+        npix,
+        sky,
+        peak,
+        flux,
+        mag,
+    )
+
+
+def convert_centroids_to_spots(centroids):
+    z = [x[0] for x in centroids]
+    y = [x[1] for x in centroids]
+    x = [x[2] for x in centroids]
+    spots = np.zeros((len(z), 3), dtype=np.int64)
+    spots[:, 0] = z
+    spots[:, 1] = y
+    spots[:, 2] = x
+    return spots
