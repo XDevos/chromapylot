@@ -235,6 +235,36 @@ class ReducePlanes(Module):
         save_json(existing_dict, out_path)
 
 
+class ShiftSpotOnZ(Module):
+    def __init__(
+        self,
+        data_manager: DataManager,
+        projection_params: ProjectionParams,
+        acquisition_params: AcquisitionParams,
+    ):
+        super().__init__(
+            data_manager=data_manager,
+            input_type=DataType.TABLE_3D,
+            output_type=DataType.TABLE_3D,
+            reference_type=None,
+            supplementary_type=None,
+        )
+        self.dirname = "localize_3d"
+        self.z_offset = int(projection_params.z_offset / acquisition_params.zBinning)
+
+    def run(self, data, supplementary_data=None):
+        data["zcentroid"] = data["zcentroid"] + self.z_offset
+        return data
+
+    def save_data(self, data, input_path, input_data):
+        out_path = os.path.join(
+            self.data_m.output_folder, self.dirname, "data", "shifted_spots.ecsv"
+        )
+        if not os.path.exists(os.path.dirname(out_path)):
+            os.makedirs(os.path.dirname(out_path))
+        data.write(out_path, format="ascii.ecsv", overwrite=True)
+
+
 class ExtractProperties(Module):
     def __init__(
         self, data_manager: DataManager, segmentation_params: SegmentationParams
@@ -250,7 +280,6 @@ class ExtractProperties(Module):
         self.threshold = segmentation_params._3D_threshold_over_std
 
     def run(self, image, mask):
-        trace_table = init_spot_table()
         # gets object properties
         properties = regionprops(mask, intensity_image=image)
         selection = select_brightest_spots(properties, self.brightest)
@@ -260,7 +289,7 @@ class ExtractProperties(Module):
         )
 
         spots = convert_centroids_to_spots(centroids)
-        return (
+        spot_table = add_spots_to_table(
             spots,
             sharpness,
             roundness1,
@@ -271,6 +300,7 @@ class ExtractProperties(Module):
             flux,
             mag,
         )
+        return spot_table
 
     def save_data(self, data, input_path, input_data):
         data.write(
@@ -469,3 +499,30 @@ def convert_centroids_to_spots(centroids):
     spots[:, 1] = y
     spots[:, 2] = x
     return spots
+
+
+def add_spots_to_table(
+    spots, sharpness, roundness1, roundness2, npix, sky, peak, flux, mag
+):
+    output = init_spot_table()
+    for i in range(spots.shape[0]):
+        table_entry = [
+            str(uuid.uuid4()),
+            "roi",
+            0,
+            "label",
+            i,
+            spots[i, 0] + z_offset,
+            spots[i, 2],
+            spots[i, 1],
+            sharpness[i],
+            roundness1[i],
+            roundness2[i],
+            npix[i],
+            sky[i],
+            peak[i],
+            flux[i],
+            mag[i],
+        ]
+        output.add_row(table_entry)
+    return output
