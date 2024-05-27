@@ -125,4 +125,6 @@ class ParamsManager:
                 "registration_params": self.registration,
                 "segmentation_params": self.segmentation,
             }
+        if module_name in ["shift_spot_on_z"]:
+            return {}
         raise ValueError(f"Unknown module name: {module_name}")

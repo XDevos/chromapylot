@@ -28,6 +28,7 @@ from chromapylot.modules.localize import (
     ExtractProperties,
     ReducePlanes,
     FitSubpixel,
+    ShiftSpotOnZ,
 )
 from chromapylot.modules.segment import Segment2D, Segment3D, Deblend3D
 
@@ -116,6 +117,7 @@ class AnalysisManager:
                     "deblend_3d",
                     "extract_properties",
                     "fit_subpixel",
+                    "shift_spot_on_z",
                 ]
         elif (
             pipeline_type == AnalysisType.DAPI
@@ -246,6 +248,7 @@ class AnalysisManager:
             "register_local": RegisterLocal,
             "localize_2d": Localize2D,
             "fit_subpixel": FitSubpixel,
+            "shift_spot_on_z": ShiftSpotOnZ,
             "segment_2d": Segment2D,
             "segment_3d": Segment3D,
             "reduce_planes": ReducePlanes,

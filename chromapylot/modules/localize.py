@@ -239,21 +239,19 @@ class ShiftSpotOnZ(Module):
     def __init__(
         self,
         data_manager: DataManager,
-        projection_params: ProjectionParams,
-        acquisition_params: AcquisitionParams,
     ):
         super().__init__(
             data_manager=data_manager,
             input_type=DataType.TABLE_3D,
             output_type=DataType.TABLE_3D,
             reference_type=None,
-            supplementary_type=None,
+            supplementary_type=DataType.REDUCE_TUPLE,
         )
         self.dirname = "localize_3d"
-        self.z_offset = int(projection_params.z_offset / acquisition_params.zBinning)
 
     def run(self, data, supplementary_data=None):
-        data["zcentroid"] = data["zcentroid"] + self.z_offset
+        z_offset = supplementary_data[0]
+        data["zcentroid"] = data["zcentroid"] + z_offset
         return data
 
     def save_data(self, data, input_path, input_data):
@@ -279,7 +277,7 @@ class ExtractProperties(Module):
         self.brightest = segmentation_params.brightest
         self.threshold = segmentation_params._3D_threshold_over_std
 
-    def run(self, image, mask):
+    def run(self, mask, image):
         # gets object properties
         properties = regionprops(mask, intensity_image=image)
         selection = select_brightest_spots(properties, self.brightest)
@@ -508,11 +506,11 @@ def add_spots_to_table(
     for i in range(spots.shape[0]):
         table_entry = [
             str(uuid.uuid4()),
-            "roi",
             0,
-            "label",
+            0,
+            0,
             i,
-            spots[i, 0] + z_offset,
+            spots[i, 0],
             spots[i, 2],
             spots[i, 1],
             sharpness[i],

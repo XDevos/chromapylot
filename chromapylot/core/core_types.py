@@ -72,6 +72,7 @@ class RoutineName(Enum):
     SPLIT_IN_BLOCKS = "split_in_blocks"
     REDUCE_PLANES = "reduce_planes"
     FIT_SUBPIXEL = "fit_subpixel"
+    SHIFT_SPOT_ON_Z = "shift_spot_on_z"
 
 
 def get_data_type(filename, extension):

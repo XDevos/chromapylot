@@ -36,7 +36,7 @@ def template_test_localize_3d(mode: str):
             "-O",
             inputs,
             "-C",
-            "skip,reduce_planes,preprocess_3d,shift_3d,segment_3d,deblend_3d,extract_properties,fit_subpixel",
+            "skip,reduce_planes,preprocess_3d,shift_3d,segment_3d,deblend_3d,extract_properties,fit_subpixel,shift_spot_on_z",
             "-A",
             "barcode",
         ]
