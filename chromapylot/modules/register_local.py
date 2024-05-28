@@ -191,7 +191,7 @@ class RegisterLocal(Module):
         try:
             with Lock(out_path):
                 self.__save_registration_table(data, out_path)
-        except RuntimeError:
+        except (RuntimeError, ValueError):
             self.__save_registration_table(data, out_path)
 
     def __update_registration_table(self, data, input_path, nrmse_matrices):

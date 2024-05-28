@@ -60,7 +60,7 @@ def save_json(data, path):
             with open(path, "w") as file:
                 json.dump(data, file, ensure_ascii=False, sort_keys=True, indent=4)
     # Case where we don't have a dask client
-    except RuntimeError:
+    except (RuntimeError, ValueError):
         with open(path, "w") as file:
             json.dump(data, file, ensure_ascii=False, sort_keys=True, indent=4)
 

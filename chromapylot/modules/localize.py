@@ -113,7 +113,7 @@ class Localize2D(Module):
         try:
             with Lock(out_path):
                 self.__save_localization_table(data, out_path)
-        except RuntimeError:
+        except (RuntimeError, ValueError):
             self.__save_localization_table(data, out_path)
 
     def __update_localization_table(self, sources, barcode_id, roi):
