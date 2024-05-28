@@ -58,12 +58,13 @@ class Preprocess3D(Module):
     def run(self, data, supplementary_type=None):
         if supplementary_type:
             zmin, zmax = supplementary_type
-            data = data[zmin:zmax, :, :]
-        data = exposure.rescale_intensity(data, out_range=(0, 1))
-        img = remove_inhomogeneous_background_3d(data)
-        adjust_img = image_adjust(
-            img, self._3D_lower_threshold, self._3D_higher_threshold
-        )
+            adjust_img = data[zmin:zmax, :, :]
+        else:
+            data = exposure.rescale_intensity(data, out_range=(0, 1))
+            img = remove_inhomogeneous_background_3d(data)
+            adjust_img = image_adjust(
+                img, self._3D_lower_threshold, self._3D_higher_threshold
+            )
         return adjust_img
 
     def save_data(self, data, input_path, input_data):

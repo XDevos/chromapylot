@@ -310,72 +310,51 @@ class ExtractProperties(Module):
 
 class FitSubpixel(Module):
     def __init__(
-        self, data_manager: DataManager, segmentation_params: SegmentationParams
+        self, data_manager: DataManager, segmentation_params: SegmentationParams, acquisition_params: AcquisitionParams
     ):
         super().__init__(
             data_manager=data_manager,
-            input_type=DataType.IMAGE_3D,
+            input_type=DataType.IMAGE_3D_SHIFTED,
             output_type=DataType.TABLE_3D,
             supplementary_type=DataType.TABLE_3D,
         )
+        self.dirname = "localize_3d"
+        self.psf_z = segmentation_params._3D_psf_z
+        self.psf_yx = segmentation_params._3D_psf_yx
+        self.voxel_size_z = float(1000 * acquisition_params.pixelSizeZ * acquisition_params.zBinning)
+        self.voxel_size_yx = float(1000 * acquisition_params.pixelSizeXY)
+
+
 
     def run(self, image, properties):
         print("> Refits spots using gaussian 3D fittings...")
 
         print(" > Rescales image values after reinterpolation")
+        # removes negative intensity levels
         image_3d_aligned = exposure.rescale_intensity(
-            image_3d_aligned, out_range=(0, 1)
-        )  # removes negative intensity levels
-
-        # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
-        # compatibility with latest version of bigfish. To be removed if stable.
-        # TODO: Is it stable ? I think we can remove it.
-        try:
-            # version 0.4 commit fa0df4f
-            spots_subpixel = fit_subpixel(
-                image_3d_aligned,
-                spots,
-                voxel_size_z=p["voxel_size_z"],
-                voxel_size_yx=p["voxel_size_yx"],
-                psf_z=p["psf_z"],
-                psf_yx=p["psf_yx"],
-            )
-        except TypeError:
-            # version > 0.5
-            spots_subpixel = fit_subpixel(
-                image_3d_aligned,
-                spots,
-                (
-                    p["voxel_size_z"],
-                    p["voxel_size_yx"],
-                    p["voxel_size_yx"],
-                ),  # voxel size
-                (p["psf_z"], p["psf_yx"], p["psf_yx"]),
-            )  # spot radius
+            image, out_range=(0, 1)
+        )
+        spots = properties[["zcentroid", "ycentroid", "xcentroid"]].to_pandas().values
+        # # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
+        # # compatibility with latest version of bigfish. To be removed if stable.
+        #     # version > 0.5
+        voxel_size = (self.voxel_size_z, self.voxel_size_yx, self.voxel_size_yx)
+        spot_radius = (self.psf_z, self.psf_yx, self.psf_yx)
+        spots_subpixel = fit_subpixel(
+            image_3d_aligned,
+            spots,
+            voxel_size, 
+            spot_radius,
+        )
 
         print(" > Updating table and saving results")
         # updates table
         for i in range(spots_subpixel.shape[0]):
-            z, x, y = spots_subpixel[i, :]
-            table_entry = [
-                str(uuid.uuid4()),
-                roi,
-                0,
-                int(label.split("RT")[1]),
-                i,
-                z + z_offset,
-                y,
-                x,
-                sharpness[i],
-                roundness1[i],
-                roundness2[i],
-                npix[i],
-                sky[i],
-                peak[i],
-                flux[i],
-                mag[i],
-            ]
-            output_table.add_row(table_entry)
+            z, y, x = spots_subpixel[i, :]
+            properties["zcentroid"][i] = z
+            properties["xcentroid"][i] = x
+            properties["ycentroid"][i] = y
+        return properties
 
     def save_data(self, data, input_path, input_data):
         data.write(

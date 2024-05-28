@@ -101,7 +101,6 @@ class ParamsManager:
             "filter_mask",
             "select_mask_2d",
             "select_mask_3d",
-            "fit_subpixel",
         ]:
             return {"segmentation_params": self.segmentation}
         if module_name in [
@@ -127,4 +126,10 @@ class ParamsManager:
             }
         if module_name in ["shift_spot_on_z"]:
             return {}
+        if module_name in ["fit_subpixel"]:
+            return {
+                "acquisition_params": self.acquisition,
+                "segmentation_params": self.segmentation,
+            }
+
         raise ValueError(f"Unknown module name: {module_name}")

@@ -199,8 +199,7 @@ class DataManager:
         ]:
             # affect list of all analysis types
             analysis_type = list(at)
-        elif extension in ["dat", "ecsv"]:
-            if "Trace" in filename or "_barcode" in filename:
+        elif extension in ["dat", "ecsv"] and "Trace" in filename or "_barcode" in filename:
                 analysis_type = [at.TRACE]
         else:
             raise ValueError(
