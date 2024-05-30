@@ -13,6 +13,7 @@ from chromapylot.core.core_types import (
 )
 
 from dask.distributed import Lock
+from astropy.table import Table
 
 
 def get_file_path(directory, filename, extension):
@@ -65,6 +66,12 @@ def save_json(data, path):
             json.dump(data, file, ensure_ascii=False, sort_keys=True, indent=4)
 
 
+def load_ecsv(file_path):
+    table = Table.read(file_path, format="ascii.ecsv")
+    print(f"[Load] {file_path}")
+    return table
+
+
 def save_ecsv(table, path):
     directory = os.path.dirname(path)
     if not os.path.exists(directory):
@@ -99,6 +106,7 @@ class DataManager:
         self.parameters_file = self.get_parameters_file()
         self.parameters = load_json(self.parameters_file)
         self.analysis_files = self.get_analysis_files()
+        self.roi_analysed = self.find_roi_analysed()
 
     def get_parameters_file(self):
         for file in self.input_files:
@@ -139,6 +147,20 @@ class DataManager:
                     if first_type_accept_second(DataType.SEGMENTED, data_type):
                         analysis_files[at.TRACE].append((data_type, file[0]))
         return analysis_files
+
+    def find_roi_analysed(self):
+        try:
+            # We expect the input folder to be named like "ROI_001"
+            roi = os.path.basename(self.input_folder).split("_")[1]
+            roi_int = int(roi)  # Check if the ROI number is an integer
+            return roi
+        except ValueError:
+            # If the input folder is not named like "ROI_001", we look for the ROI in one input filename
+            for file in self.input_files:
+                f_split = file[1].split("_")
+                if "ROI" in f_split:
+                    return f_split[f_split.index("ROI") - 1]
+            raise ValueError("No ROI found in input folder name.")
 
     def _get_paths_from_analysis_and_data_type(self, analysis_type, data_type):
         return [
@@ -199,8 +221,12 @@ class DataManager:
         ]:
             # affect list of all analysis types
             analysis_type = list(at)
-        elif extension in ["dat", "ecsv"] and "Trace" in filename or "_barcode" in filename:
-                analysis_type = [at.TRACE]
+        elif (
+            extension in ["dat", "ecsv"]
+            and "Trace" in filename
+            or "_barcode" in filename
+        ):
+            analysis_type = [at.TRACE]
         else:
             raise ValueError(
                 f"File {filename}.{extension} does not match any analysis type."

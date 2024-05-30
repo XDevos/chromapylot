@@ -33,7 +33,7 @@ from dask.distributed import Lock
 from astropy.table import Table
 from skimage import exposure
 from apifish.detection.spot_modeling import fit_subpixel
-from chromapylot.core.data_manager import load_json, save_json
+from chromapylot.core.data_manager import load_json, save_json, save_ecsv, load_ecsv
 
 
 class Localize2D(Module):
@@ -89,7 +89,7 @@ class Localize2D(Module):
         sources = daofind(im1_bkg_substracted)
         return sources
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         self._save_localization_table(data, input_path)
         png_path = create_png_path(
             input_path, self.data_m.output_folder, self.dirname, "_segmentedSources"
@@ -193,6 +193,7 @@ class ReducePlanes(Module):
         data_manager: DataManager,
         projection_params: ProjectionParams,
         acquisition_params: AcquisitionParams,
+        segmentation_params: SegmentationParams,
     ):
         super().__init__(
             data_manager=data_manager,
@@ -204,11 +205,14 @@ class ReducePlanes(Module):
         self.dirname = "localize_3d"
         self.block_size = projection_params.block_size
         self.z_window = int(projection_params.zwindows / acquisition_params.zBinning)
+        self.reduce_planes = segmentation_params.reducePlanes
 
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
 
     def run(self, data, supplementary_data=None):
+        if not self.reduce_planes:
+            return (0, data.shape[0])
         blocks = split_in_blocks(data, block_size_xy=self.block_size)
         focal_plane_matrix = calculate_focus_per_block(blocks)
         focus_plane = get_focus_plane(focal_plane_matrix)
@@ -216,7 +220,7 @@ class ReducePlanes(Module):
         zmax = np.min([focus_plane + self.z_window, data.shape[0]])
         return (zmin, zmax)
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         out_path = os.path.join(
             self.data_m.output_folder, self.dirname, "data", "reduce_planes.json"
         )
@@ -254,13 +258,14 @@ class ShiftSpotOnZ(Module):
         data["zcentroid"] = data["zcentroid"] + z_offset
         return data
 
-    def save_data(self, data, input_path, input_data):
-        out_path = os.path.join(
-            self.data_m.output_folder, self.dirname, "data", "shifted_spots.ecsv"
-        )
-        if not os.path.exists(os.path.dirname(out_path)):
-            os.makedirs(os.path.dirname(out_path))
-        data.write(out_path, format="ascii.ecsv", overwrite=True)
+    def save_data(self, data, input_path, input_data, supplementary_data):
+        out_name = "segmentedObjects_3D_barcode.dat"
+        output_dir = self.data_m.output_folder
+        table_path = os.path.join(output_dir, self.dirname, "data", out_name)
+        if os.path.exists(table_path):
+            existing_table = load_ecsv(table_path)
+            data = vstack([existing_table, data])
+        save_ecsv(data, table_path)
 
 
 class ExtractProperties(Module):
@@ -288,6 +293,7 @@ class ExtractProperties(Module):
 
         spots = convert_centroids_to_spots(centroids)
         spot_table = add_spots_to_table(
+            self.data_m.roi_analysed,
             spots,
             sharpness,
             roundness1,
@@ -300,17 +306,23 @@ class ExtractProperties(Module):
         )
         return spot_table
 
-    def save_data(self, data, input_path, input_data):
-        data.write(
-            get_file_path(self.data_m.output_folder, "_props", "ecsv"),
-            format="ascii.ecsv",
-            overwrite=True,
-        )
+    def save_data(self, data, input_path, input_data, supplementary_data):
+        pass
+        # out_name = "segmentedObjects_3D_barcode_extract.dat"
+        # output_dir = self.data_m.output_folder
+        # table_path = os.path.join(output_dir, self.dirname, "data", out_name)
+        # if os.path.exists(table_path):
+        #     existing_table = load_ecsv(table_path)
+        #     data = vstack([existing_table, data])
+        # save_ecsv(data, table_path)
 
 
 class FitSubpixel(Module):
     def __init__(
-        self, data_manager: DataManager, segmentation_params: SegmentationParams, acquisition_params: AcquisitionParams
+        self,
+        data_manager: DataManager,
+        segmentation_params: SegmentationParams,
+        acquisition_params: AcquisitionParams,
     ):
         super().__init__(
             data_manager=data_manager,
@@ -321,19 +333,16 @@ class FitSubpixel(Module):
         self.dirname = "localize_3d"
         self.psf_z = segmentation_params._3D_psf_z
         self.psf_yx = segmentation_params._3D_psf_yx
-        self.voxel_size_z = float(1000 * acquisition_params.pixelSizeZ * acquisition_params.zBinning)
+        self.voxel_size_z = float(
+            1000 * acquisition_params.pixelSizeZ * acquisition_params.zBinning
+        )
         self.voxel_size_yx = float(1000 * acquisition_params.pixelSizeXY)
-
-
 
     def run(self, image, properties):
         print("> Refits spots using gaussian 3D fittings...")
-
         print(" > Rescales image values after reinterpolation")
         # removes negative intensity levels
-        image_3d_aligned = exposure.rescale_intensity(
-            image, out_range=(0, 1)
-        )
+        image_3d_aligned = exposure.rescale_intensity(image, out_range=(0, 1))
         spots = properties[["zcentroid", "ycentroid", "xcentroid"]].to_pandas().values
         # # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
         # # compatibility with latest version of bigfish. To be removed if stable.
@@ -343,7 +352,7 @@ class FitSubpixel(Module):
         spots_subpixel = fit_subpixel(
             image_3d_aligned,
             spots,
-            voxel_size, 
+            voxel_size,
             spot_radius,
         )
 
@@ -356,12 +365,43 @@ class FitSubpixel(Module):
             properties["ycentroid"][i] = y
         return properties
 
-    def save_data(self, data, input_path, input_data):
-        data.write(
-            get_file_path(self.data_m.output_folder, "_fitted", "ecsv"),
-            format="ascii.ecsv",
-            overwrite=True,
+    def save_data(self, data, input_path, input_data, supplementary_data):
+        pass
+        # out_name = "segmentedObjects_3D_barcode_fitted.dat"
+        # output_dir = self.data_m.output_folder
+        # table_path = os.path.join(output_dir, self.dirname, "data", out_name)
+        # if os.path.exists(table_path):
+        #     existing_table = load_ecsv(table_path)
+        #     data = vstack([existing_table, data])
+        # save_ecsv(data, table_path)
+
+
+class AddCycleToTable(Module):
+    def __init__(
+        self,
+        data_manager: DataManager,
+    ):
+        super().__init__(
+            data_manager=data_manager,
+            input_type=DataType.TABLE_3D,
+            output_type=DataType.TABLE_3D,
+            supplementary_type=DataType.CYCLE,
         )
+        self.dirname = "localize_3d"
+
+    def run(self, data, supplementary_data=None):
+        data["Barcode #"] = int(supplementary_data.split("RT")[1])
+        return data
+
+    def save_data(self, data, input_path, input_data, supplementary_data):
+        pass
+        # out_name = "segmentedObjects_3D_barcode_cycle.dat"
+        # output_dir = self.data_m.output_folder
+        # table_path = os.path.join(output_dir, self.dirname, "data", out_name)
+        # if os.path.exists(table_path):
+        #     existing_table = load_ecsv(table_path)
+        #     data = vstack([existing_table, data])
+        # save_ecsv(data, table_path)
 
 
 def init_spot_table():
@@ -479,13 +519,13 @@ def convert_centroids_to_spots(centroids):
 
 
 def add_spots_to_table(
-    spots, sharpness, roundness1, roundness2, npix, sky, peak, flux, mag
+    roi, spots, sharpness, roundness1, roundness2, npix, sky, peak, flux, mag
 ):
     output = init_spot_table()
     for i in range(spots.shape[0]):
         table_entry = [
             str(uuid.uuid4()),
-            0,
+            int(roi),
             0,
             0,
             i,

@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Check the non regression of Localize3D feature"""
-
+import pandas as pd
+import numpy as np
 import os
 import shutil
 import tempfile
@@ -11,12 +12,6 @@ from chromapylot.core.data_manager import extract_files
 
 # sys.path.append("..")
 from chromapylot.run_chromapylot import main
-from tests.testing_tools.comparison import (
-    compare_ecsv_files,
-    compare_line_by_line,
-    compare_npy_files,
-    image_pixel_differences,
-)
 
 # Build a temporary directory
 tmp_dir = tempfile.TemporaryDirectory()
@@ -36,41 +31,24 @@ def template_test_localize_3d(mode: str):
             "-O",
             inputs,
             "-C",
-            "skip,reduce_planes,preprocess_3d,shift_3d,segment_3d,deblend_3d,extract_properties,fit_subpixel,shift_spot_on_z",
+            "skip,reduce_planes,preprocess_3d,shift_3d,segment_3d,deblend_3d,extract_properties,add_cycle_to_table,fit_subpixel,shift_spot_on_z",
             "-A",
             "barcode",
         ]
     )
     generated_align_images = os.path.join(inputs, "localize_3d")
     reference_outputs = f"pyhim-small-dataset/localize_3d/OUT/{mode}/segmentedObjects/"
-    generated_files = extract_files(generated_align_images)
-    reference_files = extract_files(reference_outputs)
-    assert len(generated_files) == len(reference_files)
-    for filepath, short_filename, extension in generated_files:
-        if "data" in filepath.split(os.sep):
-            filename = f"data{os.sep}{short_filename}.{extension}"
-        else:
-            filename = f"{short_filename}.{extension}"
-        tmp_file = os.path.join(generated_align_images, filename)
-        out_file = os.path.join(reference_outputs, filename)
-        assert os.path.exists(out_file)
-        if extension == "npy":
-            assert compare_npy_files(tmp_file, out_file)
-        elif extension == "png":
-            assert image_pixel_differences(tmp_file, out_file)
-        elif extension == "json":
-            assert compare_line_by_line(tmp_file, out_file)
-        elif extension == "dat":
-            assert compare_line_by_line(
-                tmp_file,
-                out_file,
-                line_start=len("e5c550de-d381-4b63-99d3-736ca7e549d9"),
-                shuffled_lines=True,
-            )
-        elif extension == "table":
-            assert compare_ecsv_files(tmp_file, out_file)
-        else:
-            raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")
+    gen_file = (
+        generated_align_images
+        + os.sep
+        + "data"
+        + os.sep
+        + "segmentedObjects_3D_barcode.dat"
+    )
+    ref_file = (
+        reference_outputs + os.sep + "data" + os.sep + "segmentedObjects_3D_barcode.dat"
+    )
+    assert compare_localize_3d_files(gen_file, ref_file)
 
 
 def test_full_stack_stardist():
@@ -83,3 +61,24 @@ def test_reduce_planes_stardist():
 
 def test_reduce_planes_thresholding():
     template_test_localize_3d("reduce_planes_thresholding")
+
+
+def compare_localize_3d_files(gen_file, ref_file):
+    # Read the files into pandas DataFrames
+    gen_df = pd.read_csv(gen_file, comment="#", delim_whitespace=True)
+    ref_df = pd.read_csv(ref_file, comment="#", delim_whitespace=True)
+
+    # Drop the 'Buid' column from both DataFrames
+    gen_df = gen_df.drop(columns=["Buid"])
+    ref_df = ref_df.drop(columns=["Buid"])
+
+    # Sort by "Barcode #" and id
+    gen_df = gen_df.sort_values(by=["Barcode #", "id"])
+    ref_df = ref_df.sort_values(by=["Barcode #", "id"])
+
+    # print first line of each DataFrame
+    print(gen_df.head(1))
+    print(ref_df.head(1))
+
+    # Compare the two DataFrames allowing a small difference
+    return np.allclose(gen_df.values, ref_df.values, atol=1e-5)

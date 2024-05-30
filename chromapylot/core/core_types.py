@@ -29,6 +29,7 @@ class DataType(Enum):
     MATRIX_3D = "MATRIX_3D"
     MATRIX_2D = "MATRIX_2D"
     MATRIX = "MATRIX"
+    CYCLE = "CYCLE"
 
 
 class AnalysisType(Enum):
@@ -73,6 +74,7 @@ class RoutineName(Enum):
     REDUCE_PLANES = "reduce_planes"
     FIT_SUBPIXEL = "fit_subpixel"
     SHIFT_SPOT_ON_Z = "shift_spot_on_z"
+    ADD_CYCLE_TO_TABLE = "add_cycle_to_table"
 
 
 def get_data_type(filename, extension):

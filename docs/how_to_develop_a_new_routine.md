@@ -80,7 +80,7 @@
     def run(self, data, supplementary_data=None):
         raise NotImplementedError
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         raise NotImplementedError
    
    ```
@@ -129,7 +129,7 @@ class RegisterLocal(Module):
     def run(self, data, supplementary_data=None):
         raise NotImplementedError
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         raise NotImplementedError
 
 ```

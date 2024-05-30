@@ -54,7 +54,7 @@ class Module:
         """
         raise NotImplementedError
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         raise NotImplementedError
 
     def print_module_name(self):
@@ -133,7 +133,7 @@ class SkipModule(Module):
         print("Loading 3D image.")
         return self.data_m.load_image_3d(input_path)
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("NO Saving 3D image.")
 
 
@@ -204,7 +204,7 @@ class Shift3DModule(ShiftModule):
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("NO saving 3D image.")
 
 
@@ -229,7 +229,7 @@ class Shift2DModule(ShiftModule):
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("[Save] 2D npy")
         base = os.path.basename(input_path).split(".")[0]
         base = base[:-3] if base[-3:] == "_2d" else base
@@ -259,7 +259,7 @@ class FilterTableModule(Module):
         properties_table = Table.read(props_path, format="ascii.ecsv")
         return properties_table
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         data.write(
             get_file_path(self.data_m.output_folder, "_filtered", "ecsv"),
             format="ascii.ecsv",
@@ -283,7 +283,7 @@ class FilterMaskModule(FilterTableModule):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("Saving filtered mask table.")
 
 
@@ -301,7 +301,7 @@ class FilterLocalizationModule(FilterTableModule):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("Saving filtered ocalization table.")
 
 
@@ -331,7 +331,7 @@ class SelectMaskModule(Module):
         properties_table = Table.read(props_path, format="ascii.ecsv")
         return properties_table
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         np.save(get_file_path(self.data_m.output_folder, "_mask_filtered", "npy"), data)
 
 
@@ -354,7 +354,7 @@ class SelectMask3DModule(SelectMaskModule):
         print("Loading 3D mask.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("Saving 3D mask.")
 
     def load_supplementary_data(self, input_path):
@@ -381,7 +381,7 @@ class SelectMask2DModule(SelectMaskModule):
         print("Loading 2D mask.")
         return np.ones((10, 10, 10))
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("Saving 2D mask.")
 
     def load_supplementary_data(self, input_path):
@@ -406,7 +406,7 @@ class RegisterLocalizationModule(Module):
         print("Loading properties.")
         return Table()
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("Saving registered localization table.")
 
     def load_reference_data(self, paths: List[str]):
@@ -430,5 +430,5 @@ class BuildMatrixModule(Module):
         print("Loading trace table.")
         return Table()
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         print("Saving matrix.")

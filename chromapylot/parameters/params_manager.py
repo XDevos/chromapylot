@@ -118,13 +118,14 @@ class ParamsManager:
             return {
                 "acquisition_params": self.acquisition,
                 "projection_params": self.projection,
+                "segmentation_params": self.segmentation,
             }
         if module_name in ["preprocess_3d"]:
             return {
                 "registration_params": self.registration,
                 "segmentation_params": self.segmentation,
             }
-        if module_name in ["shift_spot_on_z"]:
+        if module_name in ["shift_spot_on_z", "add_cycle_to_table"]:
             return {}
         if module_name in ["fit_subpixel"]:
             return {

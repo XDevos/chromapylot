@@ -441,7 +441,7 @@ class BuildTrace3DModule(Module):
         plt.close(fig)
         print(f"Saved {png_path}.")
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         method_names = []
         if "clustering" in self.tracing_method:
             method_names.append("KDtree")

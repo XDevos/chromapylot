@@ -71,7 +71,9 @@ class Pipeline:
     def load_supplementary_data(self, module: mod.Module, cycle: str):
         data_type = module.supplementary_type
         if data_type:
-            if data_type in self.supplementary_data:
+            if data_type == DataType.CYCLE:
+                return cycle
+            elif data_type in self.supplementary_data:
                 if self.supplementary_data[data_type] is None:
                     return module.load_supplementary_data(None, cycle)
                 elif isinstance(self.supplementary_data[data_type], str):
@@ -103,6 +105,6 @@ class Pipeline:
                 output = module.run(input_data)
             else:
                 output = module.run(input_data, supplementary_data)
-            module.save_data(output, data_path, input_data)
+            module.save_data(output, data_path, input_data, supplementary_data)
             self.choose_to_keep_data(module, output)
             input_data = output

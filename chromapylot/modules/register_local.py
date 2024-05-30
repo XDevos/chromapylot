@@ -51,23 +51,27 @@ class Preprocess3D(Module):
         self._3D_lower_threshold = registration_params._3D_lower_threshold
         self._3D_higher_threshold = registration_params._3D_higher_threshold
         self.reduce_planes = segmentation_params.reducePlanes
+        self.method_3d = segmentation_params._3Dmethod
+        if self.reduce_planes and self.method_3d == "thresholding":
+            self._3D_lower_threshold = segmentation_params._3D_lower_threshold
+            self._3D_higher_threshold = segmentation_params._3D_higher_threshold
 
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
 
     def run(self, data, supplementary_type=None):
-        if supplementary_type:
+        if self.reduce_planes:
             zmin, zmax = supplementary_type
-            adjust_img = data[zmin:zmax, :, :]
-        else:
+            data = data[zmin:zmax, :, :]
+        if self.method_3d != "stardist":
             data = exposure.rescale_intensity(data, out_range=(0, 1))
-            img = remove_inhomogeneous_background_3d(data)
-            adjust_img = image_adjust(
-                img, self._3D_lower_threshold, self._3D_higher_threshold
+            data = remove_inhomogeneous_background_3d(data)
+            data = image_adjust(
+                data, self._3D_lower_threshold, self._3D_higher_threshold
             )
-        return adjust_img
+        return data
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         pass
 
     def load_supplementary_data(self, input_path, cycle):

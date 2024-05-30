@@ -92,7 +92,7 @@ class Segment2D(Module):
             )
         return output
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         postfix = "_segmentedMasks"
         if self.background_method == "stardist":
             postfix = "_stardist" + postfix
@@ -279,7 +279,7 @@ class Segment3D(Module):
             )
         return labels
 
-    def save_data(self, segmented_image_3d, input_path, input_data):
+    def save_data(self, segmented_image_3d, input_path, input_data, supplementary_data):
         number_masks = np.max(segmented_image_3d)
         print(f"$ Number of masks detected: {number_masks}")
 
@@ -354,7 +354,7 @@ class Deblend3D(Module):
         labels = watershed(-distance, markers, mask=binary)
         return labels
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         pass
 
 

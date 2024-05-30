@@ -84,7 +84,7 @@ class RegisterGlobalModule(Module):
             return None
         return self.data_m.load_image_2d(input_path)
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         if data is None:
             raw_img = np.load(input_path)
             self._save_registered(raw_img, input_path)
@@ -229,7 +229,7 @@ class RegisterByBlock(RegisterGlobalModule):
         raw_img = np.float32(match_histograms(np.float32(preprocessed_img), ref_img))
         return compute_shifts_and_rms_by_block(ref_img, raw_img, self.block_size)
 
-    def save_data(self, data, input_path, input_data):
+    def save_data(self, data, input_path, input_data, supplementary_data):
         if data is None:
             return
         print("Saving rms_block_map.")

@@ -29,6 +29,7 @@ from chromapylot.modules.localize import (
     ReducePlanes,
     FitSubpixel,
     ShiftSpotOnZ,
+    AddCycleToTable,
 )
 from chromapylot.modules.segment import Segment2D, Segment3D, Deblend3D
 
@@ -116,6 +117,7 @@ class AnalysisManager:
                     "segment_3d",
                     "deblend_3d",
                     "extract_properties",
+                    "add_cycle_to_table",
                     "fit_subpixel",
                     "shift_spot_on_z",
                 ]
@@ -261,6 +263,7 @@ class AnalysisManager:
             "register_localization": mod.RegisterLocalizationModule,
             "build_trace_3d": BuildTrace3DModule,
             "build_matrix": mod.BuildMatrixModule,
+            "add_cycle_to_table": AddCycleToTable,
         }
         if module_name in module_mapping:
             print(f"> Add: {module_name}")
