@@ -107,7 +107,7 @@ class SegmentationParams:
     def __post_init__(self):
         # Handle default values for certain parameters
         self._3Dmethod = (
-            warn_pop(self.unknown_params, "3Dmethod", "stardist")
+            warn_pop(self.unknown_params, "3Dmethod", "None")
             if self._3Dmethod == "None"
             else self._3Dmethod
         )
