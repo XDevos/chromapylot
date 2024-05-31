@@ -227,6 +227,8 @@ class DataManager:
             or "_barcode" in filename
         ):
             analysis_type = [at.TRACE]
+        elif filename == "reduce_planes":
+            analysis_type = [at.BARCODE]
         else:
             raise ValueError(
                 f"File {filename}.{extension} does not match any analysis type."

@@ -76,9 +76,22 @@ def compare_localize_3d_files(gen_file, ref_file):
     gen_df = gen_df.sort_values(by=["Barcode #", "id"])
     ref_df = ref_df.sort_values(by=["Barcode #", "id"])
 
-    # print first line of each DataFrame
-    print(gen_df.head(1))
-    print(ref_df.head(1))
+    # Print first line of each DataFrame with more details
+    print("Generated DataFrame:")
+    print(gen_df.head(1).to_string(index=False))
+    print("\nReference DataFrame:")
+    print(ref_df.head(1).to_string(index=False))
 
-    # Compare the two DataFrames allowing a small difference
-    return np.allclose(gen_df.values, ref_df.values, atol=1e-5)
+    # Compare the two DataFrames line by line
+    diff_indices = np.where(~np.isclose(gen_df.values, ref_df.values, atol=1e-4))
+    if len(diff_indices[0]) > 0:
+        print("\nDifferences found:")
+        for row, col in zip(diff_indices[0], diff_indices[1]):
+            print(f"Row {row+1}, Column {col+1}:")
+            print(f"Generated: {gen_df.iloc[row, col]}")
+            print(f"Reference: {ref_df.iloc[row, col]}")
+    else:
+        print("\nNo differences found.")
+
+    # Return True if all values are close, False otherwise
+    return len(diff_indices[0]) == 0

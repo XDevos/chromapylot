@@ -198,8 +198,12 @@ class Shift3DModule(ShiftModule):
 
     def run(self, array_3d, shift_tuple):
         shift_3d = (0, shift_tuple[0], shift_tuple[1])
-        print(f"[Shift] 3D image with {shift_3d}.")
-        return shift_image(array_3d, shift_3d)
+        if shift_3d == (0, 0, 0):
+            print("[Shift] No shift for this cycle used for fiducial reference.")
+            return array_3d
+        else:
+            print(f"[Shift] 3D image with {shift_3d}.")
+            return shift_image(array_3d, shift_3d)
 
     def load_data(self, input_path):
         return self.data_m.load_image_3d(input_path)
