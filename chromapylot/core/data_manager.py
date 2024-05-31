@@ -154,13 +154,14 @@ class DataManager:
             roi = os.path.basename(self.input_folder).split("_")[1]
             roi_int = int(roi)  # Check if the ROI number is an integer
             return roi
-        except ValueError:
+        except (ValueError, IndexError):
             # If the input folder is not named like "ROI_001", we look for the ROI in one input filename
             for file in self.input_files:
                 f_split = file[1].split("_")
                 if "ROI" in f_split:
                     return f_split[f_split.index("ROI") - 1]
-            raise ValueError("No ROI found in input folder name.")
+            print("No ROI found in input folder name.")
+            return None
 
     def _get_paths_from_analysis_and_data_type(self, analysis_type, data_type):
         return [

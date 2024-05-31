@@ -208,7 +208,7 @@ class InterpolateFocalPlane(ProjectModule):
         print(f"> $INPUT{short_path}")
         return np.load(input_path)
 
-    def save_data(self, data, in_path, input_data):
+    def save_data(self, data, in_path, input_data, supplementary_data):
         output_path = create_png_path(
             in_path, self.data_m.output_folder, self.dirname, "_focalPlaneMatrix"
         )

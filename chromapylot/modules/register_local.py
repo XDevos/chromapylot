@@ -145,7 +145,9 @@ class RegisterLocal(Module):
         registration_table = self.create_registration_table(shift_matrices)
         return registration_table
 
-    def save_data(self, registration_table, input_path, shifted_3d_img):
+    def save_data(
+        self, registration_table, input_path, shifted_3d_img, supplementary_data
+    ):
         if registration_table is None:
             return
         shift_matrices = self.table_to_shift_matrices(registration_table)
