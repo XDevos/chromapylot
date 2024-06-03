@@ -471,14 +471,14 @@ def main(command_line_args=None):
     run_args = RunArgs(command_line_args)
     raw_params = load_json(os.path.join(run_args.input, "parameters.json"))
     pipe_params = ParamsManager(raw_params, AnalysisType.TRACE)
-    mod = BuildTrace3DModule(pipe_params.acquisition, pipe_params.matrix)
+    routine_b = BuildTrace3DModule(pipe_params.acquisition, pipe_params.matrix)
     ref_files = run_args.ref_file.split(",") if run_args.ref_file else []
 
     # MODULE EXECUTION
-    mod.load_reference_data(ref_files)
-    input_data = mod.load_data(run_args.in_file)
-    output_data = mod.run(input_data)
-    mod.save_data(output_data, run_args.output, run_args.in_file)
+    routine_b.load_reference_data(ref_files)
+    input_data = routine_b.load_data(run_args.in_file)
+    output_data = routine_b.run(input_data)
+    routine_b.save_data(output_data, run_args.output, run_args.in_file)
 
     # TERMINATION
     print("\n==================== Normal termination ====================\n")

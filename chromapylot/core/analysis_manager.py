@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Union
 from dask import delayed, compute
 from dask.distributed import Client
 
-from chromapylot.routines import routine as mod
+from chromapylot.routines import routine
 from routines.build_trace import BuildTrace3DModule
 from routines.project import (
     ProjectModule,
@@ -240,10 +240,10 @@ class AnalysisManager:
             "project_by_block": ProjectByBlockModule,
             "interpolate_focal_plane": InterpolateFocalPlane,
             "split_in_blocks": SplitInBlocks,
-            "skip": mod.SkipModule,
+            "skip": routine.SkipModule,
             "preprocess_3d": Preprocess3D,
-            "shift_2d": mod.Shift2DModule,
-            "shift_3d": mod.Shift3DModule,
+            "shift_2d": routine.Shift2DModule,
+            "shift_3d": routine.Shift3DModule,
             "register_global": RegisterGlobalModule,
             "register_by_block": RegisterByBlock,
             "compare_block_global": CompareBlockGlobal,
@@ -256,13 +256,13 @@ class AnalysisManager:
             "reduce_planes": ReducePlanes,
             "extract_properties": ExtractProperties,
             "deblend_3d": Deblend3D,
-            # "filter_mask": mod.FilterMaskModule,
-            # "select_mask_2d": mod.SelectMask2DModule,
-            # "select_mask_3d": mod.SelectMask3DModule,
-            # "filter_localization": mod.FilterLocalizationModule,
-            # "register_localization": mod.RegisterLocalizationModule,
+            # "filter_mask": routine.FilterMaskModule,
+            # "select_mask_2d": routine.SelectMask2DModule,
+            # "select_mask_3d": routine.SelectMask3DModule,
+            # "filter_localization": routine.FilterLocalizationModule,
+            # "register_localization": routine.RegisterLocalizationModule,
             "build_trace_3d": BuildTrace3DModule,
-            # "build_matrix": mod.BuildMatrixModule,
+            # "build_matrix": routine.BuildMatrixModule,
             "add_cycle_to_table": AddCycleToTable,
         }
         if module_name in module_mapping:
@@ -274,7 +274,7 @@ class AnalysisManager:
     def create_pipeline_modules(self, pipeline_type: AnalysisType, dim: int):
         print(f"\n[{pipeline_type.name} {dim}D]")
         module_chain = self.get_module_chain(pipeline_type, dim)
-        modules: List[mod.Module] = []
+        modules: List[routine.Module] = []
         pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
         for i in range(len(module_chain)):
             if module_chain[i] in self.routine_names:

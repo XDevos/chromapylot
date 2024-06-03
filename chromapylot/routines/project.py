@@ -633,13 +633,13 @@ def main(command_line_args=None):
     run_args = RunArgs(command_line_args)
     raw_params = load_json(os.path.join(run_args.input, "infoList.json"))
     pipe_params = ParamsManager(raw_params, AnalysisType.TRACE)
-    mod = ProjectModule(pipe_params.projection)
+    routine_p = ProjectModule(pipe_params.projection)
 
     # MODULE EXECUTION
-    input_data = mod.load_data(run_args.in_file)
+    input_data = routine_p.load_data(run_args.in_file)
     cycle = DataManager.get_cycle_from_path(run_args.in_file)
-    output_data = mod.run(input_data, cycle)
-    mod.save_data(output_data, run_args.output, run_args.in_file)
+    output_data = routine_p.run(input_data, cycle)
+    routine_p.save_data(output_data, run_args.output, run_args.in_file)
 
     # TERMINATION
     print("\n==================== Normal termination ====================\n")

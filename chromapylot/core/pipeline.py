@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-import chromapylot.routines.routine as mod
+from chromapylot.routines import routine
 
 from chromapylot.core.core_types import AnalysisType, DataType
 from chromapylot.core.data_manager import DataManager
@@ -11,7 +11,7 @@ class Pipeline:
     def __init__(
         self,
         analysis_type: AnalysisType,
-        modules: List[mod.Module],
+        modules: List[routine.Module],
     ):
         self.analysis_type = analysis_type
         self.modules = modules
@@ -68,7 +68,7 @@ class Pipeline:
             else:
                 self.supplementary_data[key] = value
 
-    def load_supplementary_data(self, module: mod.Module, cycle: str):
+    def load_supplementary_data(self, module: routine.Module, cycle: str):
         data_type = module.supplementary_type
         if data_type:
             if data_type == DataType.CYCLE:
