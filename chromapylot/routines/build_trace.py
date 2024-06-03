@@ -143,7 +143,7 @@ def add_localization_to_trace_table(
     return trace_table
 
 
-class BuildTrace3DModule(Module):
+class BuildTrace3D(Module):
     def __init__(
         self,
         data_manager: DataManager,
@@ -471,7 +471,7 @@ def main(command_line_args=None):
     run_args = RunArgs(command_line_args)
     raw_params = load_json(os.path.join(run_args.input, "parameters.json"))
     pipe_params = ParamsManager(raw_params, AnalysisType.TRACE)
-    routine_b = BuildTrace3DModule(pipe_params.acquisition, pipe_params.matrix)
+    routine_b = BuildTrace3D(pipe_params.acquisition, pipe_params.matrix)
     ref_files = run_args.ref_file.split(",") if run_args.ref_file else []
 
     # MODULE EXECUTION

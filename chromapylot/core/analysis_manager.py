@@ -3,7 +3,7 @@ from dask import delayed, compute
 from dask.distributed import Client
 
 from chromapylot.routines import routine
-from routines.build_trace import BuildTrace3DModule
+from routines.build_trace import BuildTrace3D
 from routines.project import (
     ProjectModule,
     ProjectByBlockModule,
@@ -261,7 +261,7 @@ class AnalysisManager:
             # "select_mask_3d": routine.SelectMask3DModule,
             # "filter_localization": routine.FilterLocalizationModule,
             # "register_localization": routine.RegisterLocalizationModule,
-            "build_trace_3d": BuildTrace3DModule,
+            "build_trace_3d": BuildTrace3D,
             # "build_matrix": routine.BuildMatrixModule,
             "add_cycle_to_table": AddCycleToTable,
         }

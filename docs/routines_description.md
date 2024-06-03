@@ -11,7 +11,7 @@ They exist three types of routines:
 
 | Name                 | Tested | To refactor    |
 | -------------------- | ------ | -------------- |
-| BuildTrace3DModule   | Yes    | BuildTrace3D   |
+| BuildTrace3D   | Yes    |    |
 | Localize2D           | Yes    |                |
 | ReducePlanes         | Yes    |                |
 | ShiftSpotOnZ         | Yes    |                |
