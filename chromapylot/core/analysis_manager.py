@@ -240,7 +240,7 @@ class AnalysisManager:
             "project_by_block": ProjectByBlockModule,
             "interpolate_focal_plane": InterpolateFocalPlane,
             "split_in_blocks": SplitInBlocks,
-            "skip": routine.SkipModule,
+            "skip": routine.Skip,
             "preprocess_3d": Preprocess3D,
             "shift_2d": routine.Shift2DModule,
             "shift_3d": routine.Shift3DModule,

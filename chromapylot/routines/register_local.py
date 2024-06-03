@@ -110,7 +110,7 @@ class RegisterLocal(Module):
                 break
         if good_path and good_path[-3:] == "tif":
             ref_3d = self.data_m.load_image_3d(good_path)
-            # TODO: it's a (may be long) tempo fix to apply SkipModule at the ref 3d fiducial
+            # TODO: it's a (may be long) tempo fix to apply Skip at the ref 3d fiducial
             skipped_ref = ref_3d[::2, :, :]
             preproc_ref = self._preprocess_data(skipped_ref)
             self.reference_data = preproc_ref

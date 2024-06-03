@@ -18,7 +18,7 @@ They exist three types of routines:
 | ExtractProperties    | Yes    |                |
 | FitSubpixel          | Yes    |                |
 | AddCycleToTable      | Yes    |                |
-| SkipModule           | Yes    | Skip           |
+| Skip           | Yes    |            |
 | ShiftModule          |        |                |
 | Shift3DModule        | Yes    | Shift3D        |
 | Shift2DModule        | Yes    | Shift2D        |

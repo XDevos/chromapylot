@@ -110,7 +110,7 @@ class Module:
         return False
 
 
-class SkipModule(Module):
+class Skip(Module):
     def __init__(
         self, data_manager: DataManager, acquisition_params: AcquisitionParams
     ):
