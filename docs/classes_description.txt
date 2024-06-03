@@ -34,7 +34,7 @@ RoutineName:
 Collection des noms des classes héritantes directement de Routine.
 
 SubRoutineName:
-Collection des noms des classes héritantes d'une classe héritante de Routine. elle correspond à un niveau avancé de l'utilisation du logiciel et ne devrait pas être appelé directement par l'utilisateur. Ces SubRoutineName sont surtout utilisé par l'AnalysisManager au moment de la construction d'une Pipeline pour répondre à une configuration particulière dans les paramètres. Exemple: Pour la projection, l'utilisateur demande le "mode: laplacian" ==> le RoutineName "Project" se transforme en la liste de RoutineName "[SplitInBlocks, InterpolateFocalPlane, ProjectByBlockModule]".
+Collection des noms des classes héritantes d'une classe héritante de Routine. elle correspond à un niveau avancé de l'utilisation du logiciel et ne devrait pas être appelé directement par l'utilisateur. Ces SubRoutineName sont surtout utilisé par l'AnalysisManager au moment de la construction d'une Pipeline pour répondre à une configuration particulière dans les paramètres. Exemple: Pour la projection, l'utilisateur demande le "mode: laplacian" ==> le RoutineName "Project" se transforme en la liste de RoutineName "[SplitInBlocks, InterpolateFocalPlane, ProjectByBlock]".
 Une Routine est divisée en plusieurs sub-routines dans deux cas : Si il faut sauvegarder des données intermédiaires à la transformation fourni par la Routine, ou si l'algorithme de la transformation devient complexe.
 
 AbstractRoutineName:

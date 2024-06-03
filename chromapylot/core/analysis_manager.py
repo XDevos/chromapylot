@@ -6,7 +6,7 @@ from chromapylot.routines import routine
 from routines.build_trace import BuildTrace3D
 from routines.project import (
     Project,
-    ProjectByBlockModule,
+    ProjectByBlock,
     InterpolateFocalPlane,
     SplitInBlocks,
 )
@@ -237,7 +237,7 @@ class AnalysisManager:
         routine_name = routine_name.value
         routine_mapping = {
             "project": Project,
-            "project_by_block": ProjectByBlockModule,
+            "project_by_block": ProjectByBlock,
             "interpolate_focal_plane": InterpolateFocalPlane,
             "split_in_blocks": SplitInBlocks,
             "skip": routine.Skip,
@@ -256,13 +256,13 @@ class AnalysisManager:
             "reduce_planes": ReducePlanes,
             "extract_properties": ExtractProperties,
             "deblend_3d": Deblend3D,
-            # "filter_mask": routine.FilterMaskModule,
+            # "filter_mask": routine.FilterMask,
             # "select_mask_2d": routine.SelectMask2D,
             # "select_mask_3d": routine.SelectMask3D,
-            # "filter_localization": routine.FilterLocalizationModule,
-            # "register_localization": routine.RegisterLocalizationModule,
+            # "filter_localization": routine.FilterLocalization,
+            # "register_localization": routine.RegisterLocalization,
             "build_trace_3d": BuildTrace3D,
-            # "build_matrix": routine.BuildMatrixModule,
+            # "build_matrix": routine.BuildMatrix,
             "add_cycle_to_table": AddCycleToTable,
         }
         if routine_name in routine_mapping:

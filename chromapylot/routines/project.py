@@ -74,7 +74,7 @@ class Project(Module):
         print(f"[Run] {self.input_type.value} -> {self.output_type.value}")
         if self.mode == "laplacian":
             raise ValueError(
-                "Laplacian projection is implemented with SplitInBlocks + InterpolateFocalPlane + ProjectByBlockModule routines."
+                "Laplacian projection is implemented with SplitInBlocks + InterpolateFocalPlane + ProjectByBlock routines."
             )
         elif self.mode == "automatic":
             zmin, zmax = self._precise_z_planes_auto(array_3d)
@@ -245,7 +245,7 @@ class InterpolateFocalPlane(Project):
         print(f"> $OUTPUT{short_path}")
 
 
-class ProjectByBlockModule(Project):
+class ProjectByBlock(Project):
     def __init__(self, data_manager: DataManager, projection_params: ProjectionParams):
         super().__init__(
             data_manager=data_manager,

@@ -19,7 +19,7 @@ They exist three types of routines:
 | FitSubpixel          | Yes    |                |
 | AddCycleToTable      | Yes    |                |
 | Skip           | Yes    |            |
-| ShiftModule          |        |                |
+| Shift          |        |                |
 | Shift3D        | Yes    |         |
 | Shift2D        | Yes    |         |
 | SelectMaskModule     |        |                |
@@ -38,7 +38,7 @@ They exist three types of routines:
 
 - SplitInBlocks
 - InterpolateFocalPlane
-- ProjectByBlockModule
+- ProjectByBlock
 - RegisterByBlock
 - CompareBlockGlobal
 

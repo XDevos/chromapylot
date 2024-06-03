@@ -137,7 +137,7 @@ class Skip(Module):
         print("NO Saving 3D image.")
 
 
-class ShiftModule(Module):
+class Shift(Module):
     def __init__(self, data_manager: DataManager, input_type, output_type):
         """
         Parameters:
@@ -186,7 +186,7 @@ class ShiftModule(Module):
             self.reference_data = list(shift_dict.values())[0]
 
 
-class Shift3D(ShiftModule):
+class Shift3D(Shift):
     def __init__(
         self, data_manager: DataManager, registration_params: RegistrationParams
     ):
@@ -212,7 +212,7 @@ class Shift3D(ShiftModule):
         print("NO saving 3D image.")
 
 
-class Shift2D(ShiftModule):
+class Shift2D(Shift):
     def __init__(
         self, data_manager: DataManager, registration_params: RegistrationParams
     ):
