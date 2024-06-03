@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.measure import regionprops
 
-from chromapylot.routines.routine import Module
+from chromapylot.routines.routine import Routine
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import (
     DataManager,
@@ -36,7 +36,7 @@ from apifish.detection.spot_modeling import fit_subpixel
 from chromapylot.core.data_manager import load_json, save_json, save_ecsv, load_ecsv
 
 
-class Localize2D(Module):
+class Localize2D(Routine):
     def __init__(
         self,
         data_manager: DataManager,
@@ -187,7 +187,7 @@ class Localize2D(Module):
         plt.close(fig)
 
 
-class ReducePlanes(Module):
+class ReducePlanes(Routine):
     def __init__(
         self,
         data_manager: DataManager,
@@ -239,7 +239,7 @@ class ReducePlanes(Module):
         save_json(existing_dict, out_path)
 
 
-class ShiftSpotOnZ(Module):
+class ShiftSpotOnZ(Routine):
     def __init__(
         self,
         data_manager: DataManager,
@@ -268,7 +268,7 @@ class ShiftSpotOnZ(Module):
         save_ecsv(data, table_path)
 
 
-class ExtractProperties(Module):
+class ExtractProperties(Routine):
     def __init__(
         self, data_manager: DataManager, segmentation_params: SegmentationParams
     ):
@@ -317,7 +317,7 @@ class ExtractProperties(Module):
         # save_ecsv(data, table_path)
 
 
-class FitSubpixel(Module):
+class FitSubpixel(Routine):
     def __init__(
         self,
         data_manager: DataManager,
@@ -376,7 +376,7 @@ class FitSubpixel(Module):
         # save_ecsv(data, table_path)
 
 
-class AddCycleToTable(Module):
+class AddCycleToTable(Routine):
     def __init__(
         self,
         data_manager: DataManager,

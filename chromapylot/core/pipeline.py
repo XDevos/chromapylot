@@ -11,7 +11,7 @@ class Pipeline:
     def __init__(
         self,
         analysis_type: AnalysisType,
-        routines: List[routine.Module],
+        routines: List[routine.Routine],
     ):
         self.analysis_type = analysis_type
         self.routines = routines
@@ -68,7 +68,7 @@ class Pipeline:
             else:
                 self.supplementary_data[key] = value
 
-    def load_supplementary_data(self, routine: routine.Module, cycle: str):
+    def load_supplementary_data(self, routine: routine.Routine, cycle: str):
         data_type = routine.supplementary_type
         if data_type:
             if data_type == DataType.CYCLE:

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from astropy.table import Table
 from matplotlib.patches import Polygon
-from chromapylot.routines.routine import Module
+from chromapylot.routines.routine import Routine
 from scipy.spatial import KDTree
 from stardist import random_label_cmap
 
@@ -143,7 +143,7 @@ def add_localization_to_trace_table(
     return trace_table
 
 
-class BuildTrace3D(Module):
+class BuildTrace3D(Routine):
     def __init__(
         self,
         data_manager: DataManager,

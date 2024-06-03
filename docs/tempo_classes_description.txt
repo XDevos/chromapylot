@@ -43,7 +43,7 @@ Pipeline:
 			choose_to_keep_data(routine, output)
 			input_data = output
 	
-Routine (Module):
+Routine (Routine):
 	run(data, supplementary_data = None)
 	load_data(str)
 	load_reference_data(List[str])

@@ -15,7 +15,7 @@ from chromapylot.parameters.segmentation_params import SegmentationParams
 from chromapylot.core.core_logging import print_routine
 
 
-class Module:
+class Routine:
     def __init__(
         self,
         data_manager: DataManager,
@@ -110,7 +110,7 @@ class Module:
         return False
 
 
-class Skip(Module):
+class Skip(Routine):
     def __init__(
         self, data_manager: DataManager, acquisition_params: AcquisitionParams
     ):
@@ -137,7 +137,7 @@ class Skip(Module):
         print("NO Saving 3D image.")
 
 
-class Shift(Module):
+class Shift(Routine):
     def __init__(self, data_manager: DataManager, input_type, output_type):
         """
         Parameters:
@@ -244,7 +244,7 @@ class Shift2D(Shift):
         save_npy(data, npy_path, self.data_m.out_dir_len)
 
 
-class SelectMaskModule(Module):
+class SelectMask(Routine):
     def __init__(
         self, data_manager: DataManager, input_type, output_type, supplementary_type
     ):

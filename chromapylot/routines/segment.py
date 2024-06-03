@@ -42,11 +42,11 @@ from chromapylot.core.data_manager import (
     create_npy_path,
     save_npy,
 )
-from chromapylot.routines.routine import Module
+from chromapylot.routines.routine import Routine
 from chromapylot.parameters.segmentation_params import SegmentationParams
 
 
-class Segment2D(Module):
+class Segment2D(Routine):
     def __init__(
         self,
         data_manager: DataManager,
@@ -225,7 +225,7 @@ class Segment2D(Module):
         return labeled
 
 
-class Segment3D(Module):
+class Segment3D(Routine):
     def __init__(
         self,
         data_manager: DataManager,
@@ -326,7 +326,7 @@ class Segment3D(Module):
         return model_name
 
 
-class Deblend3D(Module):
+class Deblend3D(Routine):
     def __init__(
         self,
         data_manager: DataManager,

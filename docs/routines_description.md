@@ -22,7 +22,7 @@ They exist three types of routines:
 | Shift          |        |                |
 | Shift3D        | Yes    |         |
 | Shift2D        | Yes    |         |
-| SelectMaskModule     |        |                |
+| SelectMask     |        |                |
 | Project        | Yes    |         |
 | RegisterGlobal | Yes    |  |
 | Preprocess3D         | Yes    |                |

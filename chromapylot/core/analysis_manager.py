@@ -269,12 +269,12 @@ class AnalysisManager:
             print(f"> Add: {routine_name}")
             return routine_mapping[routine_name](self.data_manager, **routine_params)
         else:
-            raise ValueError(f"Module {routine_name} does not exist.")
+            raise ValueError(f"Routine {routine_name} does not exist.")
 
     def create_pipeline_routines(self, pipeline_type: AnalysisType, dim: int):
         print(f"\n[{pipeline_type.name} {dim}D]")
         routine_chain = self.get_routine_chain(pipeline_type, dim)
-        routines: List[routine.Module] = []
+        routines: List[routine.Routine] = []
         pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
         for i in range(len(routine_chain)):
             if routine_chain[i] in self.routine_names:
@@ -285,7 +285,7 @@ class AnalysisManager:
                     routines[-2].output_type
                 ):
                     raise ValueError(
-                        f"Module {routine_chain[i]} cannot be used without {routine_chain[i - 1]}, for {pipeline_type} analysis."
+                        f"Routine {routine_chain[i]} cannot be used without {routine_chain[i - 1]}, for {pipeline_type} analysis."
                     )
         return routines
 

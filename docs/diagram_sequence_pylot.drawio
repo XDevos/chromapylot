@@ -10,7 +10,7 @@
         <mxCell id="QAZ8KyiYfv3LoN_8WGbh-2" value="DataManager" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="40" y="-1080" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="QAZ8KyiYfv3LoN_8WGbh-3" value="&lt;div&gt;Module&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+        <mxCell id="QAZ8KyiYfv3LoN_8WGbh-3" value="&lt;div&gt;Routine&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="840" y="-800" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="QAZ8KyiYfv3LoN_8WGbh-4" value="&lt;div&gt;Pipeline&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">

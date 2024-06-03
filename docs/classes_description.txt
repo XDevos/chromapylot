@@ -1,7 +1,7 @@
 RunArgs:
 Interface avec l'utilisateur, parse les arguments d'entrée, vérifie la validité, formatte les demandes de l'utilisateur (qui est sous forme de texte) en des éléments comprehensible pour le programme.
-- à quel moment il faut traduire un nom de routine généraliste vers differents ModuleName ? Comment afficher pour le user ?
->>> RunArgs donne accès au reste du programme seulement une list de ModuleName valide. Donc lors de la génération de cette list il faut faire la traduction.
+- à quel moment il faut traduire un nom de routine généraliste vers differents RoutineName ? Comment afficher pour le user ?
+>>> RunArgs donne accès au reste du programme seulement une list de RoutineName valide. Donc lors de la génération de cette list il faut faire la traduction.
 >>> comma-separeted commands: str --> split en List[str] --> [to_cmd_name(x) for x in cmd_list]
 >>> to_cmd_name(x) = x_CmdName if x_CmdName.value == x else x_CmdName_List if x in available_abstract_cmds
 

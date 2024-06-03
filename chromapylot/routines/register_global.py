@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import List
-from chromapylot.routines.routine import Module
+from chromapylot.routines.routine import Routine
 from chromapylot.core.core_types import DataType
 from chromapylot.parameters.registration_params import RegistrationParams
 import numpy as np
@@ -28,7 +28,7 @@ from chromapylot.core.data_manager import tif_path_to_projected, DataManager
 import matplotlib.pyplot as plt
 
 
-class RegisterGlobal(Module):
+class RegisterGlobal(Routine):
     def __init__(
         self,
         data_manager: DataManager,

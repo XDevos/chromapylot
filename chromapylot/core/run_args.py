@@ -127,7 +127,7 @@ class RunArgs:
         Parameters
         ----------
         command : str
-            Module name to run.
+            Routine name to run.
 
         Returns
         -------

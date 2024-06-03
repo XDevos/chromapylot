@@ -2,12 +2,12 @@
 
 1. Create a specific python file with the name of the routine, like: `register_local.py`
 
-2. Inside this file, create a class with the name of the routine, in PascalCase: `RegisterLocal` , this class inherits from `Module` class: 
+2. Inside this file, create a class with the name of the routine, in PascalCase: `RegisterLocal` , this class inherits from `Routine` class: 
 
    ```python
-   from chromapylot.routines.routine import Module
+   from chromapylot.routines.routine import Routine
    
-   class RegisterLocal(Module):
+   class RegisterLocal(Routine):
    ```
 
 3. Initialize the routine with a `DataManager` to help the routine to load and save data and log every thing:
@@ -17,7 +17,7 @@
    # ...
    from chromapylot.core.data_manager import DataManager
    
-   class RegisterLocal(Module):
+   class RegisterLocal(Routine):
        def __init__(self, data_manager: DataManager):
            super().__init__(data_manager=data_manager)
    ```
@@ -29,7 +29,7 @@
    # ...
    from chromapylot.parameters.registration_params import RegistrationParams
    
-   class RegisterLocal(Module):
+   class RegisterLocal(Routine):
        def __init__(
            self,
            data_manager: DataManager,
@@ -38,13 +38,13 @@
            super().__init__(data_manager=data_manager)
    ```
 
-5. A sub-class of Module have two mandatory data types (`DataType`) for the input and the output and two optional types for a reference and a supplementary data. The reference data are just used like a "read mode" inside the routine and it's common for all files to process inside a same analysis type. Supplementary data is also in a "read only mode" but it's specific for each file.
+5. A sub-class of Routine have two mandatory data types (`DataType`) for the input and the output and two optional types for a reference and a supplementary data. The reference data are just used like a "read mode" inside the routine and it's common for all files to process inside a same analysis type. Supplementary data is also in a "read only mode" but it's specific for each file.
 
    ```python
    # ...
    from chromapylot.core.core_types import DataType
    
-   class RegisterLocal(Module):
+   class RegisterLocal(Routine):
        def __init__(
            self,
            data_manager: DataManager,
@@ -97,11 +97,11 @@ from typing import List
 
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import DataManager
-from chromapylot.routines.routine import Module
+from chromapylot.routines.routine import Routine
 from chromapylot.parameters.registration_params import RegistrationParams
 
 
-class RegisterLocal(Module):
+class RegisterLocal(Routine):
     def __init__(
         self,
         data_manager: DataManager,

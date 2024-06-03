@@ -20,7 +20,7 @@ from matplotlib import ticker
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import save_npy
 from chromapylot.parameters.projection_params import ProjectionParams
-from chromapylot.routines.routine import Module
+from chromapylot.routines.routine import Routine
 from chromapylot.core.data_manager import DataManager, create_npy_path, create_png_path
 
 from datetime import datetime
@@ -32,7 +32,7 @@ from chromapylot.core.core_types import AnalysisType
 from apifish.stack import projection
 
 
-class Project(Module):
+class Project(Routine):
     def __init__(
         self,
         data_manager: DataManager,

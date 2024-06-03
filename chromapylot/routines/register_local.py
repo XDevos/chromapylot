@@ -19,7 +19,7 @@ from skimage.metrics import mean_squared_error, normalized_root_mse
 
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
-from chromapylot.routines.routine import Module
+from chromapylot.routines.routine import Routine
 from chromapylot.core.data_manager import (
     DataManager,
     get_roi_number_from_image_path,
@@ -34,7 +34,7 @@ font = {"weight": "normal", "size": 22}
 matplotlib.rc("font", **font)
 
 
-class Preprocess3D(Module):
+class Preprocess3D(Routine):
     def __init__(
         self,
         data_manager: DataManager,
@@ -81,7 +81,7 @@ class Preprocess3D(Module):
             raise NotImplementedError("Reduce planes loading not implemented yet")
 
 
-class RegisterLocal(Module):
+class RegisterLocal(Routine):
     def __init__(
         self, data_manager: DataManager, registration_params: RegistrationParams
     ):
