@@ -186,7 +186,7 @@ class ShiftModule(Module):
             self.reference_data = list(shift_dict.values())[0]
 
 
-class Shift3DModule(ShiftModule):
+class Shift3D(ShiftModule):
     def __init__(
         self, data_manager: DataManager, registration_params: RegistrationParams
     ):
@@ -212,7 +212,7 @@ class Shift3DModule(ShiftModule):
         print("NO saving 3D image.")
 
 
-class Shift2DModule(ShiftModule):
+class Shift2D(ShiftModule):
     def __init__(
         self, data_manager: DataManager, registration_params: RegistrationParams
     ):

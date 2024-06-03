@@ -20,8 +20,8 @@ They exist three types of routines:
 | AddCycleToTable      | Yes    |                |
 | Skip           | Yes    |            |
 | ShiftModule          |        |                |
-| Shift3DModule        | Yes    | Shift3D        |
-| Shift2DModule        | Yes    | Shift2D        |
+| Shift3D        | Yes    |         |
+| Shift2D        | Yes    |         |
 | SelectMaskModule     |        |                |
 | ProjectModule        | Yes    | Project        |
 | RegisterGlobalModule | Yes    | RegisterGlobal |
