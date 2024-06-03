@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Union
 from dask import delayed, compute
 from dask.distributed import Client
 
-from modules import module as mod
+from chromapylot.modules import routine as mod
 from modules.build_trace import BuildTrace3DModule
 from modules.project import (
     ProjectModule,

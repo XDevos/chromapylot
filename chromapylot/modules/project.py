@@ -20,7 +20,7 @@ from matplotlib import ticker
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import save_npy
 from chromapylot.parameters.projection_params import ProjectionParams
-from chromapylot.modules.module import Module
+from chromapylot.modules.routine import Module
 from chromapylot.core.data_manager import DataManager, create_npy_path, create_png_path
 
 from datetime import datetime

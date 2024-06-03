@@ -19,7 +19,7 @@ from skimage.metrics import mean_squared_error, normalized_root_mse
 
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
-from chromapylot.modules.module import Module
+from chromapylot.modules.routine import Module
 from chromapylot.core.data_manager import (
     DataManager,
     get_roi_number_from_image_path,

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-import modules.module as mod
+import chromapylot.modules.routine as mod
 
 from chromapylot.core.core_types import AnalysisType, DataType
 from chromapylot.core.data_manager import DataManager

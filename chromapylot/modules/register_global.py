@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import List
-from chromapylot.modules.module import Module
+from chromapylot.modules.routine import Module
 from chromapylot.core.core_types import DataType
 from chromapylot.parameters.registration_params import RegistrationParams
 import numpy as np

@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.measure import regionprops
 
-from modules.module import Module
+from chromapylot.modules.routine import Module
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import (
     DataManager,
