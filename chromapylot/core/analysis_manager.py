@@ -74,7 +74,7 @@ class AnalysisManager:
     def parse_commands(self, commands: List[RoutineName]):
         self.routine_names = list(set(commands))
 
-    def get_module_chain(
+    def get_routine_chain(
         self, pipeline_type: AnalysisType, dim: int
     ) -> List[RoutineName]:
         if pipeline_type == AnalysisType.REFERENCE:
@@ -163,14 +163,14 @@ class AnalysisManager:
             raise ValueError(
                 f"Analysis type '{pipeline_type}' with dimension '{dim}' not found."
             )
-        chain = self.explicite_intern_module(chain, pipeline_type)
+        chain = self.explicite_intern_routine(chain, pipeline_type)
         chain = self.convert_string_to_routine_name(chain)
         return chain
 
     def convert_string_to_routine_name(self, chain: List[str]) -> List[RoutineName]:
-        return [RoutineName(module) for module in chain]
+        return [RoutineName(routine) for routine in chain]
 
-    def explicite_intern_module(
+    def explicite_intern_routine(
         self, chain: List[RoutineName], pipeline_type
     ) -> List[RoutineName]:
         # Projection Laplacian
@@ -224,18 +224,18 @@ class AnalysisManager:
 
         return chain
 
-    def create_module(
+    def create_routine(
         self,
         routine_name: RoutineName,
-        module_params: Dict[
+        routine_params: Dict[
             str,
             Union[
                 ProjectionParams, RegistrationParams, SegmentationParams, MatrixParams
             ],
         ],
     ):
-        module_name = routine_name.value
-        module_mapping = {
+        routine_name = routine_name.value
+        routine_mapping = {
             "project": ProjectModule,
             "project_by_block": ProjectByBlockModule,
             "interpolate_focal_plane": InterpolateFocalPlane,
@@ -265,29 +265,29 @@ class AnalysisManager:
             # "build_matrix": routine.BuildMatrixModule,
             "add_cycle_to_table": AddCycleToTable,
         }
-        if module_name in module_mapping:
-            print(f"> Add: {module_name}")
-            return module_mapping[module_name](self.data_manager, **module_params)
+        if routine_name in routine_mapping:
+            print(f"> Add: {routine_name}")
+            return routine_mapping[routine_name](self.data_manager, **routine_params)
         else:
-            raise ValueError(f"Module {module_name} does not exist.")
+            raise ValueError(f"Module {routine_name} does not exist.")
 
-    def create_pipeline_modules(self, pipeline_type: AnalysisType, dim: int):
+    def create_pipeline_routines(self, pipeline_type: AnalysisType, dim: int):
         print(f"\n[{pipeline_type.name} {dim}D]")
-        module_chain = self.get_module_chain(pipeline_type, dim)
-        modules: List[routine.Module] = []
+        routine_chain = self.get_routine_chain(pipeline_type, dim)
+        routines: List[routine.Module] = []
         pipe_params = ParamsManager(self.data_manager.parameters, pipeline_type)
-        for i in range(len(module_chain)):
-            if module_chain[i] in self.routine_names:
-                module_params = pipe_params.get_module_params(module_chain[i])
-                modules.append(self.create_module(module_chain[i], module_params))
+        for i in range(len(routine_chain)):
+            if routine_chain[i] in self.routine_names:
+                routine_params = pipe_params.get_routine_params(routine_chain[i])
+                routines.append(self.create_routine(routine_chain[i], routine_params))
                 # check if we don't break the chain
-                if len(modules) >= 2 and not modules[-1].is_compatible(
-                    modules[-2].output_type
+                if len(routines) >= 2 and not routines[-1].is_compatible(
+                    routines[-2].output_type
                 ):
                     raise ValueError(
-                        f"Module {module_chain[i]} cannot be used without {module_chain[i - 1]}, for {pipeline_type} analysis."
+                        f"Module {routine_chain[i]} cannot be used without {routine_chain[i - 1]}, for {pipeline_type} analysis."
                     )
-        return modules
+        return routines
 
     def create_pipelines(self):
         print_text_inside("Creating pipelines", "=")
@@ -300,12 +300,12 @@ class AnalysisManager:
                 continue
 
             for dim in self.dims:
-                modules = self.create_pipeline_modules(analysis_type, dim)
-                if modules:
+                routines = self.create_pipeline_routines(analysis_type, dim)
+                if routines:
                     self.analysis_to_process.append((analysis_type, dim))
                     print(f"> CREATED")
                     self.pipelines[analysis_type.value][dim] = Pipeline(
-                        analysis_type, modules
+                        analysis_type, routines
                     )
                 else:
                     print("> IGNORED")

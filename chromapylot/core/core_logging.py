@@ -26,6 +26,6 @@ def print_text_inside(text: str, car: str):
     )
 
 
-def print_module(name):
+def print_routine(name):
     print("_" * (len(name) + 2))
     print(f" {name} \n")

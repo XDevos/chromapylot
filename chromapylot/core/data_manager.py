@@ -363,17 +363,17 @@ def pop_postfix(base):
         return pop_postfix("_".join(split_base[:-1]))
 
 
-def create_png_path(init_filename, out_dir, module_dir, postfix):
+def create_png_path(init_filename, out_dir, routine_dir, postfix):
     base = get_init_basename(init_filename)
     png_filename = base + postfix + ".png"
-    out_path = os.path.join(out_dir, module_dir, png_filename)
+    out_path = os.path.join(out_dir, routine_dir, png_filename)
     create_dirs_from_path(out_path)
     return out_path
 
 
-def create_npy_path(init_filename, out_dir, module_dir, postfix):
+def create_npy_path(init_filename, out_dir, routine_dir, postfix):
     base = get_init_basename(init_filename)
     npy_filename = base + postfix + ".npy"
-    out_path = os.path.join(out_dir, module_dir, "data", npy_filename)
+    out_path = os.path.join(out_dir, routine_dir, "data", npy_filename)
     create_dirs_from_path(out_path)
     return out_path

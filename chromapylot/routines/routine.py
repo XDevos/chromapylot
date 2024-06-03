@@ -12,7 +12,7 @@ from chromapylot.parameters.acquisition_params import AcquisitionParams
 from chromapylot.parameters.matrix_params import MatrixParams
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
-from chromapylot.core.core_logging import print_module
+from chromapylot.core.core_logging import print_routine
 
 
 class Module:
@@ -43,7 +43,7 @@ class Module:
 
     def load_supplementary_data(self, input_path, cycle):
         """
-        Load supplementary data for the module.
+        Load supplementary data for the routine.
 
         Args:
             input_path (str): The path or the directory to the input data.
@@ -57,9 +57,9 @@ class Module:
     def save_data(self, data, input_path, input_data, supplementary_data):
         raise NotImplementedError
 
-    def print_module_name(self):
+    def print_routine_name(self):
         print()
-        print_module(self.__class__.__name__)
+        print_routine(self.__class__.__name__)
 
     def switch_input_supplementary(self):
         """
@@ -74,13 +74,13 @@ class Module:
 
     def is_compatible(self, data_type: DataType):
         """
-        Check if the module is compatible with the given data type.
+        Check if the routine is compatible with the given data type.
 
         Args:
             data_type (DataType): The data type to check.
 
         Returns:
-            bool: True if the module is compatible, False otherwise.
+            bool: True if the routine is compatible, False otherwise.
         """
         if isinstance(self.input_type, list):
             for input in self.input_type:

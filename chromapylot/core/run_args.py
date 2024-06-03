@@ -20,7 +20,7 @@ def _parse_run_args(command_line_args):
     parser.add_argument(
         "-C",
         "--command",
-        help="Comma-separated list of module names to run.",
+        help="Comma-separated list of routine names to run.",
     )
     parser.add_argument(
         "-I",
@@ -62,20 +62,20 @@ def _parse_run_args(command_line_args):
         "--ref_file",
         type=str,
         default=None,
-        help="Reference file to run a module directly.\nDEFAULT: None",
+        help="Reference file to run a routine directly.\nDEFAULT: None",
     )
     parser.add_argument(
         "--in_file",
         type=str,
         default=None,
-        help="Data file to run a module directly.\nDEFAULT: None",
+        help="Data file to run a routine directly.\nDEFAULT: None",
     )
     parser.add_argument(
         "-S",
         "--sup_file",
         type=str,
         default=None,
-        help="Data file to run a module directly.\nDEFAULT: None",
+        help="Data file to run a routine directly.\nDEFAULT: None",
     )
 
     return parser.parse_args(command_line_args)
@@ -103,7 +103,7 @@ class RunArgs:
         Parameters
         ----------
         csv_commands : str
-            Comma-separated list of module names to run.
+            Comma-separated list of routine names to run.
 
         Returns
         -------

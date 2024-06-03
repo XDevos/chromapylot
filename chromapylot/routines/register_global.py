@@ -60,7 +60,7 @@ class RegisterGlobalModule(Module):
             return None
         if self.align_by_block:
             raise NotImplementedError(
-                "align_by_block is running with RegisterByBlock + CompareBlockGlobal modules."
+                "align_by_block is running with RegisterByBlock + CompareBlockGlobal routines."
             )
         print(f"[Run] Register Global")
         prep_2d_img = remove_inhomogeneous_background_2d(
@@ -220,7 +220,7 @@ class RegisterByBlock(RegisterGlobalModule):
             print("> No need to align reference image.")
             return None
         if not self.align_by_block:
-            raise ValueError("This module is only for block alignment.")
+            raise ValueError("This routine is only for block alignment.")
         print(f"[Run] Register Global (by block)")
         preprocessed_img = remove_inhomogeneous_background_2d(
             raw_2d_img, self.background_sigma

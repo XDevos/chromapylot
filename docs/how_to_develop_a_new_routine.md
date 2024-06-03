@@ -5,12 +5,12 @@
 2. Inside this file, create a class with the name of the routine, in PascalCase: `RegisterLocal` , this class inherits from `Module` class: 
 
    ```python
-   from chromapylot.modules.module import Module
+   from chromapylot.routines.routine import Module
    
    class RegisterLocal(Module):
    ```
 
-3. Initialize the module with a `DataManager` to help the module to load and save data and log every thing:
+3. Initialize the routine with a `DataManager` to help the routine to load and save data and log every thing:
 
    
    ```python
@@ -97,7 +97,7 @@ from typing import List
 
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import DataManager
-from chromapylot.modules.module import Module
+from chromapylot.routines.routine import Module
 from chromapylot.parameters.registration_params import RegistrationParams
 
 

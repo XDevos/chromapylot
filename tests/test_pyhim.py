@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Check the non regression of modules called inside the jupyter notebook on pyHiM documentation"""
+"""Check the non regression of routines called inside the jupyter notebook on pyHiM documentation"""
 
 import os
 import shutil
@@ -140,7 +140,7 @@ def test_segment_masks_3d():
         assert compare_npy_files(tmp_file, out_file)
 
 
-# TODO: Find a way to test this module
+# TODO: Find a way to test this routine
 # def test_segment_sources_3d():
 #     """Check localize_3d"""
 #     main(["-F", tmp_small_inputs, "-C", "localize_3d"])

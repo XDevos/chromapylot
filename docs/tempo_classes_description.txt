@@ -20,7 +20,7 @@ AnalysisManager:
 	data_manager.get_analysis_types{_from_files}() -> List[AnalysisType]
 	pipelines: Dict[AnalysisType, Dict[dimension:int, Pipeline]]
 	parse_commands(run_args.commands: List[str]) -> list(set(commands))
-	create_pipeline_modules(AnalysisType, dim) -> List[Routine]
+	create_pipeline_routines(AnalysisType, dim) -> List[Routine]
 	create_pipelines() -> file pipelines with Pipeline(AnalysisType, List[Routine])
 	start_dask(n_threads: int) -> Client | None
 	Loop on: AnalysisType and dimension
@@ -37,10 +37,10 @@ Pipeline:
 		choose_to_keep_input_data(input_data) -> supplementary_data
 		update_supplementary_data(supplementary_paths)
 		for Routine in routines:
-			load_supplementary_data(module, cycle)
-			module.run(input_data)
-			module.save_data(output, data_path, input_data)
-			choose_to_keep_data(module, output)
+			load_supplementary_data(routine, cycle)
+			routine.run(input_data)
+			routine.save_data(output, data_path, input_data)
+			choose_to_keep_data(routine, output)
 			input_data = output
 	
 Routine (Module):
@@ -99,7 +99,7 @@ AnalysisManager:
 	data_manager.get_analysis_types{_from_files}() -> List[AnalysisType]
 	pipelines: Dict[AnalysisType, Dict[dimension:int, Pipeline]]
 	parse_commands(run_args.commands: List[str]) -> list(set(commands))
-	create_pipeline_modules(AnalysisType, dim) -> List[Routine]
+	create_pipeline_routines(AnalysisType, dim) -> List[Routine]
 	create_pipelines() -> file pipelines with Pipeline(AnalysisType, List[Routine])
 	start_dask(n_threads: int) -> Client | None
 	Loop on: AnalysisType and dimension

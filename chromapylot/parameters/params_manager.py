@@ -71,18 +71,18 @@ class ParamsManager:
                 result[key].pop("unknown_params", None)
         return result
 
-    def get_module_params(self, routine_name: RoutineName):
-        module_name = routine_name.value
-        if module_name in ["acquisition", "skip"]:
+    def get_routine_params(self, routine_name: RoutineName):
+        routine_name = routine_name.value
+        if routine_name in ["acquisition", "skip"]:
             return {"acquisition_params": self.acquisition}
-        if module_name in [
+        if routine_name in [
             "project",
             "project_by_block",
             "interpolate_focal_plane",
             "split_in_blocks",
         ]:
             return {"projection_params": self.projection}
-        if module_name in [
+        if routine_name in [
             "register_global",
             "register_by_block",
             "compare_block_global",
@@ -91,7 +91,7 @@ class ParamsManager:
             "shift_3d",
         ]:
             return {"registration_params": self.registration}
-        if module_name in [
+        if routine_name in [
             "localize_2d",
             "segment_2d",
             "segment_3d",
@@ -103,34 +103,34 @@ class ParamsManager:
             "select_mask_3d",
         ]:
             return {"segmentation_params": self.segmentation}
-        if module_name in [
+        if routine_name in [
             "filter_localization",
             "register_localization",
             "build_matrix",
         ]:
             return {"matrix_params": self.matrix}
-        if module_name in ["build_trace_3d", "build_trace_2d"]:
+        if routine_name in ["build_trace_3d", "build_trace_2d"]:
             return {
                 "acquisition_params": self.acquisition,
                 "matrix_params": self.matrix,
             }
-        if module_name in ["reduce_planes"]:
+        if routine_name in ["reduce_planes"]:
             return {
                 "acquisition_params": self.acquisition,
                 "projection_params": self.projection,
                 "segmentation_params": self.segmentation,
             }
-        if module_name in ["preprocess_3d"]:
+        if routine_name in ["preprocess_3d"]:
             return {
                 "registration_params": self.registration,
                 "segmentation_params": self.segmentation,
             }
-        if module_name in ["shift_spot_on_z", "add_cycle_to_table"]:
+        if routine_name in ["shift_spot_on_z", "add_cycle_to_table"]:
             return {}
-        if module_name in ["fit_subpixel"]:
+        if routine_name in ["fit_subpixel"]:
             return {
                 "acquisition_params": self.acquisition,
                 "segmentation_params": self.segmentation,
             }
 
-        raise ValueError(f"Unknown module name: {module_name}")
+        raise ValueError(f"Unknown routine name: {routine_name}")

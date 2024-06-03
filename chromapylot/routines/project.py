@@ -74,7 +74,7 @@ class ProjectModule(Module):
         print(f"[Run] {self.input_type.value} -> {self.output_type.value}")
         if self.mode == "laplacian":
             raise ValueError(
-                "Laplacian projection is implemented with SplitInBlocks + InterpolateFocalPlane + ProjectByBlockModule modules."
+                "Laplacian projection is implemented with SplitInBlocks + InterpolateFocalPlane + ProjectByBlockModule routines."
             )
         elif self.mode == "automatic":
             zmin, zmax = self._precise_z_planes_auto(array_3d)
@@ -186,7 +186,7 @@ class SplitInBlocks(ProjectModule):
         return split_in_blocks(img, block_size_xy=self.block_size)
 
     def save_data(self, data, input_path, input_data, supplementary_data):
-        print("> No need to save data for SplitInBlocks module.")
+        print("> No need to save data for SplitInBlocks routine.")
         pass
 
 

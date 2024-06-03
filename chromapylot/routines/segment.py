@@ -263,7 +263,7 @@ class Segment3D(Module):
         if self.method_3d == "stardist":
             base_dir = self.find_base_dir()
             model_name = self.find_model_name(base_dir)
-            print(f"> Loading model {model_name} from {base_dir}...")
+            print(f"> Loading model {model_name} from {base_dir} ...")
             labels = segment_3d_by_stardist(
                 model_name, base_dir, data, limit_x=self.limit_x
             )
