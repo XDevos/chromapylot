@@ -5,7 +5,7 @@ from dask.distributed import Client
 from chromapylot.routines import routine
 from routines.build_trace import BuildTrace3D
 from routines.project import (
-    ProjectModule,
+    Project,
     ProjectByBlockModule,
     InterpolateFocalPlane,
     SplitInBlocks,
@@ -236,7 +236,7 @@ class AnalysisManager:
     ):
         routine_name = routine_name.value
         routine_mapping = {
-            "project": ProjectModule,
+            "project": Project,
             "project_by_block": ProjectByBlockModule,
             "interpolate_focal_plane": InterpolateFocalPlane,
             "split_in_blocks": SplitInBlocks,

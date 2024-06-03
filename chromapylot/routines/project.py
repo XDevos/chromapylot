@@ -32,7 +32,7 @@ from chromapylot.core.core_types import AnalysisType
 from apifish.stack import projection
 
 
-class ProjectModule(Module):
+class Project(Module):
     def __init__(
         self,
         data_manager: DataManager,
@@ -174,7 +174,7 @@ class ProjectModule(Module):
         return zmin, zmax
 
 
-class SplitInBlocks(ProjectModule):
+class SplitInBlocks(Project):
     def __init__(self, data_manager: DataManager, projection_params: ProjectionParams):
         super().__init__(
             data_manager=data_manager,
@@ -190,7 +190,7 @@ class SplitInBlocks(ProjectModule):
         pass
 
 
-class InterpolateFocalPlane(ProjectModule):
+class InterpolateFocalPlane(Project):
     def __init__(self, data_manager: DataManager, projection_params: ProjectionParams):
         super().__init__(
             data_manager=data_manager,
@@ -245,7 +245,7 @@ class InterpolateFocalPlane(ProjectModule):
         print(f"> $OUTPUT{short_path}")
 
 
-class ProjectByBlockModule(ProjectModule):
+class ProjectByBlockModule(Project):
     def __init__(self, data_manager: DataManager, projection_params: ProjectionParams):
         super().__init__(
             data_manager=data_manager,
@@ -633,7 +633,7 @@ def main(command_line_args=None):
     run_args = RunArgs(command_line_args)
     raw_params = load_json(os.path.join(run_args.input, "infoList.json"))
     pipe_params = ParamsManager(raw_params, AnalysisType.TRACE)
-    routine_p = ProjectModule(pipe_params.projection)
+    routine_p = Project(pipe_params.projection)
 
     # MODULE EXECUTION
     input_data = routine_p.load_data(run_args.in_file)
