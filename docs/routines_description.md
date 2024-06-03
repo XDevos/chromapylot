@@ -24,7 +24,7 @@ They exist three types of routines:
 | Shift2D        | Yes    |         |
 | SelectMaskModule     |        |                |
 | Project        | Yes    |         |
-| RegisterGlobalModule | Yes    | RegisterGlobal |
+| RegisterGlobal | Yes    |  |
 | Preprocess3D         | Yes    |                |
 | RegisterLocal        | Yes    |                |
 | Segment2D            | Yes    |                |

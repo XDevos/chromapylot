@@ -28,7 +28,7 @@ from chromapylot.core.data_manager import tif_path_to_projected, DataManager
 import matplotlib.pyplot as plt
 
 
-class RegisterGlobalModule(Module):
+class RegisterGlobal(Module):
     def __init__(
         self,
         data_manager: DataManager,
@@ -205,7 +205,7 @@ class RegisterGlobalModule(Module):
         plt.close(fig)
 
 
-class RegisterByBlock(RegisterGlobalModule):
+class RegisterByBlock(RegisterGlobal):
     def __init__(
         self, data_manager: DataManager, registration_params: RegistrationParams
     ):
@@ -287,7 +287,7 @@ class RegisterByBlock(RegisterGlobalModule):
         plt.close(fig)
 
 
-class CompareBlockGlobal(RegisterGlobalModule):
+class CompareBlockGlobal(RegisterGlobal):
     def __init__(
         self, data_manager: DataManager, registration_params: RegistrationParams
     ):

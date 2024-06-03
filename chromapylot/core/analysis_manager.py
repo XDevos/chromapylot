@@ -11,7 +11,7 @@ from routines.project import (
     SplitInBlocks,
 )
 from routines.register_global import (
-    RegisterGlobalModule,
+    RegisterGlobal,
     RegisterByBlock,
     CompareBlockGlobal,
 )
@@ -244,7 +244,7 @@ class AnalysisManager:
             "preprocess_3d": Preprocess3D,
             "shift_2d": routine.Shift2D,
             "shift_3d": routine.Shift3D,
-            "register_global": RegisterGlobalModule,
+            "register_global": RegisterGlobal,
             "register_by_block": RegisterByBlock,
             "compare_block_global": CompareBlockGlobal,
             "register_local": RegisterLocal,
