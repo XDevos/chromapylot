@@ -42,7 +42,7 @@ from chromapylot.core.data_manager import (
     create_npy_path,
     save_npy,
 )
-from chromapylot.modules.routine import Module
+from chromapylot.routines.routine import Module
 from chromapylot.parameters.segmentation_params import SegmentationParams
 
 

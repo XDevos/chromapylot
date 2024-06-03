@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from astropy.table import Table
 from matplotlib.patches import Polygon
-from chromapylot.modules.routine import Module
+from chromapylot.routines.routine import Module
 from scipy.spatial import KDTree
 from stardist import random_label_cmap
 

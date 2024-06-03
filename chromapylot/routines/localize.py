@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.measure import regionprops
 
-from chromapylot.modules.routine import Module
+from chromapylot.routines.routine import Module
 from chromapylot.core.core_types import DataType
 from chromapylot.core.data_manager import (
     DataManager,
@@ -19,7 +19,7 @@ from chromapylot.core.data_manager import (
 from chromapylot.parameters.segmentation_params import SegmentationParams
 from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.parameters.acquisition_params import AcquisitionParams
-from chromapylot.modules.project import (
+from chromapylot.routines.project import (
     get_focus_plane,
     split_in_blocks,
     calculate_focus_per_block,

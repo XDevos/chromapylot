@@ -19,7 +19,7 @@ from skimage.metrics import mean_squared_error, normalized_root_mse
 
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
-from chromapylot.modules.routine import Module
+from chromapylot.routines.routine import Module
 from chromapylot.core.data_manager import (
     DataManager,
     get_roi_number_from_image_path,
@@ -28,7 +28,7 @@ from chromapylot.core.data_manager import (
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
 from chromapylot.core.core_types import DataType
-from chromapylot.modules.register_global import image_adjust
+from chromapylot.routines.register_global import image_adjust
 
 font = {"weight": "normal", "size": 22}
 matplotlib.rc("font", **font)

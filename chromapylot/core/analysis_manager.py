@@ -2,20 +2,20 @@ from typing import Any, Dict, List, Union
 from dask import delayed, compute
 from dask.distributed import Client
 
-from chromapylot.modules import routine as mod
-from modules.build_trace import BuildTrace3DModule
-from modules.project import (
+from chromapylot.routines import routine as mod
+from routines.build_trace import BuildTrace3DModule
+from routines.project import (
     ProjectModule,
     ProjectByBlockModule,
     InterpolateFocalPlane,
     SplitInBlocks,
 )
-from modules.register_global import (
+from routines.register_global import (
     RegisterGlobalModule,
     RegisterByBlock,
     CompareBlockGlobal,
 )
-from modules.register_local import RegisterLocal, Preprocess3D
+from routines.register_local import RegisterLocal, Preprocess3D
 from chromapylot.core.core_types import AnalysisType, RoutineName
 from chromapylot.core.data_manager import DataManager
 from chromapylot.parameters.matrix_params import MatrixParams
@@ -23,7 +23,7 @@ from chromapylot.parameters.params_manager import ParamsManager
 from chromapylot.parameters.projection_params import ProjectionParams
 from chromapylot.parameters.registration_params import RegistrationParams
 from chromapylot.parameters.segmentation_params import SegmentationParams
-from chromapylot.modules.localize import (
+from chromapylot.routines.localize import (
     Localize2D,
     ExtractProperties,
     ReducePlanes,
@@ -31,7 +31,7 @@ from chromapylot.modules.localize import (
     ShiftSpotOnZ,
     AddCycleToTable,
 )
-from chromapylot.modules.segment import Segment2D, Segment3D, Deblend3D
+from chromapylot.routines.segment import Segment2D, Segment3D, Deblend3D
 
 
 from chromapylot.core.pipeline import Pipeline
