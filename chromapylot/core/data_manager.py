@@ -72,11 +72,11 @@ def load_ecsv(file_path):
     return table
 
 
-def save_ecsv(table, path):
+def save_ecsv(table, path, comments=None):
     directory = os.path.dirname(path)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    table.write(path, format="ascii.ecsv", overwrite=True)
+    table.write(path, format="ascii.ecsv", overwrite=True, comment=comments)
     print(f"[Saving] {path}")
 
 
