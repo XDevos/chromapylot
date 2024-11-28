@@ -1,0 +1,66 @@
+project
+	split_in_blocks
+	interpolate_focal_plane
+	project_by_block
+register_global
+	register_by_block
+	compare_block_global
+REFERENCE
+	2D
+		project
+FIDUCIAL
+	2D
+		skip
+		project
+		register_global
+	3D
+		skip
+		preprocess_3d
+		project
+		register_global
+		shift_3d
+		register_local
+BARCODE
+	2D
+		skip
+		project
+		shift_2d
+		localize_2d
+	3D
+		skip
+		reduce_planes
+		preprocess_3d
+		shift_3d
+		segment_3d
+		deblend_3d
+		extract_properties
+		add_cycle_to_table
+		fit_subpixel
+		shift_spot_on_z
+DAPI | RNA | PRIMER
+	2D
+		skip
+		project
+		shift_2d
+		segment_2d
+		extract_properties
+		filter_mask
+		select_mask_2d
+	3D
+		skip
+		shift_3d
+		segment_3d
+		extract_properties
+		filter_mask
+		select_mask_3d
+		
+TRACE
+	2D
+		filter_localization
+		build_trace_2d
+		build_matrix
+	3D
+		filter_localization
+		register_localization
+		build_trace_3d
+		build_matrix
